@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include trevo_whitelabel *.css
+recursive-include trevo_whitelabel *.csv
+recursive-include trevo_whitelabel *.html
+recursive-include trevo_whitelabel *.ico
+recursive-include trevo_whitelabel *.js
+recursive-include trevo_whitelabel *.json
+recursive-include trevo_whitelabel *.md
+recursive-include trevo_whitelabel *.png
+recursive-include trevo_whitelabel *.py
+recursive-include trevo_whitelabel *.svg
+recursive-include trevo_whitelabel *.txt
+recursive-exclude trevo_whitelabel *.pyc
