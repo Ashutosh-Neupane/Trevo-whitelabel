@@ -1,143 +1,175 @@
-// _layout.scss — navbar, sidebar, page-head, main layout
+// _layout.scss — topbar, sidebar, page structure
 
-// ── Navbar ───────────────────────────────────────────────────
+// ── Topbar (56px clean strip) ──────────────────────────────────
 .navbar {
-  height: var(--navbar-height) !important;
+  height: var(--tv-topbar-h) !important;
   background: var(--tv-surface) !important;
   border-bottom: 1px solid var(--tv-line) !important;
   box-shadow: var(--tv-sh-0) !important;
   padding: 0 !important;
 }
 
+// Navbar icons and text
 .navbar svg,
 .navbar .icon { stroke: var(--tv-text-2) !important; fill: none !important; }
 .navbar .nav-link,
-.navbar .dropdown-toggle { color: var(--tv-text) !important; }
+.navbar .dropdown-toggle { color: var(--tv-text) !important; font-size: 13px !important; }
 .navbar .nav-link:hover { color: var(--tv-deep) !important; }
 
+// Logo
 .navbar-home img,
 .navbar .app-logo img {
   max-height: 28px !important;
   width: auto !important;
 }
 
-// Search bar — single border only
+// Search bar — styled like design concept
+// "border:1px solid var(--tv-line), bg:var(--tv-bg), ⌘K kbd"
 .search-bar .awesomplete input,
 #navbar-search {
-  background: var(--tv-bg-2) !important;
+  background: var(--tv-bg) !important;
   border: 1px solid var(--tv-line) !important;
-  border-radius: var(--border-radius) !important;
+  border-radius: var(--tv-r-3) !important;
   box-shadow: none !important;
   height: 30px !important;
   color: var(--tv-text) !important;
+  font-family: var(--tv-font-sans) !important;
   font-size: 13px !important;
+  padding-left: 32px !important;
 }
 .search-bar .awesomplete input:focus,
 #navbar-search:focus {
   border-color: var(--tv-primary) !important;
   box-shadow: 0 0 0 3px rgba(107,164,75,.12) !important;
   background: var(--tv-surface) !important;
+  outline: none !important;
+}
+.search-bar .awesomplete input::placeholder,
+#navbar-search::placeholder {
+  color: var(--tv-text-3) !important;
 }
 
-// ── Sidebar ──────────────────────────────────────────────────
-// Frappe v16 uses .body-sidebar (icon-rail, 50px) that expands
-// to --sidebar-width on hover/click. We style both states.
-
+// ── Sidebar (240px, grouped, leaf-green active) ────────────────
+// Frappe v16 uses .body-sidebar (icon-rail 50px) that expands on hover
 .body-sidebar {
   background: var(--tv-surface) !important;
   border-right: 1px solid var(--tv-line) !important;
   box-shadow: none !important;
 }
 
-// Sidebar header (app logo + name row)
+// Sidebar header — brand row
 .sidebar-header {
-  border-bottom: 1px solid var(--tv-line) !important;
+  height: var(--tv-topbar-h) !important;
+  border-bottom: 1px solid var(--tv-line-2) !important;
   background: var(--tv-surface) !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 16px !important;
+}
+.header-logo-container {
+  background: linear-gradient(135deg, #6ba44b 0%, #2d7a4f 100%) !important;
+  border-radius: var(--tv-r-2) !important;
 }
 .header-title {
-  color: var(--tv-deep-900) !important;
+  font-family: var(--tv-font-sans) !important;
+  font-size: 15px !important;
   font-weight: 700 !important;
-  font-size: 14px !important;
+  letter-spacing: -0.01em !important;
+  color: var(--tv-deep-900) !important;
 }
-.header-subtitle { color: var(--tv-text-3) !important; font-size: 12px !important; }
+.header-subtitle {
+  font-size: 11px !important;
+  color: var(--tv-text-3) !important;
+}
+
+// Section break labels (WORKSPACE / LENDING / OPERATIONS)
+.section-break {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  color: var(--tv-text-3) !important;
+  padding: 6px 12px !important;
+  margin-top: 12px !important;
+}
 
 // Sidebar items
 .standard-sidebar-item {
-  border-radius: var(--border-radius) !important;
-  margin-bottom: 1px !important;
+  border-radius: var(--tv-r-3) !important;
+  margin: 1px 4px !important;
   transition: background var(--tv-dur-1) var(--tv-ease) !important;
+  position: relative !important;
 }
 
 .standard-sidebar-item:not(.active-sidebar):has(a:not(.section-break)):hover {
   background: var(--tv-primary-50) !important;
 }
 
+// Active item — left accent bar + tinted bg
 .active-sidebar {
   background: var(--tv-primary-50) !important;
   box-shadow: none !important;
-  // Active left accent bar
-  position: relative !important;
   &::before {
     content: '' !important;
     position: absolute !important;
-    left: 0 !important; top: 6px !important; bottom: 6px !important;
+    left: -4px !important;
+    top: 6px !important;
+    bottom: 6px !important;
     width: 3px !important;
     border-radius: 0 2px 2px 0 !important;
     background: var(--tv-primary) !important;
   }
 }
 
-// Item anchor text + icon
+// Item anchor text
 .item-anchor {
-  color: var(--tv-text-2) !important;
+  font-family: var(--tv-font-sans) !important;
   font-size: 13px !important;
   font-weight: 500 !important;
+  color: var(--tv-text-2) !important;
+  height: 32px !important;
+  padding: 0 12px !important;
 }
 .active-sidebar .item-anchor {
   color: var(--tv-primary-700) !important;
   font-weight: 600 !important;
 }
 
-// Sidebar icons — always currentColor so they follow text
+// Sidebar icons — currentColor so they follow text
 .body-sidebar svg,
 .standard-sidebar-item svg {
   stroke: currentColor !important;
   fill: none !important;
-}
-
-// Section break labels
-.section-break {
-  color: var(--tv-text-3) !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
-  letter-spacing: .08em !important;
-  text-transform: uppercase !important;
+  width: 16px !important;
+  height: 16px !important;
 }
 
 // Sidebar bottom user row
-.body-sidebar-bottom {
-  border-top: 1px solid var(--tv-line) !important;
-}
+.body-sidebar-bottom { border-top: 1px solid var(--tv-line-2) !important; }
 .dropdown-navbar-user:hover {
   background: var(--tv-primary-50) !important;
-  border-radius: var(--border-radius) !important;
+  border-radius: var(--tv-r-3) !important;
 }
 
-// ── Page head — sticky fix ────────────────────────────────────
-// Frappe sets position:sticky; top:0 on .page-head.
-// The bug (gap at top) happens when --navbar-height doesn't match
-// the actual rendered navbar. We pin it to the correct offset.
+// ── Page head — sticky, no gap ─────────────────────────────────
 .page-head {
   position: sticky !important;
   top: 0 !important;
   z-index: 6 !important;
   background: var(--tv-bg) !important;
   border-bottom: 1px solid var(--tv-line) !important;
-  // Remove any extra margin/padding that creates the gap
   margin-top: 0 !important;
 }
 
-// ── Main section backgrounds ──────────────────────────────────
+// Page title
+.page-title .title-text {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--tv-deep-900) !important;
+}
+
+// ── Main section backgrounds ───────────────────────────────────
 .main-section,
 .page-container,
 .page-body,
@@ -146,15 +178,14 @@
   background: var(--tv-bg) !important;
 }
 
-// page-form bar (filter bar below page-head)
 .page-form {
   background: var(--tv-surface) !important;
   border-bottom: 1px solid var(--tv-line) !important;
 }
 
-// ── Form tabs sticky ──────────────────────────────────────────
+// ── Form tabs sticky ───────────────────────────────────────────
 .form-tabs-sticky-down {
-  top: var(--navbar-height) !important;
+  top: var(--tv-topbar-h) !important;
   background: var(--tv-bg) !important;
   z-index: 5 !important;
   border-bottom: 1px solid var(--tv-line) !important;
@@ -162,18 +193,25 @@
 .form-tabs-list {
   background: var(--tv-bg) !important;
   border-bottom: 1px solid var(--tv-line) !important;
+  padding: 0 4px !important;
 }
 .form-tabs-list .nav-link {
+  font-family: var(--tv-font-sans) !important;
   color: var(--tv-text-2) !important;
   font-weight: 600 !important;
   font-size: 13px !important;
+  border: none !important;
   border-bottom: 2px solid transparent !important;
   border-radius: 0 !important;
   background: transparent !important;
   padding: 8px 14px !important;
+  transition: color var(--tv-dur-1) var(--tv-ease) !important;
 }
 .form-tabs-list .nav-link.active {
   color: var(--tv-primary-700) !important;
   border-bottom-color: var(--tv-primary) !important;
   background: transparent !important;
+}
+.form-tabs-list .nav-link:hover:not(.active) {
+  color: var(--tv-text) !important;
 }

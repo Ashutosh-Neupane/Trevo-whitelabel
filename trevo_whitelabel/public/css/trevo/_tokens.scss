@@ -1,9 +1,11 @@
-// _tokens.scss — Trevo design tokens
-// Maps onto frappe's own variable names so every component inherits automatically
+// _tokens.scss
+// Exact tokens from Trevo Design Concept v0.1
+// Maps onto Frappe's own variable names so every component inherits automatically.
 
 :root,
 [data-theme="light"] {
-  // ── Brand ──────────────────────────────────────────────
+
+  // ── Brand (from design concept) ────────────────────────────
   --tv-primary:      #6ba44b;
   --tv-primary-600:  #5a8e3e;
   --tv-primary-700:  #467132;
@@ -14,7 +16,7 @@
   --tv-deep-900:     #143628;
   --tv-cream:        #fff6c0;
 
-  // ── Neutrals ───────────────────────────────────────────
+  // ── Neutrals (warm green undertone) ────────────────────────
   --tv-bg:           #f7f8f5;
   --tv-bg-2:         #f1f3ee;
   --tv-surface:      #ffffff;
@@ -24,7 +26,7 @@
   --tv-text-2:       #4d5a55;
   --tv-text-3:       #7a8782;
 
-  // ── Status ─────────────────────────────────────────────
+  // ── Status ─────────────────────────────────────────────────
   --tv-success:      #4f9c4a;
   --tv-success-bg:   #ecf5e7;
   --tv-warning:      #c98a1c;
@@ -34,20 +36,37 @@
   --tv-info:         #2f6f8f;
   --tv-info-bg:      #e3eef3;
 
-  // ── Shadows ────────────────────────────────────────────
+  // ── Shadows (low elevation, green-tinted) ──────────────────
   --tv-sh-0: 0 1px 0 rgba(20,32,26,.04);
   --tv-sh-1: 0 1px 2px rgba(20,32,26,.05), 0 1px 1px rgba(20,32,26,.03);
   --tv-sh-2: 0 4px 12px rgba(20,32,26,.06), 0 1px 2px rgba(20,32,26,.04);
   --tv-sh-3: 0 12px 28px rgba(20,32,26,.10), 0 2px 6px rgba(20,32,26,.05);
 
-  // ── Motion ─────────────────────────────────────────────
+  // ── Motion ─────────────────────────────────────────────────
   --tv-ease:  cubic-bezier(0.2, 0.7, 0.2, 1);
-  --tv-dur-1: 120ms;
-  --tv-dur-2: 200ms;
+  --tv-dur-1: 120ms;  // hover / focus
+  --tv-dur-2: 200ms;  // panel open/close
+  --tv-dur-3: 320ms;  // page transition
 
-  // ── Override frappe tokens ─────────────────────────────
-  // These are the names frappe's own SCSS reads — overriding them
-  // means every frappe component picks up Trevo colours for free.
+  // ── Typography ─────────────────────────────────────────────
+  --tv-font-sans: "Inter Tight", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --tv-font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  // ── Radius (4px grid) ──────────────────────────────────────
+  --tv-r-1: 4px;
+  --tv-r-2: 6px;
+  --tv-r-3: 8px;
+  --tv-r-4: 10px;
+  --tv-r-5: 14px;
+  --tv-r-pill: 999px;
+
+  // ── Layout ─────────────────────────────────────────────────
+  --tv-sidebar-w: 240px;
+  --tv-topbar-h:  56px;
+
+  // ── Override Frappe tokens ─────────────────────────────────
+  // Frappe reads these names — overriding them means every
+  // frappe component picks up Trevo colours automatically.
   --primary:              var(--tv-primary);
   --brand-color:          var(--tv-primary);
   --btn-primary:          var(--tv-primary);
@@ -55,6 +74,7 @@
   --progress-bar-bg:      var(--tv-primary);
   --checkbox-gradient:    linear-gradient(180deg, var(--tv-primary) -124.51%, var(--tv-primary) 100%);
   --focus-default:        0 0 0 2px rgba(107,164,75,.35);
+  --focus-green:          0 0 0 2px rgba(107,164,75,.35);
 
   --bg-color:             var(--tv-bg);
   --fg-color:             var(--tv-surface);
@@ -68,6 +88,7 @@
   --sidebar-select-color: var(--tv-primary-50);
   --sidebar-hover-color:  var(--tv-primary-50);
   --sidebar-active-color: var(--tv-surface);
+  --surface-menu-bar:     var(--tv-bg);
 
   --border-color:         var(--tv-line);
   --dark-border-color:    #c8d8d0;
@@ -80,48 +101,50 @@
 
   --icon-stroke:          var(--tv-text-2);
   --icon-fill:            transparent;
-  --icon-fill-bg:         var(--tv-bg-2);
 
-  --shadow-xs:  var(--tv-sh-0);
-  --shadow-sm:  var(--tv-sh-1);
-  --shadow-md:  var(--tv-sh-2);
-  --shadow-lg:  var(--tv-sh-3);
+  --shadow-xs:   var(--tv-sh-0);
+  --shadow-sm:   var(--tv-sh-1);
+  --shadow-md:   var(--tv-sh-2);
+  --shadow-lg:   var(--tv-sh-3);
   --card-shadow: var(--tv-sh-1);
   --btn-shadow:  var(--tv-sh-0);
 
-  --border-radius:     8px;
-  --border-radius-sm:  8px;
-  --border-radius-md:  10px;
-  --border-radius-lg:  12px;
+  // Frappe border-radius tokens → Trevo r-3 default
+  --border-radius:     var(--tv-r-3);
+  --border-radius-sm:  var(--tv-r-3);
+  --border-radius-md:  var(--tv-r-4);
+  --border-radius-lg:  var(--tv-r-5);
   --border-radius-xl:  16px;
-  --border-radius-full: 999px;
+  --border-radius-full: var(--tv-r-pill);
 
-  --navbar-height:      52px;
-  --page-head-height:   45px;
-  --input-height:       32px;
-  --btn-height:         32px;
-  --checkbox-size:      16px;
-  --sidebar-width:      220px;
+  --navbar-height:    var(--tv-topbar-h);
+  --sidebar-width:    var(--tv-sidebar-w);
+  --page-head-height: 45px;
+  --input-height:     32px;
+  --btn-height:       32px;
+  --checkbox-size:    16px;
 }
 
 [data-theme="dark"] {
   --tv-bg:       #0f1a12;
   --tv-bg-2:     #182318;
-  --tv-surface:  #1a2a1e;
+  --tv-surface:  #1b2924;
   --tv-line:     #2a3d2e;
   --tv-line-2:   #223228;
-  --tv-text:     #d8ede0;
+  --tv-text:     #d8edde;
   --tv-text-2:   #8aaa90;
   --tv-text-3:   #5a7a60;
+  --tv-primary:  #9bd47a;
 
-  --bg-color:    var(--tv-bg);
-  --fg-color:    var(--tv-surface);
-  --card-bg:     var(--tv-surface);
-  --subtle-fg:   var(--tv-bg-2);
-  --control-bg:  var(--tv-bg-2);
-  --navbar-bg:   var(--tv-bg);
+  --bg-color:     var(--tv-bg);
+  --fg-color:     var(--tv-surface);
+  --card-bg:      var(--tv-surface);
+  --subtle-fg:    var(--tv-bg-2);
+  --control-bg:   var(--tv-bg-2);
+  --navbar-bg:    var(--tv-bg);
   --border-color: var(--tv-line);
-  --text-color:  var(--tv-text);
-  --text-muted:  var(--tv-text-2);
+  --text-color:   var(--tv-text);
+  --text-muted:   var(--tv-text-2);
   --heading-color: #c8e8d0;
+  --surface-menu-bar: var(--tv-bg);
 }
