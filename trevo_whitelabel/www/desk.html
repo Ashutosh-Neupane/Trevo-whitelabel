@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html data-theme-mode="{{ (desk_theme | default('light')) | lower }}" data-theme="{{ (desk_theme | default('light')) | lower }}" dir="{{ layout_direction | default('ltr') }}" lang="{{ lang | default('en') }}">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="theme-color" content="#4CAF50">
+		<meta name="msapplication-navbutton-color" content="#4CAF50">
+		<meta name="apple-mobile-web-app-status-bar-style" content="#4CAF50">
+		<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+		<meta content="utf-8" http-equiv="encoding">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="mobile-web-app-capable" content="yes">
+		<title>{{ app_title }}</title>
+		<link rel="shortcut icon" href="/assets/trevo_whitelabel/images/TrevoCloudLogo.svg" type="image/x-icon">
+		<link rel="icon" href="/assets/trevo_whitelabel/images/TrevoCloudLogo.svg" type="image/x-icon">
+		
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+		{% for include in app_include_css -%}
+		{{ include_style(include) }}
+		{%- endfor -%}
+	</head>
+	<body>
+		{% include "templates/includes/splash_screen.html" %}
+		<div class="main-section">
+			<header></header>
+			<div id="body"></div>
+			<footer></footer>
+		</div>
+		<div id="all-symbols" style="display:none"></div>
+		<div id="build-events-overlay"></div>
+
+		<script type="text/javascript">
+			window._version_number = "{{ build_version }}";
+			window.app = true;
+			window.dev_server = {{ dev_server }};
+			if (!window.frappe) window.frappe = {};
+			frappe.boot = {{ frappe.utils.orjson_dumps(boot, default=frappe.json_handler) }};
+			frappe._messages = frappe.boot["__messages"];
+			frappe.csrf_token = "{{ csrf_token }}";
+		</script>
+
+		{%- for path in app_include_icons -%}
+		{{ include_icons(path) }}
+		{%- endfor -%}
+
+		{% for include in app_include_js %}
+		{{ include_script(include) }}
+		{% endfor %}
+
+		{% include "templates/includes/app_analytics/google_analytics.html" %}
+	</body>
+</html>

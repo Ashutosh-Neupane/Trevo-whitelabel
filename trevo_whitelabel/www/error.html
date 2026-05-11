@@ -1,0 +1,87 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Error") }}{% endblock %}
+
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block head_include %}
+{{ include_style('trevo_v1.bundle.css') }}
+<link rel="stylesheet" href="/assets/frappe/css/hljs-night-owl.css">
+<style>
+    body {
+        background-color: var(--bg-color) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        height: 100vh !important;
+        margin: 0 !important;
+    }
+    .error-card {
+        background: var(--card-bg);
+        padding: 48px;
+        border-radius: var(--border-radius-lg);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+        max-width: 500px;
+        width: 100%;
+        text-align: center;
+        border: 1.5px solid var(--border-color);
+    }
+    .error-icon {
+        font-size: 64px;
+        margin-bottom: 24px;
+        display: block;
+    }
+    .error-card h2 {
+        font-family: 'Outfit', sans-serif;
+        color: var(--forest);
+        font-weight: 800;
+        margin-bottom: 16px;
+    }
+    .error-card p {
+        color: var(--text-muted);
+        margin-bottom: 32px;
+        font-size: 16px;
+    }
+    .error-details {
+        text-align: left;
+        background: var(--subtle-fg);
+        padding: 16px;
+        border-radius: var(--border-radius);
+        margin-top: 24px;
+        max-height: 200px;
+        overflow: auto;
+        font-size: 13px;
+    }
+    .btn-home {
+        background: var(--primary);
+        color: white;
+        padding: 12px 24px;
+        border-radius: var(--border-radius-sm);
+        text-decoration: none;
+        font-weight: 700;
+        display: inline-block;
+        transition: all 0.2s;
+    }
+    .btn-home:hover {
+        background: var(--forest);
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div class="error-card">
+    <span class="error-icon">⚠️</span>
+    <h2>{{ title or _("Something went wrong") }}</h2>
+    <p>{{ http_status_code }}: {{ message or _("The page you're looking for doesn't exist or an error occurred.") }}</p>
+    
+    <a href="/" class="btn-home">{{ _("Back to Home") }}</a>
+
+    {% if error %}
+    <div class="error-details">
+        <pre><code>{{ error }}</code></pre>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
