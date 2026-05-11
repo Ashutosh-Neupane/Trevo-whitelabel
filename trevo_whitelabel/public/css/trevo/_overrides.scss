@@ -1,0 +1,285 @@
+// _overrides.scss
+// Targets every remaining surface that still looks like default Frappe.
+// Loaded last so it wins specificity battles.
+
+// ── ink-gray → Trevo neutrals ──────────────────────────────────
+// Frappe uses --ink-gray-N for text in sidebar, breadcrumbs, etc.
+// Map them to Trevo warm neutrals.
+:root,
+[data-theme="light"] {
+  --ink-gray-1: var(--tv-line-2);
+  --ink-gray-2: var(--tv-line);
+  --ink-gray-3: #c8d8d0;
+  --ink-gray-4: var(--tv-text-3);
+  --ink-gray-5: var(--tv-text-3);
+  --ink-gray-6: var(--tv-text-2);
+  --ink-gray-7: var(--tv-text-2);
+  --ink-gray-8: var(--tv-text);
+  --ink-gray-9: var(--tv-deep-900);
+
+  // surface-menu-bar is what .body-sidebar reads for its background
+  --surface-menu-bar: var(--tv-surface);
+
+  // highlight-color (row hover on workspace) → primary tint
+  --highlight-color: var(--tv-primary-50);
+  --fg-hover-color:  var(--tv-primary-50);
+
+  // invert-neutral hover on shortcut cards → deep green not black
+  --invert-neutral: var(--tv-deep-900);
+}
+
+// ── Breadcrumbs ────────────────────────────────────────────────
+.navbar-breadcrumbs a {
+  color: var(--tv-text-2) !important;
+  font-family: var(--tv-font-sans) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+.navbar-breadcrumbs a:hover { color: var(--tv-deep) !important; }
+.navbar-breadcrumbs a::before { color: var(--tv-text-3) !important; }
+// Last breadcrumb = current page
+.navbar-breadcrumbs li:last-child a {
+  color: var(--tv-text) !important;
+  font-weight: 600 !important;
+}
+
+// ── Workspace page ─────────────────────────────────────────────
+// Widget group title
+.widget-group-title {
+  font-family: var(--tv-font-sans) !important;
+  color: var(--tv-deep-900) !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  letter-spacing: -0.01em !important;
+}
+
+// Shortcut widget cards — Trevo card style
+.widget.shortcut-widget-box {
+  background: var(--tv-surface) !important;
+  border: 1px solid var(--tv-line) !important;
+  border-radius: var(--tv-r-4) !important;
+  box-shadow: var(--tv-sh-1) !important;
+  transition: box-shadow var(--tv-dur-2) var(--tv-ease),
+              transform var(--tv-dur-2) var(--tv-ease),
+              border-color var(--tv-dur-1) var(--tv-ease) !important;
+  padding: 12px 14px !important;
+}
+.widget.shortcut-widget-box:hover {
+  border-color: var(--tv-primary) !important;
+  box-shadow: var(--tv-sh-2) !important;
+  transform: translateY(-1px) !important;
+  // Don't invert to black — use deep green
+  --invert-neutral: var(--tv-primary-700);
+}
+.widget.shortcut-widget-box .widget-title {
+  font-family: var(--tv-font-sans) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--tv-text) !important;
+}
+
+// Links widget
+.widget.links-widget-box {
+  background: var(--tv-surface) !important;
+  border: 1px solid var(--tv-line) !important;
+  border-radius: var(--tv-r-4) !important;
+  box-shadow: var(--tv-sh-1) !important;
+}
+.widget.links-widget-box .link-item:hover .link-content {
+  color: var(--tv-primary-700) !important;
+}
+
+// Number card
+.widget.number-card-widget-box {
+  background: var(--tv-surface) !important;
+  border: 1px solid var(--tv-line) !important;
+  border-radius: var(--tv-r-4) !important;
+  box-shadow: var(--tv-sh-1) !important;
+}
+.number-card .number-card-head {
+  font-family: var(--tv-font-sans) !important;
+  color: var(--tv-text-2) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+}
+.number-card .number-card-number {
+  font-family: var(--tv-font-mono) !important;
+  color: var(--tv-deep-900) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+}
+
+// Dashboard chart widget
+.widget.dashboard-widget-box {
+  background: var(--tv-surface) !important;
+  border: 1px solid var(--tv-line) !important;
+  border-radius: var(--tv-r-4) !important;
+  box-shadow: var(--tv-sh-1) !important;
+}
+.widget.dashboard-widget-box .widget-head {
+  border-bottom: 1px solid var(--tv-line-2) !important;
+}
+
+// New widget placeholder
+.widget.new-widget {
+  background: var(--tv-bg-2) !important;
+  border: 1px dashed var(--tv-line) !important;
+  border-radius: var(--tv-r-4) !important;
+  color: var(--tv-text-3) !important;
+}
+
+// ── Form right rail ────────────────────────────────────────────
+// "Two-column with right-rail context" from design concept
+.form-sidebar {
+  background: transparent !important;
+  border-left: 1px solid var(--tv-line-2) !important;
+}
+.form-sidebar .sidebar-section {
+  border-bottom: 1px solid var(--tv-line-2) !important;
+  padding: 14px 16px !important;
+}
+.form-sidebar .sidebar-section:last-child { border-bottom: none !important; }
+.form-sidebar .form-sidebar-label {
+  font-family: var(--tv-font-sans) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: var(--tv-text-3) !important;
+  margin-bottom: 8px !important;
+}
+.form-sidebar .frappe-timestamp {
+  font-family: var(--tv-font-mono) !important;
+  font-size: 11px !important;
+  color: var(--tv-text-3) !important;
+}
+
+// ── Frappe charts — replace pink with Trevo green ─────────────
+// frappe-charts uses inline style; we override via CSS attr selectors
+.frappe-chart .dataset-units path[stroke="#F683AE"],
+.frappe-chart .dataset-units path[stroke="#f683ae"] {
+  stroke: var(--tv-primary) !important;
+}
+.frappe-chart rect.bar[fill="#F683AE"],
+.frappe-chart rect.bar[fill="#f683ae"] {
+  fill: var(--tv-primary) !important;
+}
+stop[style*="stop-color: #F683AE"],
+stop[style*="stop-color:#F683AE"] {
+  stop-color: var(--tv-primary) !important;
+}
+// Chart axis labels
+.frappe-chart text,
+.chart-container text {
+  font-family: var(--tv-font-mono) !important;
+  fill: var(--tv-text-3) !important;
+}
+
+// ── Empty states ───────────────────────────────────────────────
+.msg-box {
+  color: var(--tv-text-2) !important;
+  font-family: var(--tv-font-sans) !important;
+}
+.msg-box .msg-title {
+  font-family: var(--tv-font-sans) !important;
+  color: var(--tv-deep-900) !important;
+  font-weight: 700 !important;
+  font-size: 16px !important;
+}
+.msg-box p {
+  color: var(--tv-text-3) !important;
+  font-size: 13px !important;
+}
+
+// ── List view toolbar ──────────────────────────────────────────
+.list-filters-area {
+  background: var(--tv-surface) !important;
+  border-bottom: 1px solid var(--tv-line) !important;
+}
+.filter-tag .btn {
+  font-family: var(--tv-font-sans) !important;
+  color: var(--tv-primary-700) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+// ── Toasts ─────────────────────────────────────────────────────
+.toast-container .toast {
+  background: var(--tv-surface) !important;
+  border: 1px solid var(--tv-line) !important;
+  border-radius: var(--tv-r-4) !important;
+  box-shadow: var(--tv-sh-3) !important;
+  font-family: var(--tv-font-sans) !important;
+}
+.toast-container .toast .toast-title {
+  font-weight: 700 !important;
+  color: var(--tv-deep-900) !important;
+}
+.toast-container .toast .toast-body {
+  color: var(--tv-text-2) !important;
+  font-size: 13px !important;
+}
+
+// ── Popover / tooltip ──────────────────────────────────────────
+.popover {
+  background: var(--tv-surface) !important;
+  border: 1px solid var(--tv-line) !important;
+  border-radius: var(--tv-r-4) !important;
+  box-shadow: var(--tv-sh-3) !important;
+  font-family: var(--tv-font-sans) !important;
+}
+.popover-header {
+  background: var(--tv-bg-2) !important;
+  border-bottom: 1px solid var(--tv-line) !important;
+  color: var(--tv-deep-900) !important;
+  font-weight: 700 !important;
+  border-radius: var(--tv-r-4) var(--tv-r-4) 0 0 !important;
+}
+.popover-body { color: var(--tv-text-2) !important; font-size: 13px !important; }
+
+// ── Keyboard shortcut badges ───────────────────────────────────
+kbd {
+  font-family: var(--tv-font-mono) !important;
+  background: var(--tv-bg-2) !important;
+  border: 1px solid var(--tv-line) !important;
+  color: var(--tv-text-2) !important;
+  border-radius: var(--tv-r-2) !important;
+  font-size: 11px !important;
+  padding: 2px 6px !important;
+  box-shadow: none !important;
+}
+
+// ── Skeleton loading ───────────────────────────────────────────
+.skeleton-box, [class*="skeleton"] {
+  background: linear-gradient(
+    90deg,
+    var(--tv-bg-2) 25%,
+    var(--tv-line-2) 50%,
+    var(--tv-bg-2) 75%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: tv-skeleton 1.4s ease infinite !important;
+}
+@keyframes tv-skeleton {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// ── Page actions bar ───────────────────────────────────────────
+.page-actions .btn { margin-left: 6px !important; }
+.page-actions .btn-primary { min-width: 80px !important; }
+
+// ── Indicator dots ─────────────────────────────────────────────
+.indicator.green::before  { background: var(--tv-primary) !important; }
+.indicator.blue::before   { background: var(--tv-info) !important; }
+.indicator.red::before    { background: var(--tv-danger) !important; }
+.indicator.orange::before { background: var(--tv-warning) !important; }
+.indicator.yellow::before { background: var(--tv-warning) !important; }
+
+// ── Selection highlight ────────────────────────────────────────
+::selection {
+  background: var(--tv-primary-100) !important;
+  color: var(--tv-deep-900) !important;
+}

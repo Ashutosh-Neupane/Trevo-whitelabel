@@ -1,9 +1,9 @@
-// trevo_v1.bundle.scss
-// Entry point — imports partials in 5-1 order:
-//   tokens → base → layout → components → login
+// trevo_v1.bundle.scss — entry point
+// 5-1 pattern: tokens → base → layout → components → login → overrides
 
 @import "trevo/tokens";
 @import "trevo/base";
 @import "trevo/layout";
 @import "trevo/components";
 @import "trevo/login";
+@import "trevo/overrides";
