@@ -1,17 +1,24 @@
 import frappe
 
+
+TREVO_LOGO = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg"
+
+
 def get_context(context):
     """
     Force Trevo branding into the website context.
     """
     context.app_name = "Trevo"
     context.app_title = "Trevo Cloud"
-    context.logo = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg"
-    context.favicon = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg"
-    
+    context.logo = TREVO_LOGO
+    context.app_logo_url = TREVO_LOGO
+    context.favicon = TREVO_LOGO
+    context.splash_image = TREVO_LOGO
+    context.brand_html = "Trevo Cloud"
+
     # Independent Home Page Logic
     # ---------------------------
-    # If ecommerce is installed, use its home page. 
+    # If ecommerce is installed, use its home page.
     # Otherwise, ensure we don't redirect to login by defaulting to 'index'.
     installed_apps = frappe.get_installed_apps()
     if "denimnation_ecommerce" in installed_apps:

@@ -1,21 +1,45 @@
 import frappe
 
+
+TREVO_LOGO = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg"
+TREVO_BRAND = "#6ba44b"
+
+
+def _set_single_values(doctype, values):
+    if not frappe.db.exists("DocType", doctype):
+        return
+
+    meta = frappe.get_meta(doctype)
+    for fieldname, value in values.items():
+        if meta.has_field(fieldname):
+            frappe.db.set_single_value(doctype, fieldname, value)
+
+
 def run():
     print("Starting Trevo rebranding script...")
 
     # 1. Update System Settings
     try:
-        if frappe.db.exists("DocType", "System Settings"):
-            frappe.db.set_single_value('System Settings', 'app_name', 'Trevo')
-            frappe.db.set_single_value('System Settings', 'brand_color', '#6ba44b')
-            print("Set 'app_name' to 'Trevo' and 'brand_color' to '#6ba44b' in System Settings.")
-            
-        if frappe.db.exists("DocType", "Website Settings"):
-            frappe.db.set_single_value('Website Settings', 'app_name', 'Trevo')
-            frappe.db.set_single_value('Website Settings', 'brand_color', '#6ba44b')
-            frappe.db.set_single_value('Website Settings', 'banner_image', '/assets/trevo_whitelabel/images/TrevoCloudLogo.svg')
-            frappe.db.set_single_value('Website Settings', 'splash_image', '/assets/trevo_whitelabel/images/TrevoCloudLogo.svg')
-            print("Updated Website Settings with Trevo branding and splash image.")
+        _set_single_values("System Settings", {
+            "app_name": "Trevo",
+            "brand_color": TREVO_BRAND,
+        })
+        print("Updated System Settings with Trevo naming and color.")
+
+        _set_single_values("Website Settings", {
+            "app_name": "Trevo",
+            "brand_color": TREVO_BRAND,
+            "app_logo": TREVO_LOGO,
+            "banner_image": TREVO_LOGO,
+            "splash_image": TREVO_LOGO,
+            "favicon": TREVO_LOGO,
+        })
+        print("Updated Website Settings with Trevo branding assets.")
+
+        _set_single_values("Navbar Settings", {
+            "app_logo": TREVO_LOGO,
+        })
+        print("Updated Navbar Settings with Trevo logo.")
     except Exception as e:
         print(f"Error updating System Settings: {e}")
 
@@ -25,10 +49,15 @@ def run():
         "Frappe Framework": "Trevo Framework",
         "Frappe Cloud": "Trevo Cloud",
         "Powered by Frappe": "Powered by Trevo",
-        "Frappe Technologies": "Dots and Dashes Technologies",
-        "ERPNext": "TrevoERP",
-        "About ERPNext": "About TrevoERP",
-        "ERPNext Settings": "TrevoERP Settings"
+        "Frappe Technologies": "Dots and Dashes Technology Limited",
+        "Frappe Technologies Pvt. Ltd. and contributors": "Dots and Dashes Technology Limited",
+        "ERPNext": "Trevo Next",
+        "About ERPNext": "About Trevo Next",
+        "ERPNext Settings": "Trevo Next Settings",
+        "Login with Frappe Cloud": "Login with Trevo Cloud",
+        "Welcome to Frappe": "Welcome to Trevo",
+        "Built on Frappe": "Built for Trevo",
+        "Frappe Support": "Trevo Support",
     }
 
     for source_text, translated_text in translations.items():
