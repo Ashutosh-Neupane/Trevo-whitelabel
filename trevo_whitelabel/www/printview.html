@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" dir="{{ layout_direction }}">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{{ title }} | Trevo Print</title>
+	<meta name="generator" content="trevo">
+	{{ include_style('print.bundle.css') }}
+	{{ include_style('trevo_v1.bundle.css') }}
+	{% if print_style %}
+		<style>
+		{{ print_style }}
+		</style>
+	{% endif %}
+    <style>
+        body {
+            background-color: #f4f7f4 !important;
+            font-family: 'Inter', sans-serif;
+        }
+        .print-format-gutter {
+            padding: 60px 0 !important;
+            display: flex;
+            justify-content: center;
+        }
+        .print-format {
+            background-color: #ffffff !important;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.08) !important;
+            border: none !important;
+            border-radius: 12px !important;
+            padding: 40px !important;
+            width: 210mm; /* A4 width */
+            min-height: 297mm;
+        }
+        .action-banner {
+            background: rgba(255, 255, 255, 0.8) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 40px !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .action-banner .brand {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            color: var(--forest-deep);
+            font-size: 18px;
+        }
+        .btn-print {
+            background: var(--primary) !important;
+            color: white !important;
+            padding: 8px 24px !important;
+            border-radius: 8px !important;
+            font-weight: 700 !important;
+            text-decoration: none !important;
+            transition: all 0.2s;
+            display: inline-block;
+        }
+        .btn-print:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+        .btn-pdf {
+            background: white !important;
+            color: var(--text-color) !important;
+            border: 1px solid var(--border-color) !important;
+            padding: 8px 24px !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            text-decoration: none !important;
+            margin-right: 12px;
+        }
+    </style>
+</head>
+<body>
+	<div class="action-banner print-hide">
+		<div class="brand">trevo print preview</div>
+		<div class="actions">
+			<a class="btn-pdf" href="/api/method/frappe.utils.print_format.download_pdf?doctype={{doctype|e}}&name={{name|e}}&format={{print_format|e}}&letterhead={{letterhead|e}}&no_letterhead={{no_letterhead|e}}&_lang={{lang|e}}&key={{key|e}}">
+				{{ _('Download PDF') }}
+			</a>
+			<a class="btn-print" onclick="window.print();">
+				{{ _("Print Now") }}
+			</a>
+		</div>
+	</div>
+	<div class="print-format-gutter">
+		<div class="print-format">
+			{{ body }}
+		</div>
+	</div>
+</body>
+</html>
