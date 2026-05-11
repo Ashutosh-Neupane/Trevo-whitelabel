@@ -1,262 +1,195 @@
 /**
- * TREVO CLOUD — "The Verdant Precision Framework" Engine v14.0
- * The Digital Greenhouse: Premium Overlaid Experience.
+ * TREVO CLOUD — Whitelabel Engine v3.0
+ * Optimized for Premium Emerald Design & Unified Rebranding
  */
+(function () {
+  "use strict";
 
-class TrevoTheme {
-    constructor() {
-        this.version = "14.2";
-        this.primaryColor = "#6ba44b";
-        this.init();
+  const LOGO = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg";
+  
+  // UNIFIED REBRANDING MAP
+  const REBRAND_MAP = {
+    // Apps & Modules
+    "Accounting":       "Trevo Books",
+    "HR":               "Trevo People",
+    "Stock":            "Trevo Inventory",
+    "CRM":              "Trevo CRM",
+    "Selling":          "Trevo Sales",
+    "Buying":           "Trevo Purchase",
+    "Assets":           "Trevo Assets",
+    "Projects":         "Trevo Projects",
+    "Support":          "Trevo Support",
+    "Payroll":          "Trevo Payroll",
+    "Loan":             "Trevo Finance",
+    "Retail":           "Trevo Retail",
+    "Quality":          "Trevo Quality",
+    "Manufacturing":    "Trevo Factory",
+    "Education":        "Trevo Learn",
+    "Healthcare":       "Trevo Health",
+    "Agriculture":      "Trevo Agro",
+    "Non Profit":       "Trevo Impact",
+    "Hospitality":      "Trevo Stay",
+    
+    // Core Brand Names
+    "Frappe Framework": "Trevo Engine",
+    "Frappe":           "Trevo Engine",
+    "ERPNext":          "Trevo Commerce",
+    "Frappe HR":        "Trevo People",
+    "HRMS":             "Trevo People",
+    "Payments":         "Trevo Pay",
+    "Lending":          "Trevo Finance",
+    "Integrations":     "Trevo Connect",
+    "Desk":             "Workspace"
+  };
+
+  /* ── Helpers ─────────────────────────────────────────────── */
+  function setFavicon(url) {
+    let el = document.querySelector("link[rel~='icon']");
+    if (!el) { el = document.createElement("link"); el.rel = "icon"; document.head.appendChild(el); }
+    el.href = url;
+  }
+
+  function injectFonts() {
+    if (document.getElementById("trevo-fonts")) return;
+    const l = document.createElement("link");
+    l.id = "trevo-fonts"; l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap";
+    document.head.appendChild(l);
+  }
+
+  /* ── Rebranding Logic ────────────────────────────────────── */
+  function replaceLogos() {
+    document.querySelectorAll(
+      ".navbar-home img, .app-logo img, img[src*='frappe-logo'], img[alt='Frappe'], #brand-logo"
+    ).forEach(img => {
+      if (!img.src || img.src.includes("frappe") || img.src.includes("erpnext") || img.src === "") {
+        img.src = LOGO;
+        img.style.maxHeight = "32px";
+        img.style.width = "auto";
+      }
+    });
+
+    // Sidebar header logo
+    document.querySelectorAll(".header-logo-container img").forEach(img => {
+      img.src = LOGO;
+      img.style.cssText = "width:100%;height:100%;object-fit:contain;";
+    });
+  }
+
+  function rebrandUI() {
+    // 1. Rename sidebar items & headers
+    document.querySelectorAll(".sidebar-item-label, .header-title, .title-text, .app-title").forEach(el => {
+      const text = el.textContent.trim();
+      if (REBRAND_MAP[text]) {
+        el.textContent = REBRAND_MAP[text];
+      }
+    });
+
+    // 2. Rename Workspace titles
+    document.querySelectorAll(".workspace-sidebar-item-label").forEach(el => {
+        const text = el.textContent.trim();
+        if (REBRAND_MAP[text]) {
+          el.textContent = REBRAND_MAP[text];
+        }
+    });
+
+    // 3. Update Title tag
+    if (document.title.includes("Frappe") || document.title.includes("ERPNext")) {
+        document.title = document.title
+            .replace("Frappe", "Trevo")
+            .replace("ERPNext", "Trevo Commerce");
     }
 
-    init() {
-        this.injectFonts();
-        this.setFavicon("/assets/trevo_whitelabel/images/TrevoCloudLogo.svg");
+    // 4. Update Sidebar Subtitles
+    document.querySelectorAll(".header-subtitle").forEach(el => {
+      if (el.textContent.includes("v16") || el.textContent.includes("ERPNext") || el.textContent.includes("Frappe")) {
+        el.textContent = "Unified Business Platform";
+      }
+    });
+  }
 
-        $(document).on("app_ready", () => {
-            console.log(`%c Trevo Engine ${this.version} %c`, "background: #6ba44b; color: #fff; padding: 5px 10px; border-radius: 4px; font-family: 'Inter Tight', sans-serif; font-weight: 700;", "Verdant Zenith");
-            this.setupOverrides();
-            this.applyBranding();
-            this.initMutationObserver();
-            this.setupKeyboardShortcuts();
+  /* ── About Dialog Override ───────────────────────────────── */
+  function overrideAboutDialog() {
+    if (!window.frappe?.ui?.misc) return;
+    const originalAbout = frappe.ui.misc.about;
+    
+    frappe.ui.misc.about = function () {
+      if (!frappe.ui.misc._trevo_about) {
+        frappe.ui.misc._trevo_about = new frappe.ui.Dialog({
+          title: `<div style="display:flex;align-items:center;gap:10px;">
+            <img src="${LOGO}" style="height:24px;"> <span>About Trevo Cloud</span>
+          </div>`,
         });
 
-        $(document).on("page-change", () => {
-            setTimeout(() => this.applyBranding(), 100);
-        });
-
-        // Instant check for login page
-        if (window.location.pathname.includes("login") || $("body").hasClass("for-login")) {
-            this.forceLoginBranding();
-        }
-    }
-
-    setupKeyboardShortcuts() {
-        $(document).on("keydown", (e) => {
-            // Trigger Command Palette with Ctrl+P or Cmd+K
-            if ((e.ctrlKey || e.metaKey) && (e.key === "p" || e.key === "k")) {
-                e.preventDefault();
-                frappe.search.show();
-            }
-        });
-    }
-
-    injectFonts() {
-        if (!document.getElementById("trevo-fonts")) {
-            const link = document.createElement("link");
-            link.id = "trevo-fonts";
-            link.rel = "stylesheet";
-            link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap";
-            document.head.appendChild(link);
-        }
-    }
-
-    setupOverrides() {
-        if (frappe.ui.Sidebar && !frappe.ui.Sidebar.prototype._trevo_modified) {
-            const originalMake = frappe.ui.Sidebar.prototype.make;
-            frappe.ui.Sidebar.prototype.make = function() {
-                originalMake.apply(this, arguments);
-                this.wrapper.addClass("trevo-sidebar-v14");
-            };
-            frappe.ui.Sidebar.prototype._trevo_modified = true;
-        }
-
-        this.overrideAboutDialog();
-    }
-
-    overrideAboutDialog() {
-        $(document).on("app_ready", () => {
-            if (frappe.ui && frappe.ui.misc) {
-                frappe.ui.misc.about = function () {
-                    if (frappe.ui.misc.about_dialog) {
-                        frappe.ui.misc.about_dialog.show();
-                        return;
-                    }
-
-                    const dialog = new frappe.ui.Dialog({ title: "Trevo Cloud Framework" });
-                    
-                    $(dialog.body).html(
-                        `<div>
-                                <p>The Verdant Precision Framework for the Web</p>
-                                <hr>
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <h4>Installed Modules</h4>
-                                    <button class="btn action-btn hidden" id="copy-apps-info" title="Copy Apps Version" style="margin-bottom: var(--margin-md);">
-                                        ${frappe.utils ? frappe.utils.icon("clipboard") : ""}
-                                    </button>
-                                </div>
-                                <div id='about-app-versions'>Loading modules...</div>
-                                <hr>
-                                <p class='text-muted'>&copy; Dots and Dashes Technologies</p>
-                            </div>`
-                    );
-
-                    frappe.ui.misc.about_dialog = dialog;
-
-                    frappe.ui.misc.about_dialog.on_page_show = function () {
-                        if (!frappe.versions) {
-                            frappe.call({
-                                method: "frappe.utils.change_log.get_versions",
-                                callback: function (r) {
-                                    show_versions(r.message);
-                                },
-                            });
-                        } else {
-                            show_versions(frappe.versions);
-                        }
-                    };
-
-                    const show_versions = function (versions) {
-                        const $wrap = $("#about-app-versions").empty();
-                        let app = {};
-
-                        function get_version_text(app) {
-                            if (app.branch) {
-                                return `v${app.branch_version || app.version} (${app.branch})`;
-                            } else {
-                                return `v${app.version}`;
-                            }
-                        }
-
-                        for (const app_name in versions) {
-                            app = versions[app_name];
-                            const title = `${app_name}: ${app.branch_version || app.version}`;
-                            let display_title = app.title;
-                            if (display_title === "Frappe Framework") display_title = "Trevo Framework";
-                            if (display_title === "ERPNext") display_title = "TrevoERP";
-                            
-                            const text = `<p class='app-version' role='button' title='${title}'>
-                                            <b>${display_title}:</b> ${get_version_text(app)}
-                                        </p>`;
-                            $(text).appendTo($wrap);
-                        }
-
-                        frappe.versions = versions;
-
-                        if (frappe.versions) {
-                            $(dialog.body).find("#copy-apps-info").removeClass("hidden");
-                        }
-                    };
-
-                    frappe.ui.misc.about_dialog.show();
-                };
-            }
-        });
-    }
-
-    applyBranding() {
-        if ($("body").hasClass("for-login")) {
-            this.applyLoginBranding();
-        }
-
-        $(".layout-side-section, .standard-sidebar").addClass("trevo-sidebar-v14");
-        this.replaceLogos();
-        this.colorizeIcons();
-        this.polishSearchBar();
-    }
-
-    replaceLogos() {
-        const trevoLogo = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg";
-        const logoSelectors = ["#brand-logo", ".app-logo", ".frappe-logo", "img[src*='frappe-framework-logo.svg']", "img[src*='frappe-logo.svg']", ".navbar-brand img"];
-
-        $(logoSelectors.join(", ")).each((_, img) => {
-            const $img = $(img);
-            if ($img.attr("src") !== trevoLogo) {
-                $img.attr("src", trevoLogo);
-                if ($img.attr("id") === "brand-logo") {
-                    $img.css({ "max-height": "24px", "width": "auto", "filter": "none" });
-                }
-            }
-        });
-
-        $(".navbar-brand").css("background-image", "none");
-    }
-
-    forceLoginBranding() {
-        let attempts = 0;
-        const interval = setInterval(() => {
-            this.applyLoginBranding();
-            this.replaceLogos();
-            attempts++;
-            if (attempts > 10) clearInterval(interval);
-        }, 200);
-    }
-
-    applyLoginBranding() {
-        const section = $("section.for-login, section.for-signup, section.for-forgot, section.for-email-login").filter(":visible");
-        if (!section.length) return;
-
-        this.enhanceLoginLayout(section);
-
-        const trevoLogo = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg";
-        const cardHead = section.find(".page-card-head");
-        if (cardHead.length && !cardHead.hasClass("trevo-branded")) {
-            cardHead.addClass("trevo-branded").html(`
-                <img class="app-logo" src="${trevoLogo}" style="max-height: 60px; margin-bottom: 20px;">
-                <h4 style="font-weight: 800; font-size: 28px; color: #143628; margin: 0;">Login to Trevo</h4>
-                <p style="margin-top: 10px; color: #7a8782; font-size: 15px;">Access your unified commerce workspace</p>
-            `);
-        }
-    }
-
-    enhanceLoginLayout(section) {
-        if (section.find(".trevo-login-shell").length || $(".trevo-login-page").length) return;
-
-        section.wrapInner('<div class="trevo-login-shell"></div>');
-        const shell = section.find(".trevo-login-shell");
-        shell.wrapInner('<div class="trevo-login-form-column"></div>');
-        shell.prepend(`
-            <section class="trevo-login-showcase">
-                <div class="trevo-login-showcase__inner">
-                    <p class="trevo-login-eyebrow">Trevo Cloud Framework</p>
-                    <h1>One Platform,<br>All Solutions.</h1>
-                    <p class="trevo-login-copy">Empowering Nepalese commerce with a unified ecosystem designed for growth and precision.</p>
-                </div>
-            </section>
+        $(frappe.ui.misc._trevo_about.body).html(`
+          <div id="trevo-versions" style="padding: 10px 0;">
+            <p class="text-muted">Fetching version information...</p>
+          </div>
+          <div style="margin-top:20px; padding-top:15px; border-top:1px solid var(--border-color); font-size:11px; color:var(--text-muted);">
+            &copy; ${new Date().getFullYear()} Trevo Cloud. All rights reserved.
+          </div>
         `);
-    }
+      }
 
-    colorizeIcons() {
-        $("svg").each((_, svg) => {
-            const $svg = $(svg);
-            const stroke = $svg.attr("stroke");
-            if (stroke && (stroke.toLowerCase() === "#1f272e" || stroke.toLowerCase() === "#007bff")) {
-                $svg.attr("stroke", this.primaryColor);
-            }
-        });
-    }
+      frappe.ui.misc._trevo_about.show();
 
-    polishSearchBar() {
-        const searchInput = $(".navbar-form.navbar-left input, .search-bar input, .awesomebar input, .navbar-search input");
-        searchInput.each((_, el) => {
-            const $el = $(el);
-            if (!$el.hasClass("trevo-search-polished")) {
-                $el.attr("placeholder", "Search Trevo...");
-                $el.addClass("trevo-search-polished");
-            }
-        });
-    }
-
-    initMutationObserver() {
-        let timeout;
-        const observer = new MutationObserver(() => {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => this.applyBranding(), 150);
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
-    }
-
-    setFavicon(url) {
-        let link = document.querySelector("link[rel~='icon']");
-        if (!link) {
-            link = document.createElement("link");
-            link.rel = "icon";
-            document.head.appendChild(link);
+      frappe.call({
+        method: "frappe.utils.change_log.get_versions",
+        callback(r) {
+          const $w = $("#trevo-versions").empty();
+          const versions = r?.message || {};
+          Object.entries(versions).forEach(([key, app]) => {
+            const name = REBRAND_MAP[app.title || key] || app.title || key;
+            const ver  = app.branch_version || app.version || "—";
+            $w.append(`
+              <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--subtle-accent);">
+                <span style="font-weight:600;">${name}</span>
+                <span class="badge" style="background:var(--primary-soft); color:var(--primary); font-weight:700;">v${ver}</span>
+              </div>
+            `);
+          });
         }
-        link.href = url;
-    }
-}
+      });
+    };
+  }
 
-frappe.provide("trevo");
-trevo.engine = new TrevoTheme();
+  /* ── Main Execution ──────────────────────────────────────── */
+  function apply() {
+    replaceLogos();
+    rebrandUI();
+    
+    // UI Cleanup
+    document.querySelectorAll(".form-section.card-section, .form-dashboard-section").forEach(el => {
+        el.style.boxShadow = "none";
+        el.style.border = "1.5px solid var(--border-color)";
+    });
+  }
+
+  /* ── Boot ────────────────────────────────────────────────── */
+  setFavicon(LOGO);
+  injectFonts();
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", apply);
+  } else {
+    apply();
+  }
+
+  $(document).on("app_ready", function () {
+    apply();
+    overrideAboutDialog();
+  });
+
+  $(document).on("page-change", function () {
+    setTimeout(apply, 200);
+  });
+
+  // Watch for dynamic sidebar loading
+  let _debounce;
+  const observer = new MutationObserver(() => {
+    clearTimeout(_debounce);
+    _debounce = setTimeout(apply, 500);
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+
+})();
