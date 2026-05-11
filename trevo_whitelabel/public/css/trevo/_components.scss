@@ -24,8 +24,11 @@
 // Inner input — NO border (override Bootstrap's border:1px)
 .frappe-control .control-input .form-control,
 .frappe-control .control-input input,
-.frappe-control .control-input select {
+.frappe-control .control-input select,
+.frappe-control .control-input .link-field,
+.frappe-control .control-input .awesomplete {
   border: none !important;
+  outline: none !important;
   box-shadow: none !important;
   background: transparent !important;
   height: var(--input-height) !important;
@@ -35,6 +38,19 @@
   padding: 0 10px !important;
   flex: 1 !important;
   -webkit-text-fill-color: var(--tv-text) !important;
+}
+
+// Action buttons inside inputs (Link, Dynamic Link, etc.)
+.frappe-control .control-input .link-btn,
+.frappe-control .control-input .btn-open,
+.frappe-control .control-input .btn-new {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 8px !important;
 }
 .frappe-control .control-input textarea {
   border: none !important;
@@ -117,14 +133,17 @@ input[type="checkbox"]:focus {
   font-weight: 600 !important;
   font-size: 13px !important;
   height: var(--btn-height) !important;
-  padding: 0 14px !important;
+  padding: 0 16px !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 6px !important;
+  justify-content: center !important;
+  text-align: center !important;
+  gap: 8px !important;
   letter-spacing: -0.005em !important;
   transition: background var(--tv-dur-1) var(--tv-ease),
               box-shadow var(--tv-dur-1) var(--tv-ease),
               transform var(--tv-dur-1) var(--tv-ease) !important;
+  white-space: nowrap !important;
 }
 
 // Primary — leaf green with inner highlight
