@@ -283,3 +283,10 @@ kbd {
   background: var(--tv-primary-100) !important;
   color: var(--tv-deep-900) !important;
 }
+
+// ── Fix Broken Hidden Mechanism ────────────────────────────────
+// Aggressive component styling with !important can accidentally reveal
+// elements that should be hidden. This ensures hidden intent always wins.
+.hidden, .hide, .d-none, [style*="display: none"] {
+  display: none !important;
+}

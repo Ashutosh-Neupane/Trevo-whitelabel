@@ -27,7 +27,7 @@
   // ── Logo replacement ─────────────────────────────────────────
   function replaceLogos() {
     document.querySelectorAll(
-      ".navbar-home img, .app-logo img, img[src*='frappe-logo'], img[alt='Frappe'], #brand-logo"
+      ".navbar-home img, .app-logo img, img[src*='frappe-logo'], img[src*='frappe-framework-logo'], img[alt='Frappe'], #brand-logo"
     ).forEach(img => {
       if (!img.src || img.src.includes("frappe") || img.src.includes("erpnext")) {
         img.src = LOGO;
@@ -48,6 +48,38 @@
     document.querySelectorAll(".header-subtitle").forEach(el => {
       if (el.textContent.includes("ERPNext") || el.textContent.includes("Frappe") || el.textContent.match(/^v\d/)) {
         el.textContent = "Trevo Cloud";
+      }
+    });
+  }
+
+  // ── Avatar Menu Customization ────────────────────────────────
+  function customizeAvatarMenu() {
+    // Remove "About" and update "Support" link in user menu
+    const userMenu = document.querySelector('.dropdown-navbar-user, .navbar-user');
+    if (!userMenu) return;
+
+    userMenu.querySelectorAll('li, a, .dropdown-item').forEach(el => {
+      const text = el.textContent.trim().toLowerCase();
+      
+      // Remove About section
+      if (text.includes("about")) {
+        el.style.setProperty('display', 'none', 'important');
+        el.classList.add('hidden');
+      }
+
+      // Update Support link
+      if (text.includes("support")) {
+        const link = el.tagName === 'A' ? el : el.querySelector('a');
+        if (link) {
+          link.href = 'https://trevocloud.com';
+          link.target = '_blank';
+          link.removeAttribute('data-toggle');
+          link.removeAttribute('onclick');
+          // Force click event to prevent Frappe's internal handler
+          link.addEventListener('click', (e) => {
+             e.stopPropagation();
+          }, { capture: true });
+        }
       }
     });
   }
@@ -112,6 +144,7 @@
     replaceLogos();
     relabelText();
     fixLoginPage();
+    customizeAvatarMenu();
   }
 
   // ── Boot ─────────────────────────────────────────────────────
