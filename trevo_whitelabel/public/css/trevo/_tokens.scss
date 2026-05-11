@@ -1,0 +1,127 @@
+// _tokens.scss — Trevo design tokens
+// Maps onto frappe's own variable names so every component inherits automatically
+
+:root,
+[data-theme="light"] {
+  // ── Brand ──────────────────────────────────────────────
+  --tv-primary:      #6ba44b;
+  --tv-primary-600:  #5a8e3e;
+  --tv-primary-700:  #467132;
+  --tv-primary-50:   #f1f7eb;
+  --tv-primary-100:  #e1efd4;
+  --tv-deep:         #2d7a4f;
+  --tv-deep-600:     #256241;
+  --tv-deep-900:     #143628;
+  --tv-cream:        #fff6c0;
+
+  // ── Neutrals ───────────────────────────────────────────
+  --tv-bg:           #f7f8f5;
+  --tv-bg-2:         #f1f3ee;
+  --tv-surface:      #ffffff;
+  --tv-line:         #e6ebe7;
+  --tv-line-2:       #eef1ee;
+  --tv-text:         #1f2a25;
+  --tv-text-2:       #4d5a55;
+  --tv-text-3:       #7a8782;
+
+  // ── Status ─────────────────────────────────────────────
+  --tv-success:      #4f9c4a;
+  --tv-success-bg:   #ecf5e7;
+  --tv-warning:      #c98a1c;
+  --tv-warning-bg:   #fbf1d8;
+  --tv-danger:       #c44a44;
+  --tv-danger-bg:    #fae9e7;
+  --tv-info:         #2f6f8f;
+  --tv-info-bg:      #e3eef3;
+
+  // ── Shadows ────────────────────────────────────────────
+  --tv-sh-0: 0 1px 0 rgba(20,32,26,.04);
+  --tv-sh-1: 0 1px 2px rgba(20,32,26,.05), 0 1px 1px rgba(20,32,26,.03);
+  --tv-sh-2: 0 4px 12px rgba(20,32,26,.06), 0 1px 2px rgba(20,32,26,.04);
+  --tv-sh-3: 0 12px 28px rgba(20,32,26,.10), 0 2px 6px rgba(20,32,26,.05);
+
+  // ── Motion ─────────────────────────────────────────────
+  --tv-ease:  cubic-bezier(0.2, 0.7, 0.2, 1);
+  --tv-dur-1: 120ms;
+  --tv-dur-2: 200ms;
+
+  // ── Override frappe tokens ─────────────────────────────
+  // These are the names frappe's own SCSS reads — overriding them
+  // means every frappe component picks up Trevo colours for free.
+  --primary:              var(--tv-primary);
+  --brand-color:          var(--tv-primary);
+  --btn-primary:          var(--tv-primary);
+  --border-primary:       var(--tv-primary);
+  --progress-bar-bg:      var(--tv-primary);
+  --checkbox-gradient:    linear-gradient(180deg, var(--tv-primary) -124.51%, var(--tv-primary) 100%);
+  --focus-default:        0 0 0 2px rgba(107,164,75,.35);
+
+  --bg-color:             var(--tv-bg);
+  --fg-color:             var(--tv-surface);
+  --card-bg:              var(--tv-surface);
+  --subtle-fg:            var(--tv-bg-2);
+  --subtle-accent:        var(--tv-primary-50);
+  --control-bg:           var(--tv-bg-2);
+  --navbar-bg:            var(--tv-surface);
+  --modal-bg:             var(--tv-surface);
+  --popover-bg:           var(--tv-surface);
+  --sidebar-select-color: var(--tv-primary-50);
+  --sidebar-hover-color:  var(--tv-primary-50);
+  --sidebar-active-color: var(--tv-surface);
+
+  --border-color:         var(--tv-line);
+  --dark-border-color:    #c8d8d0;
+  --table-border-color:   var(--tv-line);
+
+  --text-color:           var(--tv-text);
+  --text-muted:           var(--tv-text-2);
+  --text-light:           var(--tv-text-3);
+  --heading-color:        var(--tv-deep-900);
+
+  --icon-stroke:          var(--tv-text-2);
+  --icon-fill:            transparent;
+  --icon-fill-bg:         var(--tv-bg-2);
+
+  --shadow-xs:  var(--tv-sh-0);
+  --shadow-sm:  var(--tv-sh-1);
+  --shadow-md:  var(--tv-sh-2);
+  --shadow-lg:  var(--tv-sh-3);
+  --card-shadow: var(--tv-sh-1);
+  --btn-shadow:  var(--tv-sh-0);
+
+  --border-radius:     8px;
+  --border-radius-sm:  8px;
+  --border-radius-md:  10px;
+  --border-radius-lg:  12px;
+  --border-radius-xl:  16px;
+  --border-radius-full: 999px;
+
+  --navbar-height:      52px;
+  --page-head-height:   45px;
+  --input-height:       32px;
+  --btn-height:         32px;
+  --checkbox-size:      16px;
+  --sidebar-width:      220px;
+}
+
+[data-theme="dark"] {
+  --tv-bg:       #0f1a12;
+  --tv-bg-2:     #182318;
+  --tv-surface:  #1a2a1e;
+  --tv-line:     #2a3d2e;
+  --tv-line-2:   #223228;
+  --tv-text:     #d8ede0;
+  --tv-text-2:   #8aaa90;
+  --tv-text-3:   #5a7a60;
+
+  --bg-color:    var(--tv-bg);
+  --fg-color:    var(--tv-surface);
+  --card-bg:     var(--tv-surface);
+  --subtle-fg:   var(--tv-bg-2);
+  --control-bg:  var(--tv-bg-2);
+  --navbar-bg:   var(--tv-bg);
+  --border-color: var(--tv-line);
+  --text-color:  var(--tv-text);
+  --text-muted:  var(--tv-text-2);
+  --heading-color: #c8e8d0;
+}

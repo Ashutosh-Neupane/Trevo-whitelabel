@@ -1,0 +1,91 @@
+// _login.scss — login / signup / forgot-password pages
+
+body.login-page,
+.for-login,
+.for-forgot,
+.for-signup,
+.for-email-login,
+.for-login-with-email-link {
+  background: linear-gradient(145deg, #f1f7eb 0%, #e6f3ec 100%) !important;
+}
+
+.for-login .page-card,
+.for-forgot .page-card,
+.for-signup .page-card {
+  border-radius: var(--border-radius-xl) !important;
+  border: 1px solid var(--tv-line) !important;
+  box-shadow: var(--tv-sh-3) !important;
+  padding: 40px 32px !important;
+  background: var(--tv-surface) !important;
+}
+
+// Logo
+.page-card-head img {
+  max-height: 48px !important;
+  display: block !important;
+  margin: 0 auto 16px !important;
+}
+.page-card-head h4 {
+  color: var(--tv-deep-900) !important;
+  font-weight: 800 !important;
+  font-size: 22px !important;
+  letter-spacing: -.02em !important;
+  text-align: center !important;
+}
+
+// Login inputs — frappe sets border:none on these by default
+// We add it back as a single clean border on the input itself
+// (no wrapper border here, unlike desk controls)
+.page-card-body input[type="text"],
+.page-card-body input[type="email"],
+.page-card-body input[type="password"] {
+  border: 1px solid var(--tv-line) !important;
+  border-radius: var(--border-radius) !important;
+  background: var(--tv-surface) !important;
+  height: 42px !important;
+  color: var(--tv-text) !important;
+  -webkit-text-fill-color: var(--tv-text) !important;
+  font-size: 14px !important;
+  box-shadow: none !important;
+  transition: border-color var(--tv-dur-1) ease,
+              box-shadow var(--tv-dur-1) ease !important;
+}
+.page-card-body input:focus {
+  border-color: var(--tv-primary) !important;
+  box-shadow: 0 0 0 3px rgba(107,164,75,.12) !important;
+  outline: none !important;
+}
+
+// Field icon — always inside the input
+.page-card-body .field-icon {
+  left: 12px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 2 !important;
+  pointer-events: none !important;
+}
+.page-card-body .field-icon svg { stroke: var(--tv-text-3) !important; }
+
+// Password toggle — inside input, vertically centred
+.page-card-body .password-field .toggle-password {
+  right: 10px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 3 !important;
+  display: flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+}
+
+// Login button
+.page-card-body .btn-primary {
+  height: 42px !important;
+  width: 100% !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  margin-top: 6px !important;
+  border-radius: var(--border-radius) !important;
+}
+
+// Social login buttons — hide when not configured
+.social-logins:empty { display: none !important; }

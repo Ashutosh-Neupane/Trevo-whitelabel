@@ -1,0 +1,371 @@
+// _components.scss — all UI components
+
+// ── Inputs — single border fix ────────────────────────────────
+// Frappe structure:
+//   .frappe-control > .control-input-wrapper > .control-input > input.form-control
+// frappe's own common/form.scss sets border:none on .form-control.
+// Bootstrap adds border on .form-control via $input-border-color.
+// Result: two borders when we naively add border to .form-control.
+// Fix: border ONLY on .control-input wrapper; inner input has none.
+
+.frappe-control .control-input {
+  border: 1px solid var(--tv-line) !important;
+  border-radius: var(--border-radius) !important;
+  background: var(--tv-surface) !important;
+  box-shadow: none !important;
+  transition: border-color var(--tv-dur-1) ease,
+              box-shadow var(--tv-dur-1) ease !important;
+  // Make sure it's a flex container so icon + input align
+  display: flex !important;
+  align-items: center !important;
+}
+
+.frappe-control .control-input:focus-within {
+  border-color: var(--tv-primary) !important;
+  box-shadow: 0 0 0 3px rgba(107,164,75,.12) !important;
+}
+
+// Inner input — NO border (Bootstrap sets border:1px on .form-control;
+// we must override it here explicitly)
+.frappe-control .control-input .form-control,
+.frappe-control .control-input input,
+.frappe-control .control-input select {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  height: var(--input-height) !important;
+  color: var(--tv-text) !important;
+  font-size: 13px !important;
+  padding: 0 10px !important;
+  flex: 1 !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: var(--tv-text) !important;
+}
+
+.frappe-control .control-input textarea {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  height: auto !important;
+  min-height: 80px !important;
+  padding: 8px 10px !important;
+  color: var(--tv-text) !important;
+  font-size: 13px !important;
+  -webkit-text-fill-color: var(--tv-text) !important;
+}
+
+// Disabled / readonly
+.frappe-control .control-input:has(input:disabled),
+.frappe-control .control-input:has(input[readonly]) {
+  background: var(--tv-bg-2) !important;
+  border-color: var(--tv-line) !important;
+}
+.frappe-control .control-input input:disabled,
+.frappe-control .control-input input[readonly] {
+  color: var(--tv-text-3) !important;
+  -webkit-text-fill-color: var(--tv-text-3) !important;
+}
+
+// Check field — no border on wrapper
+.frappe-control[data-fieldtype="Check"] .control-input {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+// Control label
+.control-label, .label-area {
+  color: var(--tv-text-2) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  margin-bottom: 4px !important;
+  display: block !important;
+}
+
+// ── Checkboxes — perfect 16×16 square ────────────────────────
+input[type="checkbox"] {
+  width:  var(--checkbox-size) !important;
+  height: var(--checkbox-size) !important;
+  min-width:  var(--checkbox-size) !important;
+  min-height: var(--checkbox-size) !important;
+  border-radius: 4px !important;
+  border: 1.5px solid var(--tv-line) !important;
+  background: var(--tv-surface) !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  cursor: pointer !important;
+  position: relative !important;
+  flex-shrink: 0 !important;
+  vertical-align: middle !important;
+  transition: background var(--tv-dur-1) ease,
+              border-color var(--tv-dur-1) ease !important;
+}
+input[type="checkbox"]:checked {
+  background: var(--tv-primary) !important;
+  border-color: var(--tv-primary-600) !important;
+}
+input[type="checkbox"]:checked::after {
+  content: '' !important;
+  position: absolute !important;
+  left: 4px !important; top: 1px !important;
+  width: 5px !important; height: 9px !important;
+  border: 2px solid #fff !important;
+  border-top: none !important;
+  border-left: none !important;
+  transform: rotate(45deg) !important;
+}
+input[type="checkbox"]:focus {
+  box-shadow: 0 0 0 3px rgba(107,164,75,.15) !important;
+}
+
+// ── Buttons ───────────────────────────────────────────────────
+.btn {
+  border-radius: var(--border-radius) !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  height: var(--btn-height) !important;
+  padding: 0 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: background var(--tv-dur-1) ease,
+              box-shadow var(--tv-dur-1) ease,
+              transform var(--tv-dur-1) ease !important;
+}
+
+.btn-primary, .primary-action {
+  background: var(--tv-primary) !important;
+  border: 1px solid var(--tv-primary-600) !important;
+  color: #fff !important;
+  box-shadow: 0 1px 0 rgba(20,32,26,.06),
+              inset 0 1px 0 rgba(255,255,255,.18) !important;
+}
+.btn-primary:hover, .primary-action:hover {
+  background: var(--tv-primary-600) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: var(--tv-sh-2) !important;
+}
+.btn-primary svg, .btn-primary .icon { stroke: #fff !important; }
+
+.btn-default, .btn-secondary, .btn-light {
+  background: var(--tv-surface) !important;
+  border: 1px solid var(--tv-line) !important;
+  color: var(--tv-text) !important;
+  box-shadow: var(--tv-sh-0) !important;
+}
+.btn-default:hover, .btn-secondary:hover, .btn-light:hover {
+  background: var(--tv-bg-2) !important;
+  border-color: var(--dark-border-color) !important;
+}
+
+// btn-danger: Bootstrap already sets color:#fff — keep white text, just tint border
+.btn-danger {
+  background: var(--tv-danger) !important;
+  border-color: #c44a44 !important;
+  color: #fff !important;
+}
+
+// ── Cards / Widgets ───────────────────────────────────────────
+.frappe-card,
+.widget,
+.number-card,
+.dashboard-card {
+  background: var(--tv-surface) !important;
+  border: 1px solid var(--tv-line) !important;
+  border-radius: var(--border-radius-md) !important;
+  box-shadow: var(--tv-sh-1) !important;
+  transition: box-shadow var(--tv-dur-2) ease,
+              transform var(--tv-dur-2) ease !important;
+}
+.frappe-card:hover, .widget:hover {
+  box-shadow: var(--tv-sh-2) !important;
+  transform: translateY(-1px) !important;
+}
+
+// ── Form sections ─────────────────────────────────────────────
+.form-section.card-section,
+.form-dashboard-section {
+  background: var(--tv-surface) !important;
+  border: 1px solid var(--tv-line) !important;
+  border-radius: var(--border-radius-md) !important;
+  box-shadow: var(--tv-sh-1) !important;
+  padding: 16px 20px !important;
+  margin-bottom: 16px !important;
+}
+.form-section.card-section .section-head {
+  color: var(--tv-deep-900) !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  border-bottom: 1px solid var(--tv-line) !important;
+  padding-bottom: 10px !important;
+  margin-bottom: 14px !important;
+}
+// Inline grid forms — no card styling
+.form-in-grid .form-section {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin-bottom: 0 !important;
+}
+.form-page {
+  background: transparent !important;
+  border: none !important;
+}
+.std-form-layout > .form-layout > .form-page {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+// ── List rows ─────────────────────────────────────────────────
+.list-row-container {
+  border-bottom: 1px solid var(--tv-line-2) !important;
+  background: var(--tv-surface) !important;
+  transition: background var(--tv-dur-1) ease !important;
+}
+.list-row-container:hover .list-row {
+  background: var(--tv-primary-50) !important;
+}
+.list-row-head {
+  background: var(--tv-bg-2) !important;
+  color: var(--tv-text-3) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .04em !important;
+}
+
+// ── Grid / Datatable ──────────────────────────────────────────
+.form-grid {
+  border: 1px solid var(--tv-line) !important;
+  border-radius: var(--border-radius-md) !important;
+  overflow: hidden !important;
+}
+.grid-heading-row {
+  background: var(--tv-bg-2) !important;
+  color: var(--tv-text-3) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .04em !important;
+  border-bottom: 1px solid var(--tv-line) !important;
+}
+.grid-row {
+  border-bottom: 1px solid var(--tv-line-2) !important;
+  transition: background var(--tv-dur-1) ease !important;
+}
+.grid-row:hover { background: var(--tv-primary-50) !important; }
+.grid-row:last-child { border-bottom: none !important; }
+
+// ── Modals ────────────────────────────────────────────────────
+.modal-content {
+  border-radius: var(--border-radius-lg) !important;
+  border: none !important;
+  box-shadow: var(--tv-sh-3) !important;
+  background: var(--tv-surface) !important;
+}
+.modal-header {
+  background: var(--tv-bg-2) !important;
+  border-bottom: 1px solid var(--tv-line) !important;
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0 !important;
+  padding: 14px 20px !important;
+}
+.modal-title {
+  color: var(--tv-deep-900) !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+}
+.modal-footer {
+  background: var(--tv-bg-2) !important;
+  border-top: 1px solid var(--tv-line) !important;
+  padding: 12px 20px !important;
+}
+
+// ── Dropdowns & Awesomplete ───────────────────────────────────
+.dropdown-menu,
+.awesomplete > ul {
+  background: var(--tv-surface) !important;
+  border: 1px solid var(--tv-line) !important;
+  border-radius: var(--border-radius-md) !important;
+  box-shadow: var(--tv-sh-3) !important;
+  padding: 4px !important;
+}
+.dropdown-item,
+.awesomplete li {
+  border-radius: var(--border-radius) !important;
+  color: var(--tv-text) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  padding: 7px 12px !important;
+  transition: background var(--tv-dur-1) ease !important;
+}
+.dropdown-item:hover, .dropdown-item:focus,
+.awesomplete li:hover,
+.awesomplete li[aria-selected="true"] {
+  background: var(--tv-primary-50) !important;
+  color: var(--tv-primary-700) !important;
+}
+
+// ── Badges / Indicators ───────────────────────────────────────
+.indicator-pill {
+  border-radius: var(--border-radius-full) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+.indicator-pill.green { background: var(--tv-success-bg) !important; color: var(--tv-success) !important; }
+.indicator-pill.blue  { background: var(--tv-info-bg) !important;    color: var(--tv-info) !important; }
+.indicator-pill.red   { background: var(--tv-danger-bg) !important;  color: var(--tv-danger) !important; }
+.indicator-pill.orange,
+.indicator-pill.yellow { background: var(--tv-warning-bg) !important; color: var(--tv-warning) !important; }
+
+.indicator.green::before { background: var(--tv-primary) !important; }
+
+// ── Progress bar ──────────────────────────────────────────────
+.progress-bar { background: var(--tv-primary) !important; }
+
+// ── Timeline ─────────────────────────────────────────────────
+.timeline-item {
+  border-left: 2px solid var(--tv-line) !important;
+}
+.timeline-badge {
+  border: 2px solid var(--tv-primary) !important;
+  background: var(--tv-bg) !important;
+}
+.timeline-content {
+  background: var(--tv-surface) !important;
+  border: 1px solid var(--tv-line) !important;
+  border-radius: var(--border-radius) !important;
+  box-shadow: var(--tv-sh-1) !important;
+}
+
+// ── Filter tags ───────────────────────────────────────────────
+.filter-tag {
+  background: var(--tv-primary-50) !important;
+  border: 1px solid var(--tv-primary-100) !important;
+  border-radius: var(--border-radius-full) !important;
+}
+
+// ── Nav tabs ──────────────────────────────────────────────────
+.nav-tabs { border-bottom: 1px solid var(--tv-line) !important; }
+.nav-tabs .nav-link {
+  color: var(--tv-text-2) !important;
+  font-weight: 600 !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  padding: 10px 14px !important;
+}
+.nav-tabs .nav-link.active {
+  color: var(--tv-primary-700) !important;
+  border-bottom-color: var(--tv-primary) !important;
+  background: transparent !important;
+}
+
+// ── Icon colours ──────────────────────────────────────────────
+// Override blue module icons from erpnext
+.module-icon svg,
+.app-icon svg,
+.icon-module svg {
+  stroke: var(--tv-primary) !important;
+  fill: none !important;
+}

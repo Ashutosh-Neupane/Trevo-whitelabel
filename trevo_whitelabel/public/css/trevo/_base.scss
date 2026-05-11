@@ -1,0 +1,80 @@
+// _base.scss — global resets and typography
+
+html, body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  background-color: var(--tv-bg) !important;
+  color: var(--tv-text) !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// ── Visibility — DO NOT override frappe/bootstrap hidden-* ──
+// Frappe's compiled CSS already handles hidden-xs/sm/md/lg with
+// correct breakpoints. We must not touch them.
+// Only enforce the unconditional ones:
+.hidden   { display: none !important; }
+.hide     { display: none !important; }
+
+// ── Headings ────────────────────────────────────────────────
+h1, h2, h3, h4, h5, h6,
+.page-title .title-text,
+.ellipsis.title-text {
+  color: var(--tv-deep-900) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+}
+
+// ── Links ───────────────────────────────────────────────────
+a { color: var(--tv-primary-700) !important; }
+a:hover { color: var(--tv-deep) !important; }
+
+// ── Focus ───────────────────────────────────────────────────
+*:focus { outline: none !important; }
+*:focus-visible {
+  outline: 2px solid var(--tv-primary) !important;
+  outline-offset: 2px !important;
+}
+
+// ── Scrollbar ───────────────────────────────────────────────
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--tv-line);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--dark-border-color); }
+
+// ── Print — never bleed theme into PDFs ─────────────────────
+.print-format,
+.print-format-builder {
+  background: #fff !important;
+  color: #000 !important;
+  .frappe-card, .form-section {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .form-control, input, textarea {
+    border: none !important;
+    background: transparent !important;
+    min-height: auto !important;
+    padding: 0 !important;
+  }
+}
+
+// ── Fade-in animation ────────────────────────────────────────
+@keyframes tv-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-container { animation: tv-fade-in var(--tv-dur-2) var(--tv-ease) both; }
+
+// ── Hide frappe/erpnext branding ─────────────────────────────
+.powered-by, .help-link, .footer-powered,
+.layout-footer, .desk-footer, .version-footer,
+.frappe-footer, .built-with-frappe, .sidebar-footer,
+a[href*="frappecloud.com"], a[href*="erpnext.com"],
+a[href*="frappeframework.com"] { display: none !important; }
