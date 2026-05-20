@@ -20,6 +20,7 @@
   --tv-bg:           #f7f8f5;
   --tv-bg-2:         #f1f3ee;
   --tv-surface:      #ffffff;
+  --tv-surface-rgb:  255, 255, 255;
   --tv-line:         #e6ebe7;
   --tv-line-2:       #eef1ee;
   --tv-text:         #1f2a25;
@@ -61,7 +62,7 @@
   --tv-r-pill: 999px;
 
   // ── Layout ─────────────────────────────────────────────────
-  --tv-sidebar-w: 240px;
+  --tv-sidebar-w: initial;
   --tv-topbar-h:  56px;
 
   // ── Override Frappe tokens ─────────────────────────────────
@@ -118,7 +119,7 @@
   --border-radius-full: var(--tv-r-pill);
 
   --navbar-height:    var(--tv-topbar-h);
-  --sidebar-width:    var(--tv-sidebar-w);
+  --sidebar-width:    auto;
   --page-head-height: 45px;
   --input-height:     32px;
   --btn-height:       32px;
@@ -129,6 +130,7 @@
   --tv-bg:       #0f1a12;
   --tv-bg-2:     #182318;
   --tv-surface:  #1b2924;
+  --tv-surface-rgb: 27, 41, 36;
   --tv-line:     #2a3d2e;
   --tv-line-2:   #223228;
   --tv-text:     #d8edde;

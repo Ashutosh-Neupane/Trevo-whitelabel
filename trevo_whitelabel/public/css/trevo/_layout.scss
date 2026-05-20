@@ -3,10 +3,15 @@
 // ── Topbar (56px clean strip) ──────────────────────────────────
 .navbar {
   height: var(--tv-topbar-h) !important;
-  background: var(--tv-surface) !important;
+  background: rgba(var(--tv-surface-rgb), 0.85) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
   border-bottom: 1px solid var(--tv-line) !important;
   box-shadow: var(--tv-sh-0) !important;
-  padding: 0 !important;
+  padding: 0 24px !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
 }
 
 // Navbar icons and text
@@ -25,17 +30,24 @@
 
 // Search bar — styled like design concept
 // "border:1px solid var(--tv-line), bg:var(--tv-bg), ⌘K kbd"
+.search-bar {
+  min-width: 240px !important;
+  max-width: 360px !important;
+}
 .search-bar .awesomplete input,
 #navbar-search {
   background: var(--tv-bg) !important;
   border: 1px solid var(--tv-line) !important;
   border-radius: var(--tv-r-3) !important;
   box-shadow: none !important;
-  height: 30px !important;
+  min-height: 32px !important;
+  height: auto !important;
   color: var(--tv-text) !important;
   font-family: var(--tv-font-sans) !important;
   font-size: 13px !important;
-  padding-left: 32px !important;
+  letter-spacing: -0.01em !important;
+  padding: 0 12px !important;
+  line-height: 1.4 !important;
 }
 .search-bar .awesomplete input:focus,
 #navbar-search:focus {
@@ -47,6 +59,7 @@
 .search-bar .awesomplete input::placeholder,
 #navbar-search::placeholder {
   color: var(--tv-text-3) !important;
+  opacity: 1 !important;
 }
 
 // ── Sidebar (240px, grouped, leaf-green active) ────────────────
@@ -176,6 +189,37 @@
 .layout-main-section,
 .layout-main-section-wrapper {
   background: var(--tv-bg) !important;
+  position: relative !important;
+  
+  // Premium Background Overlay — Soft Emerald Mesh
+  &::before {
+    content: "" !important;
+    position: absolute !important;
+    top: -150px !important;
+    right: -100px !important;
+    width: 600px !important;
+    height: 600px !important;
+    background: radial-gradient(circle, rgba(107, 164, 75, 0.07) 0%, rgba(107, 164, 75, 0) 70%) !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
+  }
+  
+  &::after {
+    content: "" !important;
+    position: absolute !important;
+    bottom: -100px !important;
+    left: -100px !important;
+    width: 500px !important;
+    height: 500px !important;
+    background: radial-gradient(circle, rgba(45, 122, 79, 0.05) 0%, rgba(45, 122, 79, 0) 70%) !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
+  }
+}
+
+.main-section > *, .page-container > * {
+  position: relative !important;
+  z-index: 1 !important;
 }
 
 .page-form {

@@ -84,10 +84,14 @@ h1, h2, h3, h4, h5, h6,
 }
 
 // ── Scrollbar ──────────────────────────────────────────────────
-::-webkit-scrollbar { width: 5px; height: 5px; }
+html {
+  scrollbar-color: var(--tv-primary) transparent;
+  scrollbar-width: thin;
+}
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--tv-line); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--dark-border-color); }
+::-webkit-scrollbar-thumb { background: var(--tv-primary); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--tv-primary-600); }
 
 // ── Density toggle ─────────────────────────────────────────────
 // JS sets body[data-density="compact"] or "comfortable" (default)
