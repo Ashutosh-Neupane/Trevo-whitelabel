@@ -27,10 +27,12 @@ update_website_context = "trevo_whitelabel.branding.get_context"
 after_install = [
 	"trevo_whitelabel.scripts.repaint_svgs.run",
 	"trevo_whitelabel.scripts.rebrand_to_trevo.run",
+	"trevo_whitelabel.scripts.rebrand_form_builder.run",
 ]
 
 after_migrate = [
 	"trevo_whitelabel.scripts.repaint_svgs.run",
 	"trevo_whitelabel.scripts.rebrand_to_trevo.run",
 	"trevo_whitelabel.inject_branding.run",
+	"trevo_whitelabel.scripts.rebrand_form_builder.run",
 ]

@@ -164,13 +164,13 @@
   // ── Pink -> Trevo Primary (#6ba44b) ──
   // Matches both attribute [fill="#F683AE"] and inline style [style*="fill: #F683AE"]
   // Also matches the RGB equivalent rgb(246, 131, 174)
-  [fill="#F683AE"], [fill="#f683ae"], 
+  [fill="#F683AE"], [fill="#f683ae"],
   [style*="fill: #F683AE"], [style*="fill:#F683AE"],
   [style*="fill: #f683ae"], [style*="fill:#f683ae"],
   [style*="fill: rgb(246, 131, 174)"], [style*="fill:rgb(246, 131, 174)"] {
     fill: var(--tv-primary) !important;
   }
-  
+
   [stroke="#F683AE"], [stroke="#f683ae"],
   [style*="stroke: #F683AE"], [style*="stroke:#F683AE"],
   [style*="stroke: #f683ae"], [style*="stroke:#f683ae"],
@@ -217,12 +217,12 @@
   stop[stop-color="#F683AE"], stop[stop-color="#f683ae"] {
     stop-color: var(--tv-primary) !important;
   }
-  
+
   stop[style*="stop-color:#7cd6fd"], stop[style*="stop-color: #7cd6fd"],
   stop[style*="stop-color:#72d5f0"], stop[style*="stop-color: #72d5f0"] {
     stop-color: var(--tv-deep) !important;
   }
-  
+
   // Chart axis labels & text
   text, .chart-container text {
     font-family: var(--tv-font-mono) !important;
@@ -342,9 +342,214 @@ kbd {
   color: var(--tv-deep-900) !important;
 }
 
+// ── Datatable and Report Overrides ──────────────────────────────
+// Enforce Trevo warm-neutral and emerald system variables globally for Datatable
+:root, [data-theme="light"] {
+  --dt-header-background: var(--tv-bg-2) !important;
+  --dt-cell-background: var(--tv-surface) !important;
+  --dt-border-color: var(--tv-line) !important;
+  --dt-text-color: var(--tv-text) !important;
+  --dt-header-text-color: var(--tv-text-2) !important;
+  --dt-hover-background: var(--tv-primary-50) !important;
+  --dt-selection-background: var(--tv-primary-100) !important;
+  --dt-focus-border-color: var(--tv-primary) !important;
+  --dt-alt-row-background: var(--tv-surface) !important;
+}
+
+.datatable, .grid-report, .report-view, .frappe-list, .slickgrid {
+  background: var(--tv-bg) !important;
+  border-color: var(--tv-line) !important;
+  font-family: var(--tv-font-sans) !important;
+
+  .dt-header {
+    background-color: var(--tv-bg-2) !important;
+    border-bottom: 1px solid var(--tv-line) !important;
+
+    .dt-cell {
+      background-color: var(--tv-bg-2) !important;
+      color: var(--tv-text-2) !important;
+      font-weight: 600 !important;
+      font-size: 11px !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.04em !important;
+    }
+  }
+
+  .dt-row {
+    border-bottom: 1px solid var(--tv-line-2) !important;
+    background-color: var(--tv-surface) !important;
+
+    &:hover {
+      background-color: var(--tv-primary-50) !important;
+      .dt-cell {
+        background-color: var(--tv-primary-50) !important;
+      }
+    }
+
+    &.dt-row-even {
+      background-color: var(--tv-surface) !important;
+    }
+
+    &.dt-row-odd {
+      background-color: var(--tv-surface) !important;
+    }
+  }
+
+  .dt-cell {
+    border-right: 1px solid var(--tv-line-2) !important;
+    border-bottom: 1px solid var(--tv-line-2) !important;
+    color: var(--tv-text) !important;
+    font-size: 13px !important;
+    background-color: var(--tv-surface) !important;
+
+    &.dt-cell--hover {
+      background-color: var(--tv-primary-50) !important;
+    }
+
+    &.dt-cell--focus {
+      outline: 1px solid var(--tv-primary) !important;
+      box-shadow: inset 0 0 0 1px var(--tv-primary) !important;
+    }
+
+    &.dt-cell--selection {
+      background-color: var(--tv-primary-100) !important;
+      color: var(--tv-deep-900) !important;
+    }
+
+    // Custom cell content styles
+    .dt-cell__content {
+      padding: 6px 10px !important;
+    }
+  }
+
+  // Filter fields inside headers
+  .dt-filter {
+    background-color: var(--tv-surface) !important;
+    border: 1px solid var(--tv-line) !important;
+    border-radius: var(--tv-r-1) !important;
+    margin: 2px !important;
+
+    input {
+      background: transparent !important;
+      border: none !important;
+      color: var(--tv-text) !important;
+      font-size: 12px !important;
+      padding: 2px 6px !important;
+    }
+  }
+}
+
+// SlickGrid overrides
+.slick-header, .slick-header-columns {
+  background: var(--tv-bg-2) !important;
+  border-bottom: 1px solid var(--tv-line) !important;
+}
+.slick-header-column {
+  background: var(--tv-bg-2) !important;
+  color: var(--tv-text-2) !important;
+  font-family: var(--tv-font-sans) !important;
+  font-weight: 600 !important;
+  border-right: 1px solid var(--tv-line-2) !important;
+}
+.slick-row {
+  border-bottom: 1px solid var(--tv-line-2) !important;
+  background: var(--tv-surface) !important;
+
+  &:hover {
+    background: var(--tv-primary-50) !important;
+  }
+}
+.slick-cell {
+  border-right: 1px solid var(--tv-line-2) !important;
+  color: var(--tv-text) !important;
+  font-family: var(--tv-font-sans) !important;
+}
+
+// Report metric summary cards at the top
+.report-summary, .report-summary-container {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin-bottom: 16px !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 16px !important;
+
+  .summary-item, .report-summary-item {
+    flex: 1 !important;
+    min-width: 160px !important;
+    background: var(--tv-surface) !important;
+    border: 1px solid var(--tv-line) !important;
+    border-radius: var(--tv-r-4) !important;
+    box-shadow: var(--tv-sh-1) !important;
+    padding: 14px 18px !important;
+    transition: transform var(--tv-dur-2) var(--tv-ease), box-shadow var(--tv-dur-2) var(--tv-ease) !important;
+
+    &:hover {
+      box-shadow: var(--tv-sh-2) !important;
+      transform: translateY(-1px) !important;
+    }
+
+    .summary-label, .report-summary-label, .label {
+      font-family: var(--tv-font-sans) !important;
+      font-size: 11px !important;
+      font-weight: 600 !important;
+      color: var(--tv-text-3) !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.04em !important;
+      display: block !important;
+      margin-bottom: 4px !important;
+    }
+
+    .summary-value, .report-summary-value, .value {
+      font-family: var(--tv-font-mono) !important;
+      font-size: 20px !important;
+      font-weight: 700 !important;
+      color: var(--tv-deep-900) !important;
+      display: block !important;
+    }
+
+    .indicator {
+      margin-right: 6px !important;
+    }
+  }
+}
+
+// Financial and Query HTML Tables
+.report-view table, .query-report-table, .report-table-container table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  border: 1px solid var(--tv-line) !important;
+  border-radius: var(--tv-r-4) !important;
+  overflow: hidden !important;
+
+  thead th, tr.dt-header th {
+    background-color: var(--tv-bg-2) !important;
+    color: var(--tv-text-2) !important;
+    font-weight: 600 !important;
+    font-family: var(--tv-font-sans) !important;
+    border-bottom: 1px solid var(--tv-line) !important;
+    border-right: 1px solid var(--tv-line) !important;
+    padding: 8px 12px !important;
+  }
+
+  tbody td {
+    background-color: var(--tv-surface) !important;
+    color: var(--tv-text) !important;
+    font-family: var(--tv-font-sans) !important;
+    border-bottom: 1px solid var(--tv-line-2) !important;
+    border-right: 1px solid var(--tv-line-2) !important;
+    padding: 8px 12px !important;
+  }
+
+  tbody tr:hover td {
+    background-color: var(--tv-primary-50) !important;
+  }
+}
+
 // ── Fix Broken Hidden Mechanism ────────────────────────────────
 // Aggressive component styling with !important can accidentally reveal
 // elements that should be hidden. This ensures hidden intent always wins.
-.hidden, .hide, .d-none, [style*="display: none"] {
+.hidden, .hide, .d-none, [hidden] {
   display: none !important;
 }

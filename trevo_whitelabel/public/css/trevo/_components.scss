@@ -11,11 +11,16 @@
   border-radius: var(--tv-r-3) !important;
   background: var(--tv-surface) !important;
   box-shadow: var(--tv-sh-0) !important;
-  display: flex !important;
+  // Do NOT set display here — Frappe sets display:none on hidden inputs inline.
+  // Setting display:flex !important would override that and break read-only fields.
   align-items: center !important;
   min-height: var(--input-height) !important;
   transition: border-color var(--tv-dur-1) var(--tv-ease),
               box-shadow var(--tv-dur-1) var(--tv-ease) !important;
+}
+// Only apply flex when the input is actually visible
+.frappe-control .control-input:not([style*="display: none"]):not([style*="display:none"]) {
+  display: flex !important;
 }
 .frappe-control .control-input:focus-within {
   border-color: var(--tv-primary) !important;
@@ -230,38 +235,7 @@ input[type="checkbox"]:focus {
   transform: translateY(-1px) !important;
 }
 
-// ── Form sections ──────────────────────────────────────────────
-.form-section.card-section,
-.form-dashboard-section {
-  background: var(--tv-surface) !important;
-  border: 1px solid var(--tv-line) !important;
-  border-radius: var(--tv-r-4) !important;
-  box-shadow: var(--tv-sh-1) !important;
-  padding: 16px 20px !important;
-  margin-bottom: 16px !important;
-}
-.form-section.card-section .section-head {
-  font-family: var(--tv-font-sans) !important;
-  color: var(--tv-deep-900) !important;
-  font-weight: 700 !important;
-  font-size: 14px !important;
-  border-bottom: 1px solid var(--tv-line-2) !important;
-  padding-bottom: 10px !important;
-  margin-bottom: 14px !important;
-}
-// Inline grid — no card styling
-.form-in-grid .form-section {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  margin-bottom: 0 !important;
-}
-.form-page { background: transparent !important; border: none !important; }
-.std-form-layout > .form-layout > .form-page {
-  background: transparent !important;
-  box-shadow: none !important;
-}
+// Form section styling is in _form.scss
 
 // ── List rows — card-wrapped ───────────────────────────────────
 // "Card-wrapped, saved-view tabs, status badges, density toggle"
@@ -421,7 +395,7 @@ input[type="checkbox"]:focus {
 :root { --icon-stroke: var(--tv-text-2) !important; }
 .module-icon svg, .app-icon svg, .icon-module svg {
   stroke: var(--tv-primary) !important;
-  fill: none !important;
+  color: var(--tv-primary) !important;
 }
 
 // ── Misc polish ────────────────────────────────────────────────
@@ -431,4 +405,57 @@ input[type="checkbox"]:focus {
   font-family: var(--tv-font-mono) !important;
   font-size: 12px !important;
   color: var(--tv-text-3) !important;
+}
+
+// ── Read-only / control-value fields ──────────────────────────
+// Frappe hides .control-input and shows .control-value for read-only fields.
+// The .control-input-wrapper must not collapse when .control-input is hidden.
+.frappe-control .control-input-wrapper {
+  width: 100% !important;
+}
+.frappe-control .control-value,
+.frappe-control .like-disabled-input {
+  display: block !important;
+  width: 100% !important;
+  min-height: var(--input-height) !important;
+  padding: 5px 10px !important;
+  font-size: 13px !important;
+  font-family: var(--tv-font-sans) !important;
+  color: var(--tv-text) !important;
+  background: var(--tv-bg-2) !important;
+  border: 1px solid var(--tv-line) !important;
+  border-radius: var(--tv-r-3) !important;
+  line-height: 1.5 !important;
+  box-sizing: border-box !important;
+}
+.frappe-control .control-value a,
+.frappe-control .like-disabled-input a {
+  color: var(--tv-primary-700) !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+}
+.frappe-control .control-value a:hover,
+.frappe-control .like-disabled-input a:hover {
+  color: var(--tv-deep) !important;
+  text-decoration: underline !important;
+}
+// Bold variant (link fields in read-only)
+.frappe-control .control-value.bold,
+.frappe-control .like-disabled-input.bold {
+  font-weight: 600 !important;
+}
+
+// ── Layout side section — prevent early cutoff ─────────────────
+// Frappe uses col-lg-2 (16.6%) for .layout-side-section which is too narrow.
+// Override to give it a fixed comfortable width.
+.layout-side-section {
+  width: 280px !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
+  flex: 0 0 280px !important;
+}
+.layout-main-section-wrapper {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
 }

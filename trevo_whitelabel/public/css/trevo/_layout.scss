@@ -16,7 +16,10 @@
 
 // Navbar icons and text
 .navbar svg,
-.navbar .icon { stroke: var(--tv-text-2) !important; fill: none !important; }
+.navbar .icon {
+  stroke: var(--tv-text-2) !important;
+  color: var(--tv-text-2) !important;
+}
 .navbar .nav-link,
 .navbar .dropdown-toggle { color: var(--tv-text) !important; font-size: 13px !important; }
 .navbar .nav-link:hover { color: var(--tv-deep) !important; }
@@ -62,12 +65,89 @@
   opacity: 1 !important;
 }
 
-// ── Sidebar (240px, grouped, leaf-green active) ────────────────
-// Frappe v16 uses .body-sidebar (icon-rail 50px) that expands on hover
+// ── Sidebar ────────────────────────────────────────────────────
 .body-sidebar {
   background: var(--tv-surface) !important;
   border-right: 1px solid var(--tv-line) !important;
   box-shadow: none !important;
+  overflow: hidden auto !important;
+  // Remove any default padding — items use their own padding
+  padding: 0 !important;
+}
+
+// Collapsed sidebar — icon-only rail (52px)
+.body-sidebar.sidebar-collapsed,
+.desk-sidebar.sidebar-collapsed {
+  width: 52px !important;
+  min-width: 52px !important;
+  flex: 0 0 52px !important;
+  overflow: visible !important;
+  // Kill all padding so nothing bleeds outside the 52px rail
+  padding: 0 !important;
+
+  // Hide text labels, section breaks, subtitle
+  .item-anchor span,
+  .header-title,
+  .header-subtitle,
+  .section-break,
+  .sidebar-item-label {
+    opacity: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    pointer-events: none !important;
+  }
+
+  // Center icons in collapsed rail — no horizontal padding
+  .item-anchor {
+    justify-content: center !important;
+    padding: 0 !important;
+    width: 52px !important;
+  }
+
+  // Sidebar items fill the full 52px width so icon is truly centered
+  .standard-sidebar-item {
+    margin: 1px 0 !important;
+    width: 52px !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  // Collapse toggle button — center it in the rail
+  .sidebar-toggle-btn,
+  [data-toggle="sidebar"],
+  .toggle-sidebar {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 52px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  // Icons in collapsed state
+  .standard-sidebar-item svg,
+  .item-anchor svg {
+    stroke: var(--tv-text-2) !important;
+    width: 18px !important;
+    height: 18px !important;
+    flex-shrink: 0 !important;
+  }
+
+  // Active item in collapsed state
+  .active-sidebar svg {
+    stroke: var(--tv-primary-700) !important;
+  }
+
+  // Logo area — show only icon
+  .sidebar-header {
+    padding: 0 !important;
+    justify-content: center !important;
+    width: 52px !important;
+  }
+  .header-logo-container {
+    margin: 0 auto !important;
+  }
 }
 
 // Sidebar header — brand row
@@ -151,10 +231,13 @@
 // Sidebar icons — currentColor so they follow text
 .body-sidebar svg,
 .standard-sidebar-item svg {
-  stroke: currentColor !important;
-  fill: none !important;
+  stroke: var(--tv-text-2) !important;
+  color: var(--tv-text-2) !important;
   width: 16px !important;
   height: 16px !important;
+}
+.active-sidebar svg {
+  stroke: var(--tv-primary-700) !important;
 }
 
 // Sidebar bottom user row
@@ -166,9 +249,8 @@
 
 // ── Page head — sticky, no gap ─────────────────────────────────
 .page-head {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 6 !important;
+  position: relative !important;
+  z-index: 2 !important;
   background: var(--tv-bg) !important;
   border-bottom: 1px solid var(--tv-line) !important;
   margin-top: 0 !important;
@@ -190,36 +272,26 @@
 .layout-main-section-wrapper {
   background: var(--tv-bg) !important;
   position: relative !important;
-  
-  // Premium Background Overlay — Soft Emerald Mesh
-  &::before {
-    content: "" !important;
-    position: absolute !important;
-    top: -150px !important;
-    right: -100px !important;
-    width: 600px !important;
-    height: 600px !important;
-    background: radial-gradient(circle, rgba(107, 164, 75, 0.07) 0%, rgba(107, 164, 75, 0) 70%) !important;
-    z-index: 0 !important;
-    pointer-events: none !important;
-  }
-  
-  &::after {
-    content: "" !important;
-    position: absolute !important;
-    bottom: -100px !important;
-    left: -100px !important;
-    width: 500px !important;
-    height: 500px !important;
-    background: radial-gradient(circle, rgba(45, 122, 79, 0.05) 0%, rgba(45, 122, 79, 0) 70%) !important;
-    z-index: 0 !important;
-    pointer-events: none !important;
-  }
 }
 
 .main-section > *, .page-container > * {
   position: relative !important;
-  z-index: 1 !important;
+}
+
+.page-body > *,
+.layout-main-section > *,
+.layout-main-section-wrapper > * {
+  position: relative !important;
+}
+
+.layout-main,
+.layout-main-section,
+.layout-main-section-wrapper,
+.list-view-container,
+.report-wrapper,
+.datatable,
+.dt-scrollable {
+  min-width: 0 !important;
 }
 
 .page-form {
@@ -228,10 +300,12 @@
 }
 
 // ── Form tabs sticky ───────────────────────────────────────────
-.form-tabs-sticky-down {
-  top: var(--tv-topbar-h) !important;
+.form-tabs-sticky-down,
+.form-tabs-sticky-up {
+  position: static !important;
+  top: unset !important;
+  z-index: auto !important;
   background: var(--tv-bg) !important;
-  z-index: 5 !important;
   border-bottom: 1px solid var(--tv-line) !important;
 }
 .form-tabs-list {
@@ -258,4 +332,318 @@
 }
 .form-tabs-list .nav-link:hover:not(.active) {
   color: var(--tv-text) !important;
+}
+
+// ── Mobile Responsiveness Overrides ──────────────────────────────
+@media (max-width: 991px) {
+  // Main Desk & Workspace Layout
+  .layout-main {
+    flex-direction: column !important;
+  }
+  .layout-side-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 16px !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--tv-line) !important;
+    padding-bottom: 16px !important;
+    flex: 1 1 auto !important;
+  }
+  .layout-main-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 0 !important;
+    flex: 1 1 auto !important;
+  }
+
+  // Form Builder Container
+  .form-builder-container {
+    flex-direction: column !important;
+    margin: 0 !important;
+
+    .form-container {
+      width: 100% !important;
+      flex: 1 1 auto !important;
+
+      .form-main {
+        margin: 8px 0 !important;
+      }
+    }
+
+    .form-controls {
+      width: 100% !important;
+      position: static !important;
+
+      .form-sidebar {
+        border-left: none !important;
+        border-top: 1px solid var(--tv-line) !important;
+
+        .sidebar-container {
+          width: 100% !important;
+          height: auto !important;
+          min-height: 250px !important;
+
+          .default-state {
+            height: auto !important;
+            min-height: 250px !important;
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 767px) {
+  // Page Head Action Wrapping
+  .page-head {
+    padding: 10px 16px !important;
+
+    .page-head-content {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 12px !important;
+
+      .page-actions {
+        width: 100% !important;
+        justify-content: flex-start !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        margin-top: 4px !important;
+
+        .btn, .actions-btn-group, .menu-btn-group {
+          flex: 1 1 auto !important;
+          text-align: center !important;
+
+          .btn {
+            width: 100% !important;
+          }
+        }
+      }
+    }
+  }
+
+  // Sidebar Collapse for Frappe main layout
+  .body-sidebar {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    flex-basis: 100% !important;
+    height: auto !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--tv-line) !important;
+  }
+
+  // Form layout grids stacking
+  .form-section, .form-column, .section-columns {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .form-column {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    margin-bottom: 14px !important;
+  }
+
+  .frappe-control, .grid-row, .grid-body {
+    width: 100% !important;
+  }
+
+  // Modal adjustments for small screens
+  .modal-dialog {
+    margin: 8px !important;
+    max-width: calc(100% - 16px) !important;
+  }
+}
+
+// ── Premium Form Builder Layout Overrides ───────────────────────
+.form-builder-container {
+  background-color: var(--tv-bg) !important;
+  border-radius: var(--tv-r-5) !important;
+  overflow: hidden !important;
+  box-shadow: var(--tv-sh-2) !important;
+  border: 1px solid var(--tv-line) !important;
+
+  .form-container {
+    background-color: var(--tv-bg) !important;
+    padding: 16px !important;
+  }
+
+  .form-main {
+    border-radius: var(--tv-r-4) !important;
+    border: 1px solid var(--tv-line) !important;
+    background-color: var(--tv-surface) !important;
+    box-shadow: var(--tv-sh-1) !important;
+    padding: 24px !important;
+    position: relative !important;
+
+    // Grid dotted backdrop pattern in builder canvas
+    background-image: radial-gradient(rgba(107, 164, 75, 0.08) 1.5px, transparent 1.5px) !important;
+    background-size: 20px 20px !important;
+  }
+
+  .form-sidebar {
+    background-color: var(--tv-surface) !important;
+    border-left: 1px solid var(--tv-line) !important;
+
+    .sidebar-container {
+      background-color: var(--tv-surface) !important;
+      padding: 16px !important;
+    }
+  }
+
+  // Tabs style in builder
+  .tab-header {
+    border-bottom: 2px solid var(--tv-line) !important;
+    margin-bottom: 20px !important;
+
+    .tab {
+      font-family: var(--tv-font-sans) !important;
+      font-weight: 600 !important;
+      color: var(--tv-text-2) !important;
+      border: 1px solid transparent !important;
+      border-radius: var(--tv-r-3) var(--tv-r-3) 0 0 !important;
+      padding: 8px 16px !important;
+
+      &:hover {
+        color: var(--tv-text) !important;
+        background-color: var(--tv-primary-50) !important;
+      }
+
+      &.active {
+        color: var(--tv-primary-700) !important;
+        border-color: var(--tv-line) var(--tv-line) transparent !important;
+        background-color: var(--tv-surface) !important;
+        font-weight: 700 !important;
+      }
+    }
+  }
+
+  // Custom visual outline for columns inside sections
+  .column {
+    background-color: rgba(var(--tv-surface-rgb), 0.5) !important;
+    border: 1px dashed var(--tv-primary-300) !important;
+    border-radius: var(--tv-r-3) !important;
+    padding: 16px !important;
+    margin: 8px !important;
+    transition: all var(--tv-dur-2) var(--tv-ease) !important;
+
+    &:hover, &.hovered {
+      border-color: var(--tv-primary) !important;
+      border-style: solid !important;
+      background-color: rgba(107, 164, 75, 0.03) !important;
+      box-shadow: var(--tv-sh-1) !important;
+    }
+
+    &.selected {
+      border-color: var(--tv-deep-600) !important;
+      border-style: solid !important;
+      background-color: rgba(45, 122, 79, 0.04) !important;
+      box-shadow: 0 0 0 3px rgba(45, 122, 79, 0.12) !important;
+    }
+  }
+
+  // Section styling
+  .form-section {
+    border: 1px solid var(--tv-line) !important;
+    background-color: var(--tv-surface) !important;
+    border-radius: var(--tv-r-4) !important;
+    margin-bottom: 20px !important;
+    padding: 16px !important;
+    box-shadow: var(--tv-sh-1) !important;
+    transition: all var(--tv-dur-2) var(--tv-ease) !important;
+
+    &:hover, &.hovered {
+      border-color: var(--tv-primary-400) !important;
+      box-shadow: var(--tv-sh-2) !important;
+    }
+
+    &.selected {
+      border-color: var(--tv-primary) !important;
+      box-shadow: 0 0 0 3px rgba(107, 164, 75, 0.15) !important;
+    }
+  }
+
+  // Field/Property rows inside sidebar
+  .property-row, .field-property {
+    margin-bottom: 12px !important;
+
+    label {
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      color: var(--tv-text-2) !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+      margin-bottom: 4px !important;
+      display: block !important;
+    }
+
+    input, select, textarea {
+      background-color: var(--tv-bg) !important;
+      border: 1px solid var(--tv-line) !important;
+      border-radius: var(--tv-r-2) !important;
+      padding: 6px 10px !important;
+      font-size: 13px !important;
+      color: var(--tv-text) !important;
+      width: 100% !important;
+      transition: all var(--tv-dur-1) var(--tv-ease) !important;
+
+      &:focus {
+        border-color: var(--tv-primary) !important;
+        background-color: var(--tv-surface) !important;
+        box-shadow: 0 0 0 3px rgba(107, 164, 75, 0.1) !important;
+        outline: none !important;
+      }
+    }
+  }
+
+  // Custom animated dropzones
+  .sortable-ghost, .sortable-chosen {
+    background-color: var(--tv-primary-50) !important;
+    border: 1px dashed var(--tv-primary) !important;
+    border-radius: var(--tv-r-3) !important;
+
+    .drop-it-here {
+      color: var(--tv-primary-700) !important;
+      font-weight: 600 !important;
+      font-size: 12px !important;
+
+      &::after {
+        background-color: var(--tv-primary) !important;
+        color: white !important;
+        font-family: var(--tv-font-sans) !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        border-radius: var(--tv-r-full) !important;
+        box-shadow: var(--tv-sh-2) !important;
+        padding: 4px 12px !important;
+      }
+
+      &::before {
+        background-color: var(--tv-primary) !important;
+        height: 2px !important;
+      }
+    }
+  }
+
+  // Add field button
+  .add-field-btn, .new-tab-btn {
+    border-radius: var(--tv-r-2) !important;
+    background-color: var(--tv-bg) !important;
+    border: 1px dashed var(--tv-line) !important;
+    color: var(--tv-text-2) !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    transition: all var(--tv-dur-1) var(--tv-ease) !important;
+    padding: 8px 12px !important;
+    text-align: center !important;
+    cursor: pointer !important;
+
+    &:hover {
+      background-color: var(--tv-primary-50) !important;
+      border-color: var(--tv-primary) !important;
+      color: var(--tv-primary-700) !important;
+      border-style: solid !important;
+    }
+  }
 }
