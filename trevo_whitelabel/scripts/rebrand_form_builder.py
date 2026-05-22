@@ -1,4 +1,3 @@
-import os
 import shutil
 from pathlib import Path
 
@@ -19,38 +18,27 @@ def run():
 			bench_apps_dir = script_dir.parents[4] / "apps"
 
 	frappe_fb_dir = bench_apps_dir / "frappe" / "frappe" / "public" / "js" / "form_builder"
-	frappe_form_dir = bench_apps_dir / "frappe" / "frappe" / "public" / "js" / "frappe" / "form"
 	custom_src = Path(__file__).resolve().parent.parent / "public" / "custom_form_builder"
 
 	if not frappe_fb_dir.exists():
 		print(f"[ERROR] Form Builder dir not found: {frappe_fb_dir}")
 		return
 
-	if not frappe_form_dir.exists():
-		print(f"[ERROR] Form dir not found: {frappe_form_dir}")
-		return
-
-	# ── Form Builder Vue files (canvas / studio) ──────────────────
-	builder_replacements = [
+	# ── Form Builder Vue files only ───────────────────────────────
+	# These replace Vue source files BEFORE bench build compiles them.
+	# section_live.js / column_live.js are NOT patched — layout.js imports
+	# Section/Column via ES module inside the pre-compiled desk.bundle.js.
+	# Patching source after compilation causes "Wa.default is not a constructor".
+	# Live form styling is handled entirely via _form.scss CSS overrides.
+	replacements = [
 		("FormBuilder.vue",  frappe_fb_dir / "FormBuilder.vue"),
 		("Sidebar.vue",      frappe_fb_dir / "components" / "Sidebar.vue"),
 		("Section.vue",      frappe_fb_dir / "components" / "Section.vue"),
 		("Column.vue",       frappe_fb_dir / "components" / "Column.vue"),
-		# SectionStats is a new component — no orig backup needed
 		("SectionStats.vue", frappe_fb_dir / "components" / "SectionStats.vue"),
 	]
 
-	# ── Live form JS files (doctype rendering) ────────────────────
-	# These Trevo live-form patches replace Frappe's default section/column
-	# renderer with the Trevo form experience.
-	live_replacements = [
-		("section_live.js", frappe_form_dir / "section.js"),
-		("column_live.js",  frappe_form_dir / "column.js"),
-	]
-
-	all_replacements = builder_replacements + live_replacements
-
-	for filename, dest_path in all_replacements:
+	for filename, dest_path in replacements:
 		src_path = custom_src / filename
 		if not src_path.exists():
 			print(f"  [SKIP] Source not found: {filename}")

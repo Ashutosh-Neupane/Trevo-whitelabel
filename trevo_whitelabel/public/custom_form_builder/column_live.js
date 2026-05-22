@@ -44,7 +44,7 @@ frappe.ui.form.Column = class Column {
 			.addClass("col-sm-" + colspan);
 	}
 
-	add_field() {}
+	add_field() { }
 
 	refresh() {
 		this.section.refresh();

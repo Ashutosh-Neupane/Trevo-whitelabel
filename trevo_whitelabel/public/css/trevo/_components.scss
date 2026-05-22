@@ -24,7 +24,7 @@
 }
 .frappe-control .control-input:focus-within {
   border-color: var(--tv-primary) !important;
-  box-shadow: 0 0 0 3px rgba(107,164,75,.12) !important;
+  box-shadow: none !important;
 }
 
 // Inner input — NO border (override Bootstrap's border:1px)
@@ -391,8 +391,41 @@ input[type="checkbox"]:focus {
   background: transparent !important;
 }
 
-// ── Icons — override blue erpnext module icons ─────────────────
-:root { --icon-stroke: var(--tv-text-2) !important; }
+// ── Icons — make all Frappe SVG icons green ─────────────────────
+:root {
+  --icon-stroke: var(--tv-primary) !important;
+  --icon-fill: transparent !important;
+}
+
+// Frappe renders icons as <svg class="icon ..."><use href="#icon-*"></svg>
+// The `current-color` class means stroke/fill follow CSS color.
+// Setting color on the svg element propagates to <use> via currentColor.
+.icon,
+.icon-sm,
+.icon-md,
+.icon-lg,
+svg.icon {
+  color: var(--tv-primary) !important;
+  stroke: var(--tv-primary) !important;
+  fill: transparent !important;
+}
+
+// Specific icon contexts that should stay neutral (text/muted)
+.btn svg.icon,
+.dropdown-item svg.icon,
+.list-row svg.icon,
+.navbar svg.icon {
+  color: var(--tv-text-2) !important;
+  stroke: var(--tv-text-2) !important;
+}
+
+// Active sidebar item icons stay green
+.active-sidebar svg.icon {
+  color: var(--tv-primary-700) !important;
+  stroke: var(--tv-primary-700) !important;
+}
+
+// Module / app icons always green
 .module-icon svg, .app-icon svg, .icon-module svg {
   stroke: var(--tv-primary) !important;
   color: var(--tv-primary) !important;
@@ -415,7 +448,6 @@ input[type="checkbox"]:focus {
 }
 .frappe-control .control-value,
 .frappe-control .like-disabled-input {
-  display: block !important;
   width: 100% !important;
   min-height: var(--input-height) !important;
   padding: 5px 10px !important;

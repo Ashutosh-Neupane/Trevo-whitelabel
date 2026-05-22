@@ -62,7 +62,7 @@ frappe.ui.form.Section = class Section {
 	make_head() {
 		this.head = $(`
 			<div class="section-head tv-section-head">
-				${__(this.df.label, null, this.df.parent)}
+				<span class="tv-section-head-label tv-section-title">${__(this.df.label, null, this.df.parent)}</span>
 				<span class="collapse-indicator tv-collapse-indicator"></span>
 			</div>
 		`).appendTo(this.wrapper);
@@ -117,8 +117,32 @@ frappe.ui.form.Section = class Section {
 	}
 
 	refresh(hide) {
-		const should_hide =
-			hide !== undefined ? hide : this.df.hidden || this.df.hide_border;
-		this.wrapper.toggleClass("hide-control", !!should_hide);
+		if (!this.df) return;
+		hide = hide || this.df.hidden || this.df.hidden_due_to_dependency;
+		this.wrapper.toggleClass("hide-control", !!hide);
+	}
+
+	add_field(fieldobj) {
+		this.fields_list.push(fieldobj);
+		this.fields_dict[fieldobj.df.fieldname] = fieldobj;
+		fieldobj.section = this;
+	}
+
+	has_missing_mandatory() {
+		let missing = false;
+		for (let j = 0; j < this.fields_list.length; j++) {
+			const df = this.fields_list[j].df;
+			if (df.reqd && this.layout && this.layout.doc && this.layout.doc[df.fieldname] == null) {
+				missing = true;
+				break;
+			}
+		}
+		return missing;
+	}
+
+	hide() { this.on_section_toggle(false); }
+	show() { this.on_section_toggle(true); }
+	on_section_toggle(show) {
+		this.wrapper.toggleClass("hide-control", !show);
 	}
 };

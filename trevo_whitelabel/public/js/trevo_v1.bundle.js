@@ -247,49 +247,10 @@
   }
 
 
-  // ── Sidebar collapse toggle ──────────────────────────────────
-  // Frappe toggles sidebar via a button that adds/removes classes.
-  // We watch for that and apply our icon-only collapsed state.
-  function watchSidebarCollapse() {
-    const sidebar = document.querySelector(".body-sidebar, .desk-sidebar");
-    if (!sidebar) return;
-
-    // Observe class changes on sidebar and its parent
-    const observer = new MutationObserver(() => {
-      const isCollapsed =
-        sidebar.classList.contains("sidebar-collapsed") ||
-        sidebar.classList.contains("closed") ||
-        sidebar.style.width === "0px" ||
-        parseInt(sidebar.style.width || "999") < 100;
-
-      if (isCollapsed) {
-        sidebar.classList.add("sidebar-collapsed");
-      } else {
-        sidebar.classList.remove("sidebar-collapsed");
-      }
-    });
-
-    observer.observe(sidebar, { attributes: true, attributeFilter: ["class", "style"] });
-
-    // Also watch the toggle button
-    document.querySelectorAll(".sidebar-toggle-btn, [data-toggle='sidebar'], .toggle-sidebar").forEach(btn => {
-      btn.addEventListener("click", () => {
-        setTimeout(() => {
-          const w = parseInt(getComputedStyle(sidebar).width);
-          if (w < 100) {
-            sidebar.classList.add("sidebar-collapsed");
-          } else {
-            sidebar.classList.remove("sidebar-collapsed");
-          }
-        }, 250);
-      });
-    });
-  }
 
   // ── Main apply ───────────────────────────────────────────────
   function apply() {
     ensureSidebarBranding();
-    watchSidebarCollapse();
     syncSidebarWidth();
     replaceLogos();
     relabelText();

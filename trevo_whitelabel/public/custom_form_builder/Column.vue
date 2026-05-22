@@ -42,10 +42,10 @@
 			<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3v10M3 8h10"/></svg>
 			<span>{{ __("Drop fields here") }}</span>
 		</div>
-		<div v-if="!store.read_only" class="empty-column" style="margin-top: auto; padding-top: 6px;">
+		<div v-if="!column.fields.length && !store.read_only" class="empty-column" style="margin-top: auto; padding-top: 6px;">
 			<AddFieldButton :column="column" />
 		</div>
-		<div v-if="column.fields.length && !store.read_only" class="add-new-field-btn" style="padding-top: 4px;">
+		<div v-else-if="column.fields.length && !store.read_only" class="add-new-field-btn" style="padding-top: 4px;">
 			<AddFieldButton :field="column.fields[column.fields.length - 1]" :column="column" />
 		</div>
 	</div>

@@ -45,11 +45,20 @@ h1, h2, h3, h4, h5, h6,
   letter-spacing: -0.02em !important;
 }
 
-// ── Focus ──────────────────────────────────────────────────────
+// ── Focus — tight 1px ring, no large glow ─────────────────────
 *:focus { outline: none !important; }
 *:focus-visible {
-  outline: 2px solid var(--tv-primary) !important;
-  outline-offset: 2px !important;
+  outline: 1.5px solid var(--tv-primary) !important;
+  outline-offset: 1px !important;
+  box-shadow: none !important;
+}
+// Inputs get a subtle inner ring only, no outer glow
+.frappe-control .control-input:focus-within {
+  outline: none !important;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 // ── Motion — calm, never theatrical ───────────────────────────
@@ -126,5 +135,19 @@ a[href*="frappeframework.com"] { display: none !important; }
     background: transparent !important;
     min-height: auto !important;
     padding: 0 !important;
+  }
+}
+
+// ── Mobile viewport — prevent horizontal overflow from sidebar ─────────
+@media (max-width: 767px) {
+  html, body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+  }
+
+  // Frappe's .page-container is flex row by default
+  // On mobile it must stack so sidebar doesn't push content right
+  .page-container {
+    flex-direction: column !important;
   }
 }
