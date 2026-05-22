@@ -1,8 +1,7 @@
 /**
- * Trevo Whitelabel Engine
- * Implements: logo swap, ⌘K search, density toggle,
- * sidebar group labels, app name relabelling.
- * ~120 lines. No framework. Hooks into frappe.ui.form events.
+ * Trevo Whitelabel Engine v2
+ * Fixes: mobile sidebar overlay, desktop sidebar toggle,
+ * nested child items, navbar search, edit-mode button hiding.
  */
 (function () {
   "use strict";
@@ -10,6 +9,7 @@
   const LOGO = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg";
   const SIDEBAR_WIDTH = 272;
   let sidebarObserver;
+  let _applyTimer;
 
   const APP_NAMES = {
     "Frappe Framework": "Trevo Engine",
@@ -37,7 +37,6 @@
       }
     });
 
-    // Replace raw .header-logo div that Frappe renders with build.svg
     document.querySelectorAll(".header-logo").forEach(el => {
       const img = el.querySelector("img");
       if (img && (img.src.includes("build.svg") || img.src.includes("/frappe/icons/"))) {
@@ -47,13 +46,11 @@
       }
     });
 
-    // Sidebar header logo container
     document.querySelectorAll(".header-logo-container img").forEach(img => {
       img.src = LOGO;
       img.style.cssText = "width:100%;height:100%;object-fit:contain;padding:2px;";
     });
 
-    // Sidebar header title
     document.querySelectorAll(".header-title").forEach(el => {
       if (["ERPNext", "Frappe"].includes(el.textContent.trim())) el.textContent = "Trevo";
     });
@@ -65,9 +62,6 @@
   }
 
   function ensureSidebarBranding() {
-    // Frappe renders .sidebar-header with .header-logo > img (build.svg) and
-    // .header-title / .header-subtitle text. We only fix text here.
-    // The img swap is handled by replaceLogos() targeting .header-logo img.
     document.querySelectorAll(".header-title").forEach(el => {
       const t = el.textContent.trim();
       if (!t || t === "Trevo") return;
@@ -80,59 +74,206 @@
     });
   }
 
+  // ── Sidebar width sync ───────────────────────────────────────
   function syncSidebarWidth() {
     const sidebar = document.querySelector(".body-sidebar");
     if (!sidebar) return;
 
     const applySidebarWidth = () => {
       let width = Math.round(sidebar.getBoundingClientRect().width);
-      if (!width || width <= 0) {
-        width = SIDEBAR_WIDTH;
-      }
+      if (!width || width <= 0) width = SIDEBAR_WIDTH;
       document.documentElement.style.setProperty("--tv-sidebar-w", `${width}px`);
       document.documentElement.style.setProperty("--sidebar-width", `${width}px`);
-      window.dispatchEvent(new Event("resize"));
     };
 
     applySidebarWidth();
 
-    if (sidebarObserver) {
-      sidebarObserver.disconnect();
+    if (sidebarObserver) sidebarObserver.disconnect();
+    if (typeof ResizeObserver !== "undefined") {
+      sidebarObserver = new ResizeObserver(applySidebarWidth);
+      sidebarObserver.observe(sidebar);
+    }
+  }
+
+  // ── Mobile sidebar overlay ───────────────────────────────────
+  // Frappe's sidebar toggle adds/removes .hidden on .body-sidebar.
+  // On mobile we intercept this to show/hide an overlay instead.
+  let _overlay = null;
+
+  function getOverlay() {
+    if (_overlay) return _overlay;
+    _overlay = document.createElement("div");
+    _overlay.id = "tv-sidebar-overlay";
+    _overlay.style.cssText = [
+      "position:fixed", "inset:0", "background:rgba(0,0,0,0.35)",
+      "z-index:499", "display:none", "backdrop-filter:blur(2px)",
+      "-webkit-backdrop-filter:blur(2px)"
+    ].join(";");
+    _overlay.addEventListener("click", closeMobileSidebar);
+    document.body.appendChild(_overlay);
+    return _overlay;
+  }
+
+  function isMobile() {
+    return window.innerWidth <= 767;
+  }
+
+  function openMobileSidebar() {
+    const sidebar = document.querySelector(".body-sidebar");
+    if (!sidebar) return;
+    sidebar.classList.remove("hidden");
+    sidebar.style.transform = "translateX(0)";
+    sidebar.style.visibility = "visible";
+    getOverlay().style.display = "block";
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeMobileSidebar() {
+    const sidebar = document.querySelector(".body-sidebar");
+    if (!sidebar) return;
+    sidebar.style.transform = "translateX(-100%)";
+    getOverlay().style.display = "none";
+    document.body.style.overflow = "";
+    // After transition, let Frappe add .hidden back
+    setTimeout(() => {
+      if (isMobile()) sidebar.classList.add("hidden");
+    }, 260);
+  }
+
+  function setupMobileSidebar() {
+    if (!isMobile()) return;
+
+    const sidebar = document.querySelector(".body-sidebar");
+    if (!sidebar || sidebar._tvMobileSetup) return;
+    sidebar._tvMobileSetup = true;
+
+    // Ensure sidebar starts closed on mobile
+    sidebar.classList.add("hidden");
+    sidebar.style.transform = "translateX(-100%)";
+
+    // Intercept Frappe's collapse-sidebar-link (the "Collapse" button)
+    sidebar.addEventListener("click", e => {
+      const collapseLink = e.target.closest(".collapse-sidebar-link");
+      if (collapseLink && isMobile()) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeMobileSidebar();
+      }
+    });
+
+    // Watch for Frappe removing .hidden (sidebar open event)
+    const obs = new MutationObserver(() => {
+      if (isMobile() && !sidebar.classList.contains("hidden")) {
+        openMobileSidebar();
+      }
+    });
+    obs.observe(sidebar, { attributes: true, attributeFilter: ["class"] });
+  }
+
+  // ── Navbar hamburger → open mobile sidebar ───────────────────
+  function setupNavbarToggle() {
+    // Frappe's navbar toggle button has data-toggle="collapse" targeting .body-sidebar
+    // On mobile we intercept it
+    document.addEventListener("click", e => {
+      if (!isMobile()) return;
+
+      // Frappe sidebar toggle buttons
+      const toggle = e.target.closest(
+        "[data-toggle='collapse'][data-target*='sidebar'], " +
+        ".navbar-toggler, " +
+        ".sidebar-toggle-btn, " +
+        "[data-action='toggle_sidebar']"
+      );
+      if (toggle) {
+        e.preventDefault();
+        e.stopPropagation();
+        const sidebar = document.querySelector(".body-sidebar");
+        if (!sidebar) return;
+        if (sidebar.classList.contains("hidden") || sidebar.style.transform === "translateX(-100%)") {
+          openMobileSidebar();
+        } else {
+          closeMobileSidebar();
+        }
+      }
+    }, true);
+  }
+
+  // ── Nested sidebar children — fix toggle ─────────────────────
+  // Frappe uses .drop-icon button inside .sidebar-item-control to toggle
+  // .sidebar-child-item.nested-container visibility.
+  // The issue: our CSS sets overflow:hidden on .body-sidebar which clips
+  // the nested containers. We need to ensure they render correctly.
+  function fixNestedSidebarItems() {
+    // Ensure nested containers that are NOT .hidden are visible
+    document.querySelectorAll(".sidebar-child-item.nested-container").forEach(el => {
+      if (!el.classList.contains("hidden")) {
+        el.style.display = "";
+        el.style.overflow = "visible";
+      }
+    });
+
+    // Fix the drop-icon chevron buttons — Frappe handles the toggle,
+    // but we need to ensure the parent .body-sidebar doesn't clip children
+    const sidebar = document.querySelector(".body-sidebar");
+    if (sidebar) {
+      sidebar.style.overflow = "hidden auto";
+      sidebar.style.overflowX = "hidden";
+    }
+  }
+
+  // ── Hide edit-mode controls (only visible in workspace edit mode) ─
+  function hideEditModeControls() {
+    // .sidebar-item-edit-controls.edit-mode should only show when
+    // Frappe adds .edit-mode to .body-sidebar. Ensure they stay hidden otherwise.
+    const sidebar = document.querySelector(".body-sidebar");
+    if (!sidebar || sidebar.classList.contains("edit-mode")) return;
+
+    document.querySelectorAll(".sidebar-item-edit-controls").forEach(el => {
+      if (!el.classList.contains("hidden")) {
+        el.classList.add("hidden");
+      }
+    });
+  }
+
+  // ── Navbar search visibility fix ─────────────────────────────
+  function fixNavbarSearch() {
+    const navbar = document.querySelector(".navbar");
+    if (!navbar) return;
+
+    // Ensure search bar is visible and properly sized
+    const searchBar = navbar.querySelector(".search-bar, #navbar-search-container, .form-control.search-bar");
+    if (searchBar) {
+      searchBar.style.removeProperty("display");
+      searchBar.style.removeProperty("visibility");
     }
 
-    if (typeof ResizeObserver !== "undefined") {
-      sidebarObserver = new ResizeObserver(() => applySidebarWidth());
-      sidebarObserver.observe(sidebar);
+    // Fix navbar flex layout — ensure items don't overflow
+    const navbarInner = navbar.querySelector(".container-fluid, .navbar-inner, .navbar-collapse");
+    if (navbarInner) {
+      navbarInner.style.cssText = "display:flex;align-items:center;width:100%;gap:8px;flex-wrap:nowrap;";
     }
   }
 
   // ── Avatar Menu Customization ────────────────────────────────
   function customizeAvatarMenu() {
-    // Remove "About" and update "Support" link in user menu
-    const userMenu = document.querySelector('.dropdown-navbar-user, .navbar-user');
+    const userMenu = document.querySelector(".dropdown-navbar-user, .navbar-user");
     if (!userMenu) return;
 
-    userMenu.querySelectorAll('li, a, .dropdown-item').forEach(el => {
+    userMenu.querySelectorAll("li, a, .dropdown-item").forEach(el => {
       const text = el.textContent.trim().toLowerCase();
-      
-      // Remove About section
-      if (text.includes("about")) {
-        el.style.setProperty('display', 'none', 'important');
-        el.classList.add('hidden');
+
+      if (text === "about" || (text.includes("about") && text.length < 20)) {
+        el.style.setProperty("display", "none", "important");
+        el.classList.add("hidden");
       }
 
-      // Update Support link
       if (text.includes("support")) {
-        const link = el.tagName === 'A' ? el : el.querySelector('a');
+        const link = el.tagName === "A" ? el : el.querySelector("a");
         if (link) {
-          link.href = 'https://trevocloud.com';
-          link.target = '_blank';
-          link.removeAttribute('data-toggle');
-          link.removeAttribute('onclick');
-          // Force click event to prevent Frappe's internal handler
-          link.addEventListener('click', (e) => {
-             e.stopPropagation();
-          }, { capture: true });
+          link.href = "https://trevocloud.com";
+          link.target = "_blank";
+          link.removeAttribute("data-toggle");
+          link.removeAttribute("onclick");
         }
       }
     });
@@ -159,13 +300,11 @@
   }
 
   // ── Density toggle ───────────────────────────────────────────
-  // Reads from localStorage; JS sets body[data-density]; CSS responds.
   function setupDensityToggle() {
     const saved = localStorage.getItem("trevo-density") || "comfortable";
     document.body.setAttribute("data-density", saved);
   }
 
-  // Expose globally so a toolbar button can call it
   window.trevo = window.trevo || {};
   window.trevo.setDensity = function (mode) {
     document.body.setAttribute("data-density", mode);
@@ -201,9 +340,7 @@
                   .replace(/Frappe Cloud/g, "Trevo Cloud")
                   .replace(/Frappe/g, "Trevo")
                   .replace(/ERPNext/g, "Trevo Next");
-      if (t !== nt) {
-        document.title = nt;
-      }
+      if (t !== nt) document.title = nt;
     }
   }
 
@@ -214,39 +351,25 @@
       frappe.show_about = function() {
         const d = new frappe.ui.Dialog({
           title: __("About Trevo"),
-          fields: [
-            {
-              fieldtype: "HTML",
-              options: `
-                <div class="text-center" style="padding: 10px 0; font-family: var(--tv-font-sans);">
-                  <img src="${LOGO}" style="max-height: 48px; display: block; margin: 0 auto 12px; filter: drop-shadow(0 2px 4px rgba(20,32,26,0.06));">
-                  <h4 style="font-weight: 700; color: var(--tv-deep-900); margin-bottom: 4px; font-size: 16px;">Trevo Cloud</h4>
-                  <p style="color: var(--tv-text-3); font-size: 13px; margin-bottom: 16px;">Unified Digital Lending & Commerce Ecosystem</p>
-                  <div style="border-top: 1px solid var(--tv-line); padding-top: 16px; text-align: left; font-size: 13px;">
-                    <p style="margin-bottom: 8px; color: var(--tv-text-2);"><strong>Version:</strong> Trevo Next v1.0.0</p>
-                    <p style="margin-bottom: 8px; color: var(--tv-text-2);"><strong>Engine:</strong> Trevo Engine v16</p>
-                    <p style="margin-bottom: 16px; color: var(--tv-text-2);"><strong>Publisher:</strong> Dots and Dashes Technology Limited</p>
-                    <p style="color: var(--tv-text-3); font-size: 12px; line-height: 1.4; margin-bottom: 0;">
-                      Trevo is a premium enterprise resource management platform designed for modern financial institutions, dynamic supply chains, and ecommerce operators.
-                    </p>
-                  </div>
+          fields: [{
+            fieldtype: "HTML",
+            options: `
+              <div class="text-center" style="padding:10px 0;font-family:var(--tv-font-sans);">
+                <img src="${LOGO}" style="max-height:48px;display:block;margin:0 auto 12px;">
+                <h4 style="font-weight:700;color:var(--tv-deep-900);margin-bottom:4px;font-size:16px;">Trevo Cloud</h4>
+                <p style="color:var(--tv-text-3);font-size:13px;margin-bottom:16px;">Unified Digital Lending & Commerce Ecosystem</p>
+                <div style="border-top:1px solid var(--tv-line);padding-top:16px;text-align:left;font-size:13px;">
+                  <p style="margin-bottom:8px;color:var(--tv-text-2);"><strong>Version:</strong> Trevo Next v1.0.0</p>
+                  <p style="margin-bottom:8px;color:var(--tv-text-2);"><strong>Engine:</strong> Trevo Engine v16</p>
+                  <p style="margin-bottom:16px;color:var(--tv-text-2);"><strong>Publisher:</strong> Dots and Dashes Technology Limited</p>
                 </div>
-              `
-            }
-          ]
+              </div>`
+          }]
         });
         d.show();
-        if (d.$wrapper) {
-          d.$wrapper.find('.modal-content').css({
-            'border-radius': 'var(--tv-r-5)',
-            'box-shadow': 'var(--tv-sh-3)'
-          });
-        }
       };
     }
   }
-
-
 
   // ── Main apply ───────────────────────────────────────────────
   function apply() {
@@ -258,11 +381,16 @@
     customizeAvatarMenu();
     rebrandTitle();
     overrideAboutDialog();
+    fixNavbarSearch();
+    fixNestedSidebarItems();
+    hideEditModeControls();
+    setupMobileSidebar();
   }
 
   // ── Boot ─────────────────────────────────────────────────────
   setupDensityToggle();
   setupCmdK();
+  setupNavbarToggle();
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", apply);
@@ -272,12 +400,27 @@
 
   if (typeof $ !== "undefined") {
     $(document).on("app_ready", apply);
-    $(document).on("page-change", () => setTimeout(apply, 150));
+    $(document).on("page-change", () => setTimeout(apply, 200));
   }
 
-  // MutationObserver — catch logo re-renders after navigation
-  let _t;
-  new MutationObserver(() => { clearTimeout(_t); _t = setTimeout(apply, 400); })
-    .observe(document.body, { childList: true, subtree: true });
+  // Handle window resize — re-evaluate mobile state
+  window.addEventListener("resize", () => {
+    if (!isMobile()) {
+      // Desktop: ensure sidebar is visible, remove mobile transforms
+      const sidebar = document.querySelector(".body-sidebar");
+      if (sidebar) {
+        sidebar.style.transform = "";
+        sidebar.style.visibility = "";
+        if (_overlay) _overlay.style.display = "none";
+        document.body.style.overflow = "";
+      }
+    }
+  });
+
+  // MutationObserver — catch DOM changes
+  new MutationObserver(() => {
+    clearTimeout(_applyTimer);
+    _applyTimer = setTimeout(apply, 350);
+  }).observe(document.body, { childList: true, subtree: true });
 
 })();

@@ -442,11 +442,9 @@
     padding: 10px 16px !important;
   }
 
-  // Frappe main desk — sidebar must NOT push the page body
-  // Frappe renders: .page-container > .body-sidebar + .page-body
-  // On mobile the sidebar must be hidden by default (Frappe handles toggle)
+  // Mobile sidebar — fixed overlay, does NOT push content
+  // JS in trevo_v1.bundle.js handles open/close via transform
   .page-container {
-    flex-direction: column !important;
     overflow-x: hidden !important;
   }
 
@@ -456,25 +454,28 @@
     left: 0 !important;
     bottom: 0 !important;
     width: 260px !important;
-    max-width: 80vw !important;
+    max-width: 82vw !important;
     z-index: 500 !important;
     transform: translateX(-100%) !important;
-    transition: transform 0.25s var(--tv-ease) !important;
+    transition: transform 0.25s ease !important;
     border-right: 1px solid var(--tv-line) !important;
     border-bottom: none !important;
-    box-shadow: 4px 0 20px rgba(0,0,0,0.12) !important;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.15) !important;
     overflow-y: auto !important;
-    height: auto !important;
+    overflow-x: hidden !important;
+    height: calc(100vh - var(--tv-topbar-h)) !important;
+    // Frappe adds .hidden — keep it hidden via transform, not display:none
+    // so our JS transition works
   }
 
-  // When Frappe opens the sidebar it adds .opened or removes .hidden
-  .body-sidebar.opened,
-  .body-sidebar:not(.hidden) {
-    transform: translateX(0) !important;
-  }
+  // JS sets transform:translateX(0) when open
+  // We do NOT use :not(.hidden) here because Frappe removes .hidden
+  // BEFORE our JS can set the transform, causing a flash
 
-  // Page body takes full width — sidebar is overlaid
-  .page-body {
+  // Page body always full width — sidebar overlays it
+  .page-body,
+  .layout-main,
+  .page-container > .page-body {
     width: 100% !important;
     max-width: 100% !important;
     margin-left: 0 !important;
@@ -541,5 +542,181 @@
     .tv-sidebar-wrap .tv-resizer {
       display: none !important;
     }
+  }
+}
+
+// ── Navbar search — always visible, proper sizing ─────────────────────
+.navbar .container-fluid,
+.navbar .navbar-inner {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+  padding: 0 !important;
+}
+
+// Search bar — never collapse, always in the middle
+.navbar .search-bar {
+  flex: 1 1 auto !important;
+  min-width: 160px !important;
+  max-width: 400px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.navbar .search-bar .awesomplete,
+.navbar .search-bar .awesomplete input {
+  width: 100% !important;
+}
+
+// Navbar left (logo + breadcrumbs) — don't shrink too much
+.navbar .navbar-left,
+.navbar .navbar-home {
+  flex-shrink: 0 !important;
+}
+
+// Navbar right (icons) — don't shrink
+.navbar .navbar-right,
+.navbar .nav.navbar-nav {
+  flex-shrink: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+// ── Sidebar nested children — proper visibility ────────────────────
+// Frappe toggles .hidden on .sidebar-child-item.nested-container
+.sidebar-child-item.nested-container {
+  overflow: visible !important;
+  transition: none !important;
+}
+
+.sidebar-child-item.nested-container.hidden {
+  display: none !important;
+}
+
+.sidebar-child-item.nested-container:not(.hidden) {
+  display: block !important;
+}
+
+// Nested items get a left indent
+.sidebar-child-item .standard-sidebar-item .item-anchor {
+  padding-left: 32px !important;
+  font-size: 12px !important;
+  color: var(--tv-text-3) !important;
+}
+
+.sidebar-child-item .standard-sidebar-item.active-sidebar .item-anchor {
+  color: var(--tv-primary-700) !important;
+}
+
+// Section group items (indent class) — the parent row
+.standard-sidebar-item.indent > .item-anchor {
+  font-weight: 600 !important;
+  color: var(--tv-text-2) !important;
+}
+
+// Drop icon chevron in sidebar
+.sidebar-item-control .drop-icon {
+  background: none !important;
+  border: none !important;
+  padding: 0 4px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  color: var(--tv-text-3) !important;
+
+  svg {
+    stroke: var(--tv-text-3) !important;
+    transition: transform 0.2s ease !important;
+  }
+}
+
+// ── Edit-mode controls — ONLY visible when sidebar is in edit mode ─────
+// Frappe adds .edit-mode to .body-sidebar when workspace is being edited.
+// The drag handles and dot-menu buttons must stay hidden otherwise.
+.sidebar-item-edit-controls {
+  display: none !important;
+}
+
+.body-sidebar.edit-mode .sidebar-item-edit-controls {
+  display: flex !important;
+}
+
+// show-in-edit-mode elements (like the chevron-down on sidebar header)
+.show-in-edit-mode {
+  display: none !important;
+}
+
+.body-sidebar.edit-mode .show-in-edit-mode {
+  display: flex !important;
+}
+
+// ── Sidebar sections — visual grouping ─────────────────────────────
+.sidebar-item-container.section-item {
+  margin-top: 4px !important;
+}
+
+.sidebar-item-container.section-item > .standard-sidebar-item {
+  border-radius: var(--tv-r-3) !important;
+}
+
+.sidebar-item-container.section-item > .standard-sidebar-item > .item-anchor {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: var(--tv-text-2) !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+// Notification dropdown — ensure it renders above sidebar
+.dropdown-notifications {
+  z-index: 600 !important;
+  position: absolute !important;
+}
+
+.dropdown-notifications.hidden {
+  display: none !important;
+}
+
+// ── Collapse sidebar link — always at bottom ───────────────────────
+.collapse-sidebar-link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 12px !important;
+  color: var(--tv-text-3) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  border-radius: var(--tv-r-2) !important;
+  transition: background 0.12s ease, color 0.12s ease !important;
+  text-decoration: none !important;
+
+  svg { stroke: var(--tv-text-3) !important; }
+
+  &:hover {
+    background: var(--tv-primary-50) !important;
+    color: var(--tv-primary-700) !important;
+    svg { stroke: var(--tv-primary-700) !important; }
+  }
+}
+
+// ── Mobile navbar — search always visible ───────────────────────────
+@media (max-width: 767px) {
+  .navbar .search-bar {
+    min-width: 100px !important;
+    max-width: 200px !important;
+  }
+
+  // Hide breadcrumbs on mobile to give search more room
+  .navbar-breadcrumbs {
+    display: none !important;
+  }
+
+  // Sidebar notification — hide on mobile (too complex)
+  .sidebar-notification {
+    display: none !important;
   }
 }
