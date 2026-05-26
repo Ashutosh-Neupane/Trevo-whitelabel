@@ -33,15 +33,33 @@ frappe.ui.form.Column = class Column {
 	}
 
 	resize_all_columns() {
-		let columns = this.section.wrapper.find(".form-column").length;
-		let colspan = cint(12 / columns);
-		if (columns === 5) colspan = 20;
+		let columns = this.section.columns || [];
+		if (!columns.length) return;
 
-		this.section.wrapper
-			.find(".form-column")
-			.removeClass()
-			.addClass("form-column tv-column-break")
-			.addClass("col-sm-" + colspan);
+		let total_colspan = 0;
+		let auto_colspan_count = 0;
+
+		columns.forEach(c => {
+			if (c.df && c.df.columns) {
+				total_colspan += cint(c.df.columns);
+			} else {
+				auto_colspan_count++;
+			}
+		});
+
+		let remaining_colspan = 12 - total_colspan;
+		let auto_colspan = auto_colspan_count ? Math.max(1, Math.floor(remaining_colspan / auto_colspan_count)) : 1;
+
+		columns.forEach(c => {
+			let colspan = (c.df && c.df.columns) ? cint(c.df.columns) : auto_colspan;
+			if (c.wrapper) {
+				c.wrapper
+					.removeClass((index, className) => {
+						return (className.match(/(^|\s)col-sm-\S+/g) || []).join(" ");
+					})
+					.addClass("col-sm-" + colspan);
+			}
+		});
 	}
 
 	add_field() { }

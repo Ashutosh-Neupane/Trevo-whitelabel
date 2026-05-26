@@ -60,9 +60,6 @@
   opacity: 1 !important;
 }
 
-// ── Desk layout — prevent sidebar from pushing content on mobile ─
-// Frappe's desk uses .desk-sidebar + .desk-body flex layout.
-// On mobile we must collapse the sidebar so it doesn't eat the viewport.
 .desk-sidebar,
 .body-sidebar {
   background: var(--tv-surface) !important;
@@ -73,6 +70,56 @@
   // Never let sidebar overflow the viewport width
   max-width: 100vw !important;
   flex-shrink: 0 !important;
+  transition: width 0.15s ease, min-width 0.15s ease, max-width 0.15s ease, flex 0.15s ease !important;
+}
+
+// Collapsed state (52px rail)
+.desk-sidebar.sidebar-collapsed,
+.body-sidebar.sidebar-collapsed,
+.layout-side-section.sidebar-collapsed {
+  width: 52px !important;
+  min-width: 52px !important;
+  max-width: 52px !important;
+  flex: 0 0 52px !important;
+  overflow: hidden !important;
+
+  .sidebar-child-item,
+  .standard-sidebar-item span,
+  .standard-sidebar-item a span,
+  .sidebar-item-control,
+  .sidebar-header > div:last-child,
+  .sidebar-header span,
+  .section-break,
+  .collapse-sidebar-link span,
+  .header-title,
+  .header-subtitle {
+    opacity: 0 !important;
+    width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    pointer-events: none !important;
+    display: none !important;
+  }
+
+  .standard-sidebar-item {
+    justify-content: center !important;
+    margin: 1px 0 !important;
+    width: 44px !important;
+  }
+}
+
+// Closed state (completely hidden)
+.desk-sidebar.closed,
+.body-sidebar.closed,
+.layout-side-section.closed,
+.layout-side-section.hidden {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  flex: 0 0 0 !important;
+  border-right: none !important;
+  overflow: hidden !important;
+  display: none !important;
 }
 
 // Sidebar header — brand row
@@ -368,49 +415,6 @@
 
 // ── Mobile — fix sidebar pushing content off screen ────────────
 @media (max-width: 991px) {
-  // Frappe desk layout
-  .desk-body {
-    flex-direction: column !important;
-  }
-
-  .body-sidebar,
-  .desk-sidebar {
-    // Collapse to a thin strip or hide — Frappe toggles .hidden via JS
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: unset !important;
-    height: auto !important;
-    border-right: none !important;
-    border-bottom: 1px solid var(--tv-line) !important;
-    flex-shrink: 0 !important;
-    overflow: hidden !important;
-  }
-
-  // When sidebar is collapsed (Frappe adds .hidden or width:0)
-  .body-sidebar.hidden,
-  .desk-sidebar.hidden {
-    display: none !important;
-  }
-
-  .layout-main {
-    flex-direction: column !important;
-  }
-  .layout-side-section {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin-bottom: 16px !important;
-    border-right: none !important;
-    border-bottom: 1px solid var(--tv-line) !important;
-    padding-bottom: 16px !important;
-    flex: 1 1 auto !important;
-  }
-  .layout-main-section {
-    width: 100% !important;
-    max-width: 100% !important;
-    padding-left: 0 !important;
-    flex: 1 1 auto !important;
-  }
-
   // Form builder on tablet
   .form-builder-container {
     flex-direction: column !important;
@@ -442,37 +446,6 @@
     padding: 10px 16px !important;
   }
 
-  // Mobile sidebar — fixed overlay, does NOT push content
-  // JS in trevo_v1.bundle.js handles open/close via transform
-  .page-container {
-    overflow-x: hidden !important;
-  }
-
-  .body-sidebar {
-    position: fixed !important;
-    top: var(--tv-topbar-h) !important;
-    left: 0 !important;
-    bottom: 0 !important;
-    width: 260px !important;
-    max-width: 82vw !important;
-    z-index: 500 !important;
-    transform: translateX(-100%) !important;
-    transition: transform 0.25s ease !important;
-    border-right: 1px solid var(--tv-line) !important;
-    border-bottom: none !important;
-    box-shadow: 4px 0 24px rgba(0,0,0,0.15) !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    height: calc(100vh - var(--tv-topbar-h)) !important;
-    // Frappe adds .hidden — keep it hidden via transform, not display:none
-    // so our JS transition works
-  }
-
-  // JS sets transform:translateX(0) when open
-  // We do NOT use :not(.hidden) here because Frappe removes .hidden
-  // BEFORE our JS can set the transform, causing a flash
-
-  // Page body always full width — sidebar overlays it
   .page-body,
   .layout-main,
   .page-container > .page-body {

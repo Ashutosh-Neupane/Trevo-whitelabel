@@ -7,9 +7,14 @@
   "use strict";
 
   const LOGO = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg";
-  const SIDEBAR_WIDTH = 272;
-  let sidebarObserver;
   let _applyTimer;
+  let _mobileSidebarOpener;
+  let _lastSidebarWidth = null;
+  let _sidebarCollapseTarget = null;
+  let _sidebarCollapseObserver = null;
+  let _rootMutationObserver = null;
+  let _gridEnhancementBound = false;
+  let _gridScanFrame = null;
 
   const APP_NAMES = {
     "Frappe Framework": "Trevo Engine",
@@ -18,6 +23,16 @@
     "Frappe HR":        "Trevo People",
     "HRMS":             "Trevo People",
   };
+
+  const ITEM_GRID_DOCTYPES = new Set([
+    "Sales Order Item",
+    "Sales Invoice Item",
+    "Purchase Order Item",
+    "Purchase Invoice Item",
+    "Quotation Item",
+    "Delivery Note Item",
+    "Material Request Item"
+  ]);
 
   // ── Favicon ──────────────────────────────────────────────────
   (function setFavicon() {
@@ -74,157 +89,59 @@
     });
   }
 
-  // ── Sidebar width sync ───────────────────────────────────────
-  function syncSidebarWidth() {
-    const sidebar = document.querySelector(".body-sidebar");
-    if (!sidebar) return;
+  function getSidebar() {
+    return document.querySelector(".body-sidebar, .desk-sidebar, .layout-side-section");
+  }
 
-    const applySidebarWidth = () => {
-      let width = Math.round(sidebar.getBoundingClientRect().width);
-      if (!width || width <= 0) width = SIDEBAR_WIDTH;
-      document.documentElement.style.setProperty("--tv-sidebar-w", `${width}px`);
-      document.documentElement.style.setProperty("--sidebar-width", `${width}px`);
-    };
+  function ensureMobileSidebarOpener() {
+    if (typeof frappe === "undefined" || !frappe.app || !frappe.app.sidebar) return;
 
-    applySidebarWidth();
-
-    if (sidebarObserver) sidebarObserver.disconnect();
-    if (typeof ResizeObserver !== "undefined") {
-      sidebarObserver = new ResizeObserver(applySidebarWidth);
-      sidebarObserver.observe(sidebar);
+    if (!_mobileSidebarOpener) {
+      _mobileSidebarOpener = document.createElement("button");
+      _mobileSidebarOpener.type = "button";
+      _mobileSidebarOpener.className = "tv-mobile-sidebar-opener";
+      _mobileSidebarOpener.setAttribute("aria-label", "Open sidebar");
+      _mobileSidebarOpener.innerHTML = `
+        <span></span>
+        <span></span>
+        <span></span>
+      `;
+      _mobileSidebarOpener.addEventListener("click", () => {
+        if (!frappe.app || !frappe.app.sidebar) return;
+        frappe.app.sidebar.open();
+        setTimeout(syncMobileSidebarOpener, 80);
+      });
+      document.body.appendChild(_mobileSidebarOpener);
     }
+
+    syncMobileSidebarOpener();
   }
 
-  // ── Mobile sidebar overlay ───────────────────────────────────
-  // Frappe's sidebar toggle adds/removes .hidden on .body-sidebar.
-  // On mobile we intercept this to show/hide an overlay instead.
-  let _overlay = null;
+  function syncMobileSidebarOpener() {
+    if (!_mobileSidebarOpener) return;
 
-  function getOverlay() {
-    if (_overlay) return _overlay;
-    _overlay = document.createElement("div");
-    _overlay.id = "tv-sidebar-overlay";
-    _overlay.style.cssText = [
-      "position:fixed", "inset:0", "background:rgba(0,0,0,0.35)",
-      "z-index:499", "display:none", "backdrop-filter:blur(2px)",
-      "-webkit-backdrop-filter:blur(2px)"
-    ].join(";");
-    _overlay.addEventListener("click", closeMobileSidebar);
-    document.body.appendChild(_overlay);
-    return _overlay;
-  }
+    const isMobileViewport = window.innerWidth <= 991;
+    if (!isMobileViewport) {
+      _mobileSidebarOpener.style.display = "none";
+      return;
+    }
 
-  function isMobile() {
-    return window.innerWidth <= 767;
-  }
-
-  function openMobileSidebar() {
-    const sidebar = document.querySelector(".body-sidebar");
-    if (!sidebar) return;
-    sidebar.classList.remove("hidden");
-    sidebar.style.transform = "translateX(0)";
-    sidebar.style.visibility = "visible";
-    getOverlay().style.display = "block";
-    document.body.style.overflow = "hidden";
-  }
-
-  function closeMobileSidebar() {
-    const sidebar = document.querySelector(".body-sidebar");
-    if (!sidebar) return;
-    sidebar.style.transform = "translateX(-100%)";
-    getOverlay().style.display = "none";
-    document.body.style.overflow = "";
-    // After transition, let Frappe add .hidden back
-    setTimeout(() => {
-      if (isMobile()) sidebar.classList.add("hidden");
-    }, 260);
-  }
-
-  function setupMobileSidebar() {
-    if (!isMobile()) return;
-
-    const sidebar = document.querySelector(".body-sidebar");
-    if (!sidebar || sidebar._tvMobileSetup) return;
-    sidebar._tvMobileSetup = true;
-
-    // Ensure sidebar starts closed on mobile
-    sidebar.classList.add("hidden");
-    sidebar.style.transform = "translateX(-100%)";
-
-    // Intercept Frappe's collapse-sidebar-link (the "Collapse" button)
-    sidebar.addEventListener("click", e => {
-      const collapseLink = e.target.closest(".collapse-sidebar-link");
-      if (collapseLink && isMobile()) {
-        e.preventDefault();
-        e.stopPropagation();
-        closeMobileSidebar();
-      }
-    });
-
-    // Watch for Frappe removing .hidden (sidebar open event)
-    const obs = new MutationObserver(() => {
-      if (isMobile() && !sidebar.classList.contains("hidden")) {
-        openMobileSidebar();
-      }
-    });
-    obs.observe(sidebar, { attributes: true, attributeFilter: ["class"] });
-  }
-
-  // ── Navbar hamburger → open mobile sidebar ───────────────────
-  function setupNavbarToggle() {
-    // Frappe's navbar toggle button has data-toggle="collapse" targeting .body-sidebar
-    // On mobile we intercept it
-    document.addEventListener("click", e => {
-      if (!isMobile()) return;
-
-      // Frappe sidebar toggle buttons
-      const toggle = e.target.closest(
-        "[data-toggle='collapse'][data-target*='sidebar'], " +
-        ".navbar-toggler, " +
-        ".sidebar-toggle-btn, " +
-        "[data-action='toggle_sidebar']"
-      );
-      if (toggle) {
-        e.preventDefault();
-        e.stopPropagation();
-        const sidebar = document.querySelector(".body-sidebar");
-        if (!sidebar) return;
-        if (sidebar.classList.contains("hidden") || sidebar.style.transform === "translateX(-100%)") {
-          openMobileSidebar();
-        } else {
-          closeMobileSidebar();
-        }
-      }
-    }, true);
+    const container = document.querySelector(".body-sidebar-container");
+    const expanded = container && container.classList.contains("expanded");
+    _mobileSidebarOpener.style.display = expanded ? "none" : "inline-flex";
   }
 
   // ── Nested sidebar children — fix toggle ─────────────────────
-  // Frappe uses .drop-icon button inside .sidebar-item-control to toggle
-  // .sidebar-child-item.nested-container visibility.
-  // The issue: our CSS sets overflow:hidden on .body-sidebar which clips
-  // the nested containers. We need to ensure they render correctly.
   function fixNestedSidebarItems() {
-    // Ensure nested containers that are NOT .hidden are visible
     document.querySelectorAll(".sidebar-child-item.nested-container").forEach(el => {
       if (!el.classList.contains("hidden")) {
         el.style.display = "";
         el.style.overflow = "visible";
       }
     });
-
-    // Fix the drop-icon chevron buttons — Frappe handles the toggle,
-    // but we need to ensure the parent .body-sidebar doesn't clip children
-    const sidebar = document.querySelector(".body-sidebar");
-    if (sidebar) {
-      sidebar.style.overflow = "hidden auto";
-      sidebar.style.overflowX = "hidden";
-    }
   }
 
-  // ── Hide edit-mode controls (only visible in workspace edit mode) ─
   function hideEditModeControls() {
-    // .sidebar-item-edit-controls.edit-mode should only show when
-    // Frappe adds .edit-mode to .body-sidebar. Ensure they stay hidden otherwise.
     const sidebar = document.querySelector(".body-sidebar");
     if (!sidebar || sidebar.classList.contains("edit-mode")) return;
 
@@ -371,10 +288,279 @@
     }
   }
 
+  const SIDEBAR_WIDTH = 280;
+  let sidebarObserver;
+  function syncSidebarWidth() {
+    const sidebar = document.querySelector(".body-sidebar, .desk-sidebar, .layout-side-section");
+    if (!sidebar) return;
+
+    const applySidebarWidth = () => {
+      let width = Math.round(sidebar.getBoundingClientRect().width);
+      if (getComputedStyle(sidebar).display === 'none') {
+        width = 0;
+      }
+      document.documentElement.style.setProperty("--tv-sidebar-w", `${width}px`);
+      document.documentElement.style.setProperty("--sidebar-width", `${width}px`);
+      if (_lastSidebarWidth !== width) {
+        _lastSidebarWidth = width;
+      }
+    };
+
+    applySidebarWidth();
+
+    if (sidebarObserver) {
+      sidebarObserver.disconnect();
+    }
+
+    if (typeof ResizeObserver !== "undefined") {
+      sidebarObserver = new ResizeObserver(() => applySidebarWidth());
+      sidebarObserver.observe(sidebar);
+    }
+  }
+
+  function watchSidebarCollapse() {
+    const sidebar = document.querySelector(".body-sidebar, .desk-sidebar, .layout-side-section");
+    if (!sidebar) return;
+    if (_sidebarCollapseTarget === sidebar) return;
+
+    _sidebarCollapseTarget = sidebar;
+    if (_sidebarCollapseObserver) {
+      _sidebarCollapseObserver.disconnect();
+    }
+
+    // Observe only width/style changes; avoid class‑based loop
+    _sidebarCollapseObserver = new MutationObserver(() => {
+      const isCollapsed =
+        sidebar.classList.contains("closed") ||
+        sidebar.classList.contains("collapsed") ||
+        sidebar.style.width === "0px" ||
+        parseInt(sidebar.style.width || "999") < 100;
+
+      if (isCollapsed) {
+        sidebar.classList.add("sidebar-collapsed");
+      } else {
+        sidebar.classList.remove("sidebar-collapsed");
+      }
+    });
+
+    _sidebarCollapseObserver.observe(sidebar, { attributes: true, attributeFilter: ["style"] });
+
+    document.querySelectorAll(".sidebar-toggle-btn, [data-toggle='sidebar'], .toggle-sidebar, .collapse-sidebar-link").forEach(btn => {
+      if (btn.dataset.toggleObserved) return;
+      btn.dataset.toggleObserved = "1";
+      btn.addEventListener("click", () => {
+        setTimeout(() => {
+          const w = parseInt(getComputedStyle(sidebar).width);
+          if (w < 100) {
+            sidebar.classList.add("sidebar-collapsed");
+          } else {
+            sidebar.classList.remove("sidebar-collapsed");
+          }
+        }, 150);
+      });
+    });
+  }
+
+  function sanitizeImageUrl(url) {
+    if (!url || typeof url !== "string") return "";
+    const trimmed = url.trim();
+    if (!trimmed) return "";
+    if (trimmed.startsWith("/files/") || trimmed.startsWith("/private/files/")) return trimmed;
+    if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith("data:image/")) return trimmed;
+    return "";
+  }
+
+  function getGridRowElement(gridRow) {
+    return (
+      gridRow?.row?.[0] ||
+      gridRow?.row?.get?.(0) ||
+      gridRow?.wrapper?.[0] ||
+      gridRow?.wrapper?.get?.(0) ||
+      gridRow?.$row?.[0] ||
+      null
+    );
+  }
+
+  function getGridRowDoc(gridRow) {
+    return gridRow?.doc || gridRow?.grid_form?.doc || null;
+  }
+
+  function getGridRowDoctype(gridRow) {
+    return (
+      gridRow?.doc?.doctype ||
+      gridRow?.grid?.doctype ||
+      gridRow?.grid?.df?.options ||
+      gridRow?.grid_form?.doctype ||
+      ""
+    );
+  }
+
+  function shouldEnhanceItemGridRow(gridRow) {
+    const doctype = getGridRowDoctype(gridRow);
+    if (ITEM_GRID_DOCTYPES.has(doctype)) return true;
+    const doc = getGridRowDoc(gridRow);
+    return !!(doc && (doc.item_code || doc.item_name) && (doc.image_view || doc.item_image || doc.image));
+  }
+
+  function getItemImage(doc) {
+    return sanitizeImageUrl(
+      doc?.image_view ||
+      doc?.item_image ||
+      doc?.image ||
+      doc?.thumbnail ||
+      ""
+    );
+  }
+
+  function findGridItemCell(rowEl) {
+    if (!rowEl) return null;
+    const explicit = rowEl.querySelector(
+      [
+        "[data-fieldname='item_code']",
+        "[data-fieldname='item_name']",
+        "[data-fieldname='item']",
+        "[data-fieldname='description']",
+        ".grid-static-col[data-fieldname='item_code']",
+        ".grid-static-col[data-fieldname='item_name']"
+      ].join(", ")
+    );
+    if (explicit) return explicit;
+
+    const candidates = Array.from(
+      rowEl.querySelectorAll(".grid-static-col, .col, .ellipsis, .static-area, [data-fieldname]")
+    ).filter((node) => {
+      if (!(node instanceof HTMLElement)) return false;
+      if (node.classList.contains("row-check")) return false;
+      if (node.closest(".row-check")) return false;
+      return !!node.textContent.trim();
+    });
+
+    return candidates[0] || null;
+  }
+
+  function createFallbackThumb(doc) {
+    const source = doc?.item_name || doc?.item_code || doc?.description || "";
+    const initials = source
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(part => part[0]?.toUpperCase() || "")
+      .join("") || "IT";
+
+    const badge = document.createElement("span");
+    badge.className = "tv-grid-item-thumb tv-grid-item-thumb--fallback";
+    badge.textContent = initials;
+    return badge;
+  }
+
+  function enhanceItemGridRow(gridRow) {
+    if (!shouldEnhanceItemGridRow(gridRow)) return;
+
+    const rowEl = getGridRowElement(gridRow);
+    const doc = getGridRowDoc(gridRow);
+    if (!rowEl || !doc) return;
+
+    const targetCell = findGridItemCell(rowEl);
+    if (!targetCell) return;
+
+    const imageUrl = getItemImage(doc);
+    const cacheKey = [doc.name || "", imageUrl, doc.item_name || "", doc.item_code || ""].join("|");
+    if (targetCell.dataset.tvGridItemEnhanced === cacheKey) return;
+
+    let shell = targetCell.querySelector(":scope > .tv-grid-item-shell");
+    let thumb = shell?.querySelector(".tv-grid-item-thumb");
+    let meta = shell?.querySelector(".tv-grid-item-meta");
+
+    if (!shell) {
+      shell = document.createElement("div");
+      shell.className = "tv-grid-item-shell";
+
+      thumb = document.createElement("span");
+      thumb.className = "tv-grid-item-thumb";
+
+      meta = document.createElement("span");
+      meta.className = "tv-grid-item-meta";
+
+      const textSlot = document.createElement("span");
+      textSlot.className = "tv-grid-item-text";
+
+      const nodes = Array.from(targetCell.childNodes);
+      nodes.forEach((node) => {
+        if (node === shell) return;
+        textSlot.appendChild(node);
+      });
+
+      meta.appendChild(textSlot);
+      shell.appendChild(thumb);
+      shell.appendChild(meta);
+      targetCell.appendChild(shell);
+    }
+
+    thumb.replaceChildren();
+    if (imageUrl) {
+      const img = document.createElement("img");
+      img.src = imageUrl;
+      img.alt = doc.item_name || doc.item_code || "Item";
+      img.loading = "lazy";
+      thumb.appendChild(img);
+    } else {
+      thumb.appendChild(createFallbackThumb(doc));
+    }
+
+    let subtitle = meta.querySelector(".tv-grid-item-subtitle");
+    if (!subtitle) {
+      subtitle = document.createElement("span");
+      subtitle.className = "tv-grid-item-subtitle";
+      meta.appendChild(subtitle);
+    }
+
+    const subtitleText = [doc.item_code, doc.uom].filter(Boolean).join("  ·  ");
+    subtitle.textContent = subtitleText;
+    subtitle.style.display = subtitleText ? "" : "none";
+
+    targetCell.dataset.tvGridItemEnhanced = cacheKey;
+  }
+
+  function scanVisibleGridRows() {
+    if (typeof frappe === "undefined" || typeof cur_frm === "undefined") {
+      return;
+    }
+
+    const route = typeof frappe.get_route === "function" ? frappe.get_route() : [];
+    const curFrm = route && route[0] === "Form" ? cur_frm : null;
+    if (!curFrm || !curFrm.grids) return;
+
+    curFrm.grids.forEach((grid) => {
+      (grid.grid_rows || []).forEach((gridRow) => enhanceItemGridRow(gridRow));
+    });
+  }
+
+  function scheduleGridEnhancementScan() {
+    if (_gridScanFrame) {
+      cancelAnimationFrame(_gridScanFrame);
+    }
+    _gridScanFrame = requestAnimationFrame(() => {
+      _gridScanFrame = null;
+      scanVisibleGridRows();
+    });
+  }
+
+  function setupGridRowEnhancements() {
+    if (_gridEnhancementBound || typeof $ === "undefined") return;
+    _gridEnhancementBound = true;
+
+    $(document).on("grid-row-render", (_event, gridRow) => {
+      enhanceItemGridRow(gridRow);
+    });
+  }
+
   // ── Main apply ───────────────────────────────────────────────
   function apply() {
     ensureSidebarBranding();
+    watchSidebarCollapse();
     syncSidebarWidth();
+    fixNestedSidebarItems();
+    hideEditModeControls();
     replaceLogos();
     relabelText();
     fixLoginPage();
@@ -382,16 +568,48 @@
     rebrandTitle();
     overrideAboutDialog();
     fixNavbarSearch();
-    fixNestedSidebarItems();
-    hideEditModeControls();
-    setupMobileSidebar();
+    ensureMobileSidebarOpener();
+    scheduleGridEnhancementScan();
+  }
+
+  function mutationNeedsApply(mutations) {
+    const interestingSelectors = [
+      ".page-container",
+      ".layout-side-section",
+      ".body-sidebar",
+      ".desk-sidebar",
+      ".navbar",
+      ".page-head",
+      ".main-section"
+    ];
+
+    return mutations.some(mutation => {
+      const nodes = [...mutation.addedNodes, ...mutation.removedNodes];
+      return nodes.some(node => {
+        if (!node || node.nodeType !== 1) return false;
+        return interestingSelectors.some(selector =>
+          node.matches?.(selector) || node.querySelector?.(selector)
+        );
+      });
+    });
+  }
+
+  function setupStructuralObserver() {
+    if (_rootMutationObserver) return;
+
+    const root = document.querySelector(".main-section") || document.body;
+    _rootMutationObserver = new MutationObserver((mutations) => {
+      if (!mutationNeedsApply(mutations)) return;
+      clearTimeout(_applyTimer);
+      _applyTimer = setTimeout(apply, 180);
+    });
+    _rootMutationObserver.observe(root, { childList: true, subtree: true });
   }
 
   // ── Boot ─────────────────────────────────────────────────────
   setupDensityToggle();
   setupCmdK();
-  setupNavbarToggle();
-
+  setupGridRowEnhancements();
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", apply);
   } else {
@@ -401,26 +619,10 @@
   if (typeof $ !== "undefined") {
     $(document).on("app_ready", apply);
     $(document).on("page-change", () => setTimeout(apply, 200));
+    $(document).on("sidebar-expand", () => setTimeout(syncMobileSidebarOpener, 50));
   }
 
-  // Handle window resize — re-evaluate mobile state
-  window.addEventListener("resize", () => {
-    if (!isMobile()) {
-      // Desktop: ensure sidebar is visible, remove mobile transforms
-      const sidebar = document.querySelector(".body-sidebar");
-      if (sidebar) {
-        sidebar.style.transform = "";
-        sidebar.style.visibility = "";
-        if (_overlay) _overlay.style.display = "none";
-        document.body.style.overflow = "";
-      }
-    }
-  });
-
-  // MutationObserver — catch DOM changes
-  new MutationObserver(() => {
-    clearTimeout(_applyTimer);
-    _applyTimer = setTimeout(apply, 350);
-  }).observe(document.body, { childList: true, subtree: true });
+  window.addEventListener("resize", () => setTimeout(syncMobileSidebarOpener, 50));
+  setupStructuralObserver();
 
 })();

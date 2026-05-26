@@ -368,3 +368,370 @@
     padding: 8px 12px !important;
   }
 }
+
+/* ── Custom Layout Presets & Styling ──────────────────────────────── */
+
+// 1. Two Columns (50/50)
+.tv-layout-half {
+  .section-body,
+  .tv-section-body,
+  .section-columns-container {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    .form-column,
+    .column {
+      width: 50% !important;
+      flex: 0 0 50% !important;
+      max-width: 50% !important;
+    }
+  }
+}
+
+// 2. Three Columns (33/33/33)
+.tv-layout-third {
+  .section-body,
+  .tv-section-body,
+  .section-columns-container {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    .form-column,
+    .column {
+      width: 33.333% !important;
+      flex: 0 0 33.333% !important;
+      max-width: 33.333% !important;
+    }
+  }
+}
+
+// 3. Four Columns (25/25/25/25)
+.tv-layout-fourth {
+  .section-body,
+  .tv-section-body,
+  .section-columns-container {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    .form-column,
+    .column {
+      width: 25% !important;
+      flex: 0 0 25% !important;
+      max-width: 25% !important;
+    }
+  }
+}
+
+// 4. Sidebar Left (30/70)
+.tv-layout-sidebar-left {
+  .section-body,
+  .tv-section-body,
+  .section-columns-container {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    .form-column:nth-child(1),
+    .column:nth-child(1) {
+      width: 30% !important;
+      flex: 0 0 30% !important;
+      max-width: 30% !important;
+    }
+    .form-column:nth-child(2),
+    .column:nth-child(2) {
+      width: 70% !important;
+      flex: 0 0 70% !important;
+      max-width: 70% !important;
+    }
+  }
+}
+
+// 5. Sidebar Right (70/30)
+.tv-layout-sidebar-right {
+  .section-body,
+  .tv-section-body,
+  .section-columns-container {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    .form-column:nth-child(1),
+    .column:nth-child(1) {
+      width: 70% !important;
+      flex: 0 0 70% !important;
+      max-width: 70% !important;
+    }
+    .form-column:nth-child(2),
+    .column:nth-child(2) {
+      width: 30% !important;
+      flex: 0 0 30% !important;
+      max-width: 30% !important;
+    }
+  }
+}
+
+// 6. Details Card (Tighter padding, distinct header accent)
+.tv-section-details {
+  border-top: 3px solid var(--tv-primary) !important;
+  background: var(--tv-surface) !important;
+  
+  .section-body,
+  .tv-section-body {
+    padding: 18px 16px !important;
+    gap: 16px !important;
+  }
+  
+  .control-label {
+    color: var(--tv-primary-700) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+  }
+}
+
+// 7. Items Breakdown Grid (Clean premium table style for grids/tables inside sections)
+.tv-section-grid {
+  border: 1px solid var(--tv-line) !important;
+  box-shadow: var(--tv-sh-1) !important;
+  
+  .section-body,
+  .tv-section-body {
+    padding: 12px 14px !important;
+  }
+  
+  // Custom styling for child table grids inside this section
+  .grid-heading-row {
+    background: var(--tv-bg-2) !important;
+    border-bottom: 2px solid var(--tv-line) !important;
+    color: var(--tv-primary-700) !important;
+    font-weight: 700 !important;
+  }
+  
+  .grid-row {
+    border-bottom: 1px solid var(--tv-line-2) !important;
+    min-height: 78px !important;
+    box-shadow: var(--tv-sh-1) !important;
+    &:hover {
+      background: var(--tv-primary-50) !important;
+      box-shadow: var(--tv-sh-2) !important;
+    }
+  }
+
+  .grid-add-row,
+  .grid-add-multiple-rows {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+  }
+}
+
+// 8. Summary Card
+.tv-section-summary {
+  background: linear-gradient(180deg, var(--tv-surface) 0%, var(--tv-bg) 100%) !important;
+  border: 1.5px solid var(--tv-line) !important;
+  max-width: 480px !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  border-radius: var(--tv-r-4) !important;
+
+  .section-body,
+  .tv-section-body {
+    padding: 16px !important;
+    flex-direction: column !important;
+  }
+
+  .frappe-control {
+    margin-bottom: 8px !important;
+    border-bottom: 1px dashed var(--tv-line) !important;
+    padding-bottom: 8px !important;
+    &:last-child {
+      border-bottom: none !important;
+      margin-bottom: 0 !important;
+      padding-bottom: 0 !important;
+    }
+  }
+}
+
+// 9. Address & Contact Section
+.tv-section-address {
+  background: #fdfdfb !important;
+  border-left: 4px solid var(--tv-primary) !important;
+}
+
+// 10. Hero Banner Section
+.tv-section-hero {
+  background: linear-gradient(135deg, var(--tv-primary-50) 0%, rgba(107, 164, 75, 0.15) 100%) !important;
+  border: 1px solid rgba(107, 164, 75, 0.22) !important;
+  border-radius: var(--tv-r-4) !important;
+  padding: 16px 20px !important;
+  
+  .tv-section-title {
+    font-size: 16px !important;
+    color: var(--tv-primary-700) !important;
+  }
+}
+
+// 11. Compact Cards List
+.tv-layout-compact-cards {
+  .section-body,
+  .tv-section-body {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+    gap: 12px !important;
+    padding: 12px !important;
+  }
+  .form-column {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 auto !important;
+    background: var(--tv-bg) !important;
+    border: 1px solid var(--tv-line) !important;
+    border-radius: var(--tv-r-3) !important;
+    padding: 10px !important;
+  }
+}
+
+// 12. Compact Grid Dashboard
+.tv-layout-dashboard-grid {
+  .section-body,
+  .tv-section-body {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+    padding: 8px !important;
+  }
+}
+
+// 13. Feature Split (40/60)
+.tv-layout-feature-split {
+  .section-body,
+  .tv-section-body,
+  .section-columns-container {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 14px !important;
+  }
+
+  .form-column:nth-child(1),
+  .column:nth-child(1) {
+    width: 40% !important;
+    flex: 0 0 40% !important;
+    max-width: 40% !important;
+  }
+
+  .form-column:nth-child(2),
+  .column:nth-child(2) {
+    width: 60% !important;
+    flex: 0 0 60% !important;
+    max-width: 60% !important;
+  }
+}
+
+// 14. Insight Rail (65/35)
+.tv-layout-insight-rail {
+  .section-body,
+  .tv-section-body,
+  .section-columns-container {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 14px !important;
+  }
+
+  .form-column:nth-child(1),
+  .column:nth-child(1) {
+    width: 65% !important;
+    flex: 0 0 65% !important;
+    max-width: 65% !important;
+  }
+
+  .form-column:nth-child(2),
+  .column:nth-child(2) {
+    width: 35% !important;
+    flex: 0 0 35% !important;
+    max-width: 35% !important;
+    background: linear-gradient(180deg, var(--tv-bg) 0%, #ffffff 100%) !important;
+    border: 1px solid var(--tv-line) !important;
+    border-radius: var(--tv-r-3) !important;
+    padding: 12px !important;
+  }
+}
+
+// 15. Metric Strip
+.tv-layout-metric-strip {
+  .section-body,
+  .tv-section-body {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+    gap: 12px !important;
+    padding: 10px !important;
+  }
+
+  .form-column,
+  .column {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 auto !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(15, 23, 42, 0.08) !important;
+    border-radius: var(--tv-r-3) !important;
+    padding: 10px !important;
+    box-shadow: var(--tv-sh-1) !important;
+  }
+}
+
+// 16. Soft Panel Section
+.tv-section-soft-panel {
+  background: linear-gradient(180deg, rgba(107, 164, 75, 0.08) 0%, rgba(255, 255, 255, 0.98) 100%) !important;
+  border: 1px solid rgba(107, 164, 75, 0.18) !important;
+
+  .section-body,
+  .tv-section-body {
+    padding: 14px !important;
+  }
+}
+
+@media (max-width: 991px) {
+  .tv-layout-half,
+  .tv-layout-third,
+  .tv-layout-fourth,
+  .tv-layout-sidebar-left,
+  .tv-layout-sidebar-right,
+  .tv-layout-feature-split,
+  .tv-layout-insight-rail {
+    .section-body,
+    .tv-section-body,
+    .section-columns-container {
+      display: flex !important;
+      flex-direction: column !important;
+      flex-wrap: nowrap !important;
+      gap: 12px !important;
+    }
+
+    .form-column,
+    .column {
+      width: 100% !important;
+      max-width: 100% !important;
+      flex: 1 1 100% !important;
+    }
+  }
+
+  .tv-layout-dashboard-grid,
+  .tv-layout-metric-strip,
+  .tv-layout-compact-cards {
+    .section-body,
+    .tv-section-body {
+      grid-template-columns: 1fr !important;
+    }
+  }
+
+  .tv-section-summary {
+    max-width: 100% !important;
+  }
+}
+
+// ── Hide default Frappe sidebar toggle buttons and placeholders ──
+.sidebar-toggle-placeholder,
+.sidebar-toggle-btn,
+.toggle-sidebar,
+.navbar-left .sidebar-toggle-placeholder,
+.navbar-left .sidebar-toggle-btn,
+[data-toggle="sidebar"] {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

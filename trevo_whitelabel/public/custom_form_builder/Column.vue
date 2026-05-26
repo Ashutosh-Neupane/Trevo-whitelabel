@@ -1,6 +1,11 @@
 <template>
 	<div
 		:class="['column tv-column-break', selected ? 'selected' : hovered ? 'hovered' : '']"
+		:style="{
+			flex: column.df.columns ? '0 0 ' + ((column.df.columns / 12) * 100) + '%' : '1 1 0%',
+			maxWidth: column.df.columns ? ((column.df.columns / 12) * 100) + '%' : '100%',
+			minWidth: column.df.columns ? ((column.df.columns / 12) * 100) + '%' : 'auto'
+		}"
 		:title="column.df.fieldname"
 		@click.stop="store.form.selected_field = column.df"
 		@mouseover.stop="hovered = true"

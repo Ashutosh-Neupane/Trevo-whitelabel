@@ -31,6 +31,133 @@ const section_count = computed(() => {
 	return n;
 });
 
+const layout_presets = [
+	{
+		label: __("Default Layout"),
+		value: "",
+		preview: "1col",
+		description: __("Simple section with default spacing"),
+	},
+	{
+		label: __("Order Details Card"),
+		value: "tv-section-details",
+		preview: "2col",
+		description: __("Header card for customer, date and status"),
+	},
+	{
+		label: __("Items Breakdown Grid"),
+		value: "tv-section-grid",
+		preview: "table",
+		description: __("Best for child tables and item breakdowns"),
+	},
+	{
+		label: __("Summary Card"),
+		value: "tv-section-summary",
+		preview: "metric",
+		description: __("Compact totals, grand total and CTA rail"),
+	},
+	{
+		label: __("Address & Contact"),
+		value: "tv-section-address",
+		preview: "stack",
+		description: __("Split address, contact and shipping details"),
+	},
+	{
+		label: __("Hero Banner"),
+		value: "tv-section-hero",
+		preview: "hero",
+		description: __("Prominent section intro for overview blocks"),
+	},
+	{
+		label: __("Two Columns"),
+		value: "tv-layout-half",
+		preview: "2col",
+		description: __("Balanced 50/50 form layout"),
+	},
+	{
+		label: __("Three Columns"),
+		value: "tv-layout-third",
+		preview: "3col",
+		description: __("Even 3-column details layout"),
+	},
+	{
+		label: __("Four Columns"),
+		value: "tv-layout-fourth",
+		preview: "4col",
+		description: __("Dense metric or compact detail rows"),
+	},
+	{
+		label: __("Sidebar Left"),
+		value: "tv-layout-sidebar-left",
+		preview: "aside-left",
+		description: __("Narrow summary rail on the left"),
+	},
+	{
+		label: __("Sidebar Right"),
+		value: "tv-layout-sidebar-right",
+		preview: "aside-right",
+		description: __("Narrow summary rail on the right"),
+	},
+	{
+		label: __("Compact Cards"),
+		value: "tv-layout-compact-cards",
+		preview: "cards",
+		description: __("Short blocks for grouped quick fields"),
+	},
+	{
+		label: __("Dashboard Grid"),
+		value: "tv-layout-dashboard-grid",
+		preview: "grid",
+		description: __("Cards for KPIs, widgets and summaries"),
+	},
+	{
+		label: __("Feature Split"),
+		value: "tv-layout-feature-split",
+		preview: "split",
+		description: __("Large content area with supporting panel"),
+	},
+	{
+		label: __("Insight Rail"),
+		value: "tv-layout-insight-rail",
+		preview: "rail",
+		description: __("Primary content with side insights"),
+	},
+	{
+		label: __("Metric Strip"),
+		value: "tv-layout-metric-strip",
+		preview: "metric",
+		description: __("Short horizontal KPI section"),
+	},
+	{
+		label: __("Soft Panel"),
+		value: "tv-section-soft-panel",
+		preview: "panel",
+		description: __("Muted boxed section for supporting content"),
+	},
+];
+
+const selected_section_field = computed(() => {
+	const field = store.form.selected_field;
+	return field && field.fieldtype === "Section Break" ? field : null;
+});
+
+const selected_preset_label = computed(() => {
+	const field = selected_section_field.value;
+	if (!field) return "";
+	return layout_presets.find((preset) => preset.value === (field.css_class || ""))?.label || __("Default Layout");
+});
+
+function apply_layout_preset(preset) {
+	if (!selected_section_field.value) return;
+	selected_section_field.value.css_class = preset.value;
+	store.dirty = true;
+}
+
+function is_layout_preset_active(preset) {
+	const field = selected_section_field.value;
+	return !!field && (field.css_class || "") === preset.value;
+}
+
 /* ── Resize ─────────────────────────────────────────────────── */
 function start_resize(e) {
 	e.preventDefault();
@@ -193,6 +320,42 @@ onUnmounted(() => {
 
 			<!-- Structure panel -->
 			<div v-else-if="active_panel === 'settings' && !store.read_only" class="tv-sb-panel">
+				<div class="tv-sb-section-label">{{ __("Layout Presets") }}</div>
+				<div class="tv-sb-preset-intro">
+					<p class="tv-sb-preset-title">{{ __("Select a section to style it") }}</p>
+					<p class="tv-sb-preset-copy">
+						{{
+							selected_section_field
+								? __("Current preset") + ": " + selected_preset_label
+								: __("Choose a section on the canvas, then apply one of the layouts below.")
+						}}
+					</p>
+				</div>
+				<div class="tv-sb-presets">
+					<button
+						v-for="preset in layout_presets"
+						:key="preset.value || 'default'"
+						type="button"
+						class="tv-sb-preset-card"
+						:class="{
+							'is-active': is_layout_preset_active(preset),
+							'is-disabled': !selected_section_field,
+						}"
+						:disabled="!selected_section_field"
+						@click.stop="apply_layout_preset(preset)"
+					>
+						<span class="tv-sb-preset-visual" :data-preview="preset.preview">
+							<span></span>
+							<span></span>
+							<span></span>
+							<span></span>
+						</span>
+						<span class="tv-sb-preset-meta">
+							<span class="tv-sb-preset-name">{{ preset.label }}</span>
+							<span class="tv-sb-preset-desc">{{ preset.description }}</span>
+						</span>
+					</button>
+				</div>
 				<div class="tv-sb-section-label">{{ __("Form Structure") }}</div>
 				<div class="tv-sb-tree">
 					<div
@@ -498,6 +661,140 @@ onUnmounted(() => {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
+}
+
+.tv-sb-preset-intro {
+	padding: 10px 12px;
+	border-radius: var(--tv-r-3);
+	background: linear-gradient(180deg, rgba(107, 164, 75, 0.09), rgba(107, 164, 75, 0.02));
+	border: 1px solid rgba(107, 164, 75, 0.18);
+}
+
+.tv-sb-preset-title {
+	margin: 0 0 4px;
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--tv-deep-900);
+}
+
+.tv-sb-preset-copy {
+	margin: 0;
+	font-size: 11px;
+	line-height: 1.5;
+	color: var(--tv-text-2);
+}
+
+.tv-sb-presets {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 8px;
+}
+
+.tv-sb-preset-card {
+	display: grid;
+	grid-template-columns: 54px minmax(0, 1fr);
+	gap: 10px;
+	align-items: center;
+	width: 100%;
+	padding: 10px;
+	border-radius: 12px;
+	border: 1px solid var(--tv-line);
+	background: var(--tv-surface);
+	cursor: pointer;
+	text-align: left;
+	transition: border-color 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
+
+	&:hover:not(.is-disabled) {
+		border-color: rgba(107, 164, 75, 0.34);
+		box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+		transform: translateY(-1px);
+	}
+
+	&.is-active {
+		border-color: var(--tv-primary);
+		box-shadow: 0 0 0 3px rgba(107, 164, 75, 0.12);
+	}
+
+	&.is-disabled {
+		opacity: 0.58;
+		cursor: not-allowed;
+	}
+}
+
+.tv-sb-preset-visual {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	grid-auto-rows: 10px;
+	gap: 4px;
+	padding: 8px;
+	min-height: 46px;
+	border-radius: 10px;
+	background: linear-gradient(180deg, #f8fafc, #eefaf2);
+	border: 1px solid rgba(107, 164, 75, 0.12);
+
+	span {
+		display: block;
+		border-radius: 999px;
+		background: linear-gradient(90deg, rgba(16, 185, 129, 0.82), rgba(16, 185, 129, 0.26));
+	}
+}
+
+.tv-sb-preset-visual[data-preview="1col"] {
+	grid-template-columns: 1fr;
+}
+
+.tv-sb-preset-visual[data-preview="3col"] {
+	grid-template-columns: repeat(3, 1fr);
+}
+
+.tv-sb-preset-visual[data-preview="4col"] {
+	grid-template-columns: repeat(4, 1fr);
+}
+
+.tv-sb-preset-visual[data-preview="table"] span:first-child,
+.tv-sb-preset-visual[data-preview="grid"] span:first-child,
+.tv-sb-preset-visual[data-preview="hero"] span:first-child,
+.tv-sb-preset-visual[data-preview="split"] span:first-child,
+.tv-sb-preset-visual[data-preview="rail"] span:first-child,
+.tv-sb-preset-visual[data-preview="panel"] span:first-child {
+	grid-column: 1 / -1;
+}
+
+.tv-sb-preset-visual[data-preview="metric"] {
+	grid-template-columns: repeat(3, 1fr);
+}
+
+.tv-sb-preset-visual[data-preview="metric"] span:first-child {
+	grid-column: 1 / -1;
+	height: 6px;
+}
+
+.tv-sb-preset-visual[data-preview="aside-left"],
+.tv-sb-preset-visual[data-preview="aside-right"] {
+	grid-template-columns: 0.7fr 1.3fr;
+}
+
+.tv-sb-preset-visual[data-preview="aside-right"] span:first-child {
+	order: 2;
+}
+
+.tv-sb-preset-meta {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.tv-sb-preset-name {
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--tv-deep-900);
+}
+
+.tv-sb-preset-desc {
+	font-size: 10px;
+	line-height: 1.45;
+	color: var(--tv-text-3);
 }
 
 .tv-sb-tree-tab {

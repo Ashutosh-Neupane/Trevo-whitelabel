@@ -4,7 +4,8 @@ app_publisher = "Ashutosh"
 app_description = "Whitelabel app for Trevo Cloud"
 app_email = "contact@dndts.net"
 app_license = "mit"
-app_home = "/app/ecommerce-command-center"
+app_home = "/desk"
+
 
 # Required Apps
 required_apps = ["erpnext"]
@@ -12,8 +13,15 @@ required_apps = ["erpnext"]
 # Includes in <head>
 # ------------------
 # include js, css files in header of desk.html
-app_include_css = "trevo_v1.bundle.css"
-app_include_js = "trevo_v1.bundle.js"
+app_include_css = [
+	"trevo_v1.bundle.css",
+	"/assets/trevo_whitelabel/css/trevo_desk.css?v=20260526-formfix1",
+]
+app_include_js = [
+	"trevo_v1.bundle.js",
+	"/assets/trevo_whitelabel/js/trevo_desk.js?v=20260526-formfix1",
+    
+]
 
 # include js, css files in header of web template
 web_include_css = "trevo_v1.bundle.css"

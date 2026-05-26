@@ -14,6 +14,8 @@ def _set_if_field(doctype, fieldname, value):
 def run():
     print("Injecting Trevo branding...")
 
+    installed_apps = frappe.get_installed_apps()
+    home_page = "shop" if "denimnation_ecommerce" in installed_apps else "index"
     website_fields = {
         "head_html": "",
         "app_name": "Trevo",
@@ -22,6 +24,7 @@ def run():
         "banner_image": TREVO_LOGO,
         "splash_image": TREVO_LOGO,
         "favicon": TREVO_LOGO,
+        "home_page": home_page,
     }
 
     for fieldname, value in website_fields.items():

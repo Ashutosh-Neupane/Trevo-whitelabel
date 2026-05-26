@@ -40,8 +40,8 @@
   min-height: calc(var(--input-height) - 4px) !important;
   color: var(--tv-text) !important;
   font-family: var(--tv-font-sans) !important;
-  font-size: 13px !important;
-  padding: 0 10px !important;
+  font-size: 14px !important;
+  padding: 0 12px !important;
   flex: 1 !important;
   -webkit-text-fill-color: var(--tv-text) !important;
 }
@@ -100,8 +100,9 @@
   font-family: var(--tv-font-sans) !important;
   color: var(--tv-text-2) !important;
   font-size: 12px !important;
-  font-weight: 500 !important;
-  margin-bottom: 4px !important;
+  font-weight: 600 !important;
+  margin-bottom: 6px !important;
+  letter-spacing: -0.01em !important;
   display: block !important;
 }
 
@@ -450,8 +451,10 @@ svg.icon {
 .frappe-control .like-disabled-input {
   width: 100% !important;
   min-height: var(--input-height) !important;
-  padding: 5px 10px !important;
-  font-size: 13px !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  display: flex !important;
+  align-items: center !important;
   font-family: var(--tv-font-sans) !important;
   color: var(--tv-text) !important;
   background: var(--tv-bg-2) !important;

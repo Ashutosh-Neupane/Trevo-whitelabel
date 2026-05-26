@@ -8,6 +8,7 @@
 				'form-section tv-section-card',
 				hovered ? 'hovered' : '',
 				store.selected(section.df.name) ? 'selected' : '',
+				section.df.css_class || '',
 			]"
 			:title="section.df.fieldname"
 			@click.stop="select_section"
@@ -118,6 +119,11 @@ const section_field_count = computed(() =>
 );
 
 // ── Section actions ────────────────────────────────────────────
+function set_section_preset(presetClass) {
+	props.section.df.css_class = presetClass;
+	store.dirty = true;
+}
+
 function add_section_below() {
 	let index = props.tab.sections.indexOf(props.section);
 	props.tab.sections.splice(index + 1, 0, section_boilerplate());
@@ -278,6 +284,28 @@ const options = computed(() => {
 			group: __("Column"),
 			items: [{ label: __("Add column"), onClick: add_column }],
 		},
+		{
+			group: __("Section Layout / Style Preset"),
+			items: [
+				{ label: __("Default Layout"), onClick: () => set_section_preset("") },
+				{ label: __("Order Details Card"), onClick: () => set_section_preset("tv-section-details") },
+				{ label: __("Items Breakdown Grid"), onClick: () => set_section_preset("tv-section-grid") },
+				{ label: __("Summary Card"), onClick: () => set_section_preset("tv-section-summary") },
+				{ label: __("Address & Contact Section"), onClick: () => set_section_preset("tv-section-address") },
+				{ label: __("Hero Banner Section"), onClick: () => set_section_preset("tv-section-hero") },
+				{ label: __("Two Columns (50/50)"), onClick: () => set_section_preset("tv-layout-half") },
+				{ label: __("Three Columns (33/33/33)"), onClick: () => set_section_preset("tv-layout-third") },
+				{ label: __("Four Columns (25/25/25/25)"), onClick: () => set_section_preset("tv-layout-fourth") },
+				{ label: __("Sidebar Left (30/70)"), onClick: () => set_section_preset("tv-layout-sidebar-left") },
+				{ label: __("Sidebar Right (70/30)"), onClick: () => set_section_preset("tv-layout-sidebar-right") },
+				{ label: __("Compact Cards List"), onClick: () => set_section_preset("tv-layout-compact-cards") },
+				{ label: __("Compact Grid Dashboard"), onClick: () => set_section_preset("tv-layout-dashboard-grid") },
+				{ label: __("Feature Split (40/60)"), onClick: () => set_section_preset("tv-layout-feature-split") },
+				{ label: __("Insight Rail (65/35)"), onClick: () => set_section_preset("tv-layout-insight-rail") },
+				{ label: __("Metric Strip"), onClick: () => set_section_preset("tv-layout-metric-strip") },
+				{ label: __("Soft Panel Section"), onClick: () => set_section_preset("tv-section-soft-panel") },
+			]
+		}
 	];
 
 	if (props.section.columns.length > 1) {

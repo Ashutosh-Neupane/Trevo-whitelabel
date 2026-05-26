@@ -553,3 +553,99 @@ kbd {
 .hidden, .hide, .d-none, [hidden] {
   display: none !important;
 }
+
+// ── Premium Global List View Overrides ─────────────────────────
+.list-row-container {
+  background: var(--tv-surface) !important;
+  border-bottom: 1px solid var(--tv-line) !important;
+  transition: all var(--tv-dur-1) var(--tv-ease) !important;
+  border-radius: var(--tv-r-3) !important;
+  margin-bottom: 6px !important;
+
+  &:hover {
+    background: var(--tv-primary-50) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: var(--tv-sh-2) !important;
+  }
+}
+
+.list-row {
+  min-height: 74px !important; // Premium taller rows
+  padding: 8px 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  
+  .list-subject {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    
+    a {
+      color: var(--tv-primary-700) !important;
+      font-weight: 700 !important;
+      &:hover {
+        color: var(--tv-deep) !important;
+        text-decoration: none !important;
+      }
+    }
+  }
+
+  // Status Badges (Overdue, Completed, Cancelled, Draft, etc.)
+  .indicator-pill, .indicator {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    padding: 4px 10px !important;
+    border-radius: 12px !important;
+    border: 1px solid transparent !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    box-shadow: none !important;
+    
+    &.red, &.is-danger, &.overdue, &.danger {
+      color: var(--tv-danger) !important;
+      background: var(--tv-danger-bg) !important;
+      border-color: rgba(196, 74, 68, 0.15) !important;
+      &::before { display: none !important; }
+    }
+    
+    &.green, &.is-success, &.completed, &.success {
+      color: var(--tv-success) !important;
+      background: var(--tv-success-bg) !important;
+      border-color: rgba(79, 156, 74, 0.15) !important;
+      &::before { display: none !important; }
+    }
+
+    &.blue, &.is-info, &.cancelled, &.info {
+      color: var(--tv-info) !important;
+      background: var(--tv-info-bg) !important;
+      border-color: rgba(47, 111, 143, 0.15) !important;
+      &::before { display: none !important; }
+    }
+
+    &.gray, &.is-neutral, &.draft, &.dark {
+      color: var(--tv-text-2) !important;
+      background: var(--tv-bg-2) !important;
+      border-color: var(--tv-line) !important;
+      &::before { display: none !important; }
+    }
+  }
+
+  // Progress Bar for % Delivered
+  .progress {
+    height: 6px !important;
+    border-radius: 3px !important;
+    background-color: var(--tv-bg-2) !important;
+    margin-bottom: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    
+    .progress-bar {
+      background-color: var(--tv-primary) !important;
+      border-radius: 3px !important;
+      box-shadow: none !important;
+    }
+  }
+}
+
