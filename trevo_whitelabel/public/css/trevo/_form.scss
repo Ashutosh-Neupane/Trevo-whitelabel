@@ -33,10 +33,10 @@
 // Scope to top-level form only — prevents double-card in child tables
 .layout-main-section .form-section,
 .form-section.tv-section-card {
-  background: var(--tv-surface) !important;
-  border: 1px solid var(--tv-line) !important;
-  border-radius: var(--tv-r-4) !important;
-  box-shadow: var(--tv-sh-1) !important;
+  // background: var(--tv-surface) !important;
+  // border: 1px solid var(--tv-line) !important;
+  // border-radius: var(--tv-r-4) !important;
+  // box-shadow: var(--tv-sh-1) !important;
   padding: 0 !important;
   margin: 0 0 8px !important;
   overflow: hidden !important;
@@ -100,13 +100,16 @@
   letter-spacing: -0.01em !important;
   flex: 1 !important;
 }
+.tv-collapse-indicator{
+  align-items: center !important;
 
+}
 // Collapse indicator — green chevron
 .collapse-indicator,
 .tv-collapse-indicator {
   color: var(--tv-primary) !important;
   display: flex !important;
-  align-items: center !important;
+  // align-items: center !important;
   margin-left: 8px !important;
   flex-shrink: 0 !important;
 

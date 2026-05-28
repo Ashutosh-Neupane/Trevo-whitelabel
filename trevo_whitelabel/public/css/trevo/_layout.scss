@@ -30,17 +30,33 @@
 }
 
 // Search bar
-.search-bar {
-  min-width: 240px !important;
-  max-width: 360px !important;
+.search-bar,
+.navbar-search-bar,
+.tv-native-search,
+.tv-search-launcher {
+  min-width: 220px !important;
+  max-width: 400px !important;
+  min-height: 40px !important;
+  border: 1px solid rgba(16, 185, 129, 0.18) !important;
+  border-radius: var(--tv-r-4) !important;
+  background: rgba(var(--tv-surface-rgb), 0.88) !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06) !important;
+  color: var(--tv-text-2) !important;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease !important;
+}
+.search-bar:hover,
+.navbar-search-bar:hover,
+.tv-native-search:hover,
+.tv-search-launcher:hover {
+  border-color: rgba(16, 185, 129, 0.34) !important;
+  box-shadow: 0 10px 24px rgba(6, 95, 70, 0.10) !important;
 }
 .search-bar .awesomplete input,
 #navbar-search {
-  background: var(--tv-bg) !important;
-  border: 1px solid var(--tv-line) !important;
-  border-radius: var(--tv-r-3) !important;
+  background: transparent !important;
+  border: 0 !important;
   box-shadow: none !important;
-  min-height: 32px !important;
+  min-height: 38px !important;
   height: auto !important;
   color: var(--tv-text) !important;
   font-family: var(--tv-font-sans) !important;
@@ -49,9 +65,8 @@
 }
 .search-bar .awesomplete input:focus,
 #navbar-search:focus {
-  border-color: var(--tv-primary) !important;
   box-shadow: none !important;
-  background: var(--tv-surface) !important;
+  background: transparent !important;
   outline: none !important;
 }
 .search-bar .awesomplete input::placeholder,
@@ -62,9 +77,11 @@
 
 .desk-sidebar,
 .body-sidebar {
-  background: var(--tv-surface) !important;
+  background: rgba(var(--tv-surface-rgb), 0.96) !important;
+  backdrop-filter: blur(14px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(160%) !important;
   border-right: 1px solid var(--tv-line) !important;
-  box-shadow: none !important;
+  box-shadow: 12px 0 30px rgba(15, 23, 42, 0.05) !important;
   overflow: hidden auto !important;
   padding: 0 !important;
   // Never let sidebar overflow the viewport width
@@ -126,25 +143,53 @@
 .sidebar-header {
   height: var(--tv-topbar-h) !important;
   border-bottom: 1px solid var(--tv-line-2) !important;
-  background: var(--tv-surface) !important;
+  background: rgba(var(--tv-surface-rgb), 0.92) !important;
   display: flex !important;
   align-items: center !important;
+  gap: 10px !important;
   padding: 0 16px !important;
 }
+.sidebar-header.tv-sidebar-brand {
+  cursor: default !important;
+}
 .header-logo-container {
-  background: linear-gradient(135deg, #6ba44b 0%, #2d7a4f 100%) !important;
-  border-radius: var(--tv-r-2) !important;
+  background: linear-gradient(135deg, var(--tv-primary) 0%, var(--tv-deep) 100%) !important;
+  border-radius: var(--tv-r-3) !important;
+  width: 34px !important;
+  height: 34px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 8px 18px rgba(6, 95, 70, 0.18) !important;
 }
 .header-title {
   font-family: var(--tv-font-sans) !important;
   font-size: 15px !important;
   font-weight: 700 !important;
-  letter-spacing: -0.01em !important;
+  letter-spacing: 0 !important;
   color: var(--tv-deep-900) !important;
 }
 .header-subtitle {
   font-size: 11px !important;
   color: var(--tv-text-3) !important;
+}
+.tv-sidebar-collapse-btn {
+  width: 32px !important;
+  height: 32px !important;
+  margin-left: auto !important;
+  border: 1px solid var(--tv-line) !important;
+  border-radius: var(--tv-r-3) !important;
+  background: var(--tv-bg) !important;
+  color: var(--tv-text-2) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease !important;
+}
+.tv-sidebar-collapse-btn:hover {
+  background: var(--tv-primary-50) !important;
+  border-color: rgba(16, 185, 129, 0.32) !important;
+  color: var(--tv-primary-700) !important;
 }
 
 // Section break labels

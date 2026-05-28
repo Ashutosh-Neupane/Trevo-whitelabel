@@ -4,7 +4,7 @@ app_publisher = "Ashutosh"
 app_description = "Whitelabel app for Trevo Cloud"
 app_email = "contact@dndts.net"
 app_license = "mit"
-app_home = "/desk"
+app_home = "desk"
 
 
 # Required Apps
@@ -31,6 +31,11 @@ app_logo_url = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg"
 splash_image = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg"
 
 update_website_context = "trevo_whitelabel.branding.get_context"
+
+website_redirects = [
+	{"source": "/", "target": "/desk"},
+	{"source": "/index", "target": "/desk"},
+]
 
 after_install = [
 	"trevo_whitelabel.scripts.repaint_svgs.run",

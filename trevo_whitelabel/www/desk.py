@@ -27,7 +27,7 @@ def get_context(context):
     raw_path = (getattr(frappe.request, "path", None) or "").rstrip("/")
     request_path = raw_path if raw_path else "/"
 
-    # Our custom dashboard renders for /desk and / (home redirect via app_home)
+    # Our custom dashboard renders for /desk and falls back to / for safety.
     context.is_custom_desk = request_path in ("/desk", "/", "")
 
     # ── Custom dashboard data ────────────────────────────────────────────────
@@ -35,7 +35,9 @@ def get_context(context):
         # Redirect unauthenticated guests to login
         if frappe.session.user == "Guest":
             frappe.local.flags.redirect_location = "/login"
-            raise frappe.Redirect
+            frappe.local.response["type"] = "redirect"
+            frappe.local.response["location"] = "/login"
+            return context
 
         # Load dashboard metrics, tasks, activity
         try:

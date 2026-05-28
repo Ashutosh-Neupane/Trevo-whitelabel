@@ -77,16 +77,45 @@
   }
 
   function ensureSidebarBranding() {
+    document.querySelectorAll(".sidebar-header").forEach(header => {
+      header.classList.add("tv-sidebar-brand");
+    });
     document.querySelectorAll(".header-title").forEach(el => {
-      const t = el.textContent.trim();
-      if (!t || t === "Trevo") return;
-      el.textContent = "Trevo";
+      if (el.textContent.trim() !== "Trevo ERP") {
+        el.textContent = "Trevo ERP";
+      }
     });
     document.querySelectorAll(".header-subtitle").forEach(el => {
-      const t = el.textContent.trim();
-      if (t === "Trevo Cloud") return;
-      el.textContent = "Trevo Cloud";
+      el.textContent = "Command Center";
     });
+    ensureSidebarHeaderToggle();
+  }
+
+  function ensureSidebarHeaderToggle() {
+    const header = document.querySelector(".sidebar-header");
+    if (!header || header.querySelector(".tv-sidebar-collapse-btn")) return;
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "tv-sidebar-collapse-btn";
+    button.setAttribute("aria-label", "Toggle sidebar");
+    button.innerHTML = `
+      <svg class="icon icon-sm" aria-hidden="true">
+        <use href="#es-line-sidebar-collapse"></use>
+      </svg>
+    `;
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof frappe !== "undefined" && frappe.app && frappe.app.sidebar && frappe.app.sidebar.toggle_width) {
+        frappe.app.sidebar.toggle_width();
+        return;
+      }
+      document.querySelector(".collapse-sidebar-link")?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+    header.appendChild(button);
   }
 
   function getSidebar() {
@@ -155,20 +184,103 @@
   // ── Navbar search visibility fix ─────────────────────────────
   function fixNavbarSearch() {
     const navbar = document.querySelector(".navbar");
+    ensureNativeAwesomeSearchAPI();
+    styleNativeSearchTriggers();
     if (!navbar) return;
 
-    // Ensure search bar is visible and properly sized
     const searchBar = navbar.querySelector(".search-bar, #navbar-search-container, .form-control.search-bar");
     if (searchBar) {
       searchBar.style.removeProperty("display");
       searchBar.style.removeProperty("visibility");
+      searchBar.classList.add("tv-native-search");
+    }
+
+    const navbarInner = navbar.querySelector(".container-fluid, .navbar-inner, .navbar-collapse") || navbar;
+    let launcher = navbar.querySelector(".tv-search-launcher[data-trevo-injected='1']");
+
+    if (!launcher) {
+      launcher = document.createElement("button");
+      launcher.type = "button";
+      launcher.className = "tv-search-launcher";
+      launcher.dataset.trevoInjected = "1";
+      launcher.setAttribute("aria-label", "Open search");
+      launcher.innerHTML = `
+        <span class="tv-search-launcher__icon" aria-hidden="true">⌕</span>
+        <span class="tv-search-launcher__label">Search</span>
+        <span class="tv-search-launcher__hint">Ctrl+K</span>
+      `;
+      launcher.addEventListener("click", () => {
+        if (typeof frappe !== "undefined" && frappe.search && typeof frappe.search.show === "function") {
+          frappe.search.show();
+        }
+      });
+      navbarInner.appendChild(launcher);
     }
 
     // Fix navbar flex layout — ensure items don't overflow
-    const navbarInner = navbar.querySelector(".container-fluid, .navbar-inner, .navbar-collapse");
     if (navbarInner) {
       navbarInner.style.cssText = "display:flex;align-items:center;width:100%;gap:8px;flex-wrap:nowrap;";
     }
+  }
+
+  function ensureNativeAwesomeSearchAPI() {
+    if (typeof frappe === "undefined") return;
+    if (typeof frappe.provide === "function") {
+      frappe.provide("frappe.search");
+    } else {
+      frappe.search = frappe.search || {};
+    }
+
+    if (typeof frappe.search.show === "function") return;
+
+    frappe.search.show = function () {
+      const target = getNativeSearchTrigger();
+      if (!target) return;
+
+      if (
+        (window.jQuery || window.$) &&
+        frappe.search.AwesomeBar &&
+        target.classList.contains("trevo-awesomebar-proxy") &&
+        !target.dataset.trevoAwesomebarBound
+      ) {
+        const awesomeBar = new frappe.search.AwesomeBar();
+        awesomeBar.setup(target);
+        target.dataset.trevoAwesomebarBound = "1";
+      }
+
+      target.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    };
+  }
+
+  function getNativeSearchTrigger() {
+    const selector = [
+      "#navbar-modal-search",
+      ".navbar-search-bar",
+      ".navbar-modal-search-mobile",
+      ".search-bar",
+      ".trevo-awesomebar-proxy"
+    ].join(", ");
+    let trigger = Array.from(document.querySelectorAll(selector)).find((el) => {
+      return !el.classList.contains("tv-search-launcher") && !el.classList.contains("search-launcher");
+    });
+
+    if (!trigger) {
+      trigger = document.createElement("button");
+      trigger.type = "button";
+      trigger.className = "trevo-awesomebar-proxy hidden";
+      trigger.setAttribute("aria-hidden", "true");
+      document.body.appendChild(trigger);
+    }
+
+    return trigger;
+  }
+
+  function styleNativeSearchTriggers() {
+    document
+      .querySelectorAll("#navbar-modal-search, .navbar-search-bar, .navbar-modal-search-mobile, .search-bar")
+      .forEach((el) => {
+        el.classList.add("tv-native-search");
+      });
   }
 
   // ── Avatar Menu Customization ────────────────────────────────
@@ -209,7 +321,8 @@
     document.addEventListener("keydown", e => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        if (typeof frappe !== "undefined" && frappe.search) {
+        ensureNativeAwesomeSearchAPI();
+        if (typeof frappe !== "undefined" && frappe.search && typeof frappe.search.show === "function") {
           frappe.search.show();
         }
       }

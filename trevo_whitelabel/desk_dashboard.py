@@ -96,10 +96,10 @@ def get_desk_dashboard_data():
 		"recent_documents": recent_documents[:8],
 		"workspaces": workspaces,
 		"quick_actions": [
-			{"label": _("New Task"), "action": "new-todo"},
-			{"label": _("My Tasks"), "action": "route", "route": ["List", "ToDo"]},
-			{"label": _("Notifications"), "action": "route", "route": ["List", "Notification Log"]},
-			{"label": _("Activity Log"), "action": "route", "route": ["List", "Activity Log"]},
+			{"label": _("New Task"), "action": "route", "route": "/app/list/todo"},
+			{"label": _("My Tasks"), "action": "route", "route": "/app/list/todo"},
+			{"label": _("Notifications"), "action": "route", "route": "/app/list/notification-log"},
+			{"label": _("Activity Log"), "action": "route", "route": "/app/list/activity-log"},
 		],
 	}
 
@@ -112,7 +112,7 @@ def _get_user_details(user):
 	return {
 		"id": user,
 		"full_name": full_name,
-		"first_name": full_name.split(" ", 1)[0],
+		"first_name": full_name.split(" ", 1)[0] if full_name else user,
 		"roles": frappe.get_roles(user),
 	}
 
@@ -205,6 +205,35 @@ def _summarize_documents(documents):
 			summary["pending"] += 1
 
 	return summary
+
+
+def _get_workspace_shortcuts():
+	try:
+		workspaces = frappe.get_all(
+			"Workspace",
+			filters={"public": 1, "is_hidden": 0},
+			fields=["name", "title", "icon", "label", "module", "parent_page"],
+			order_by="sequence_id asc, modified desc",
+			limit_page_length=24,
+		)
+	except Exception:
+		workspaces = []
+
+	shortcuts = []
+	for workspace in workspaces:
+		title = workspace.title or workspace.label or workspace.name
+		shortcuts.append(
+			{
+				"name": workspace.name,
+				"title": title,
+				"icon": workspace.icon or "Grid",
+				"module": workspace.module,
+				"parent_page": workspace.parent_page,
+				"route": f"/app/{workspace.name.lower().replace(' ', '-')}",
+			}
+		)
+
+	return shortcuts
 
 
 def _get_status_label(row):

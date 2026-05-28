@@ -506,41 +506,70 @@ html.sidebar-collapsed .trevo-main { margin-left: var(--sidebar-collapsed); }
 }
 
 /* Search */
-.search-wrap {
+.search-wrap,
+.search-launcher {
   flex: 1;
   max-width: 380px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(0,0,0,0.02);
+  gap: 10px;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   padding: 0 14px;
-  height: 38px;
+  height: 40px;
   transition: all var(--t-fast);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.82));
+  color: var(--text-2);
+  box-shadow: var(--shadow-xs);
 }
 
-html[data-theme="dark"] .search-wrap {
-  background: rgba(255,255,255,0.04);
+html[data-theme="dark"] .search-wrap,
+html[data-theme="dark"] .search-launcher {
+  background:
+    linear-gradient(180deg, rgba(15,23,42,0.86), rgba(15,23,42,0.72));
 }
 
-.search-wrap:focus-within {
+.search-wrap:hover,
+.search-launcher:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 0 0 3px var(--primary-ring), var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.search-wrap:active,
+.search-launcher:active {
+  transform: translateY(0);
+}
+
+.search-launcher {
+  cursor: pointer;
+  text-align: left;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.search-launcher:focus-visible {
+  outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-ring);
-  background: var(--bg-glass-2);
 }
-.search-icon-svg { color: var(--text-3); flex-shrink: 0; }
 
-.search-input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  font-family: var(--font-sans);
-  font-size: 13.5px;
-  color: var(--text);
-  outline: none;
+.search-icon-svg,
+.search-launcher__icon {
+  color: var(--text-3);
+  flex-shrink: 0;
 }
-.search-input::placeholder { color: var(--text-3); }
+
+.search-launcher__text {
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* Navbar Right */
 .navbar-right {
@@ -1190,7 +1219,9 @@ html[data-theme="dark"] .icon-moon { display: block; }
   .hero-cta-group { width: 100%; }
   .btn-primary, .btn-ghost { flex: 1; justify-content: center; }
 
-  .search-wrap { display: none; }
+  .search-wrap,
+  .search-launcher { max-width: 100%; }
+  .search-launcher__text { display: none; }
 
   .kpi-grid {
     grid-template-columns: 1fr 1fr;

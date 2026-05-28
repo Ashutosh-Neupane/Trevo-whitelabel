@@ -24,6 +24,6 @@ def get_context(context):
     if "denimnation_ecommerce" in installed_apps:
         context.home_page = "shop"
     else:
-        context.home_page = "index"
+        context.home_page = "desk"
 
     return context
