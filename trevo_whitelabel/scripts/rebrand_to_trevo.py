@@ -43,6 +43,14 @@ def run():
             "app_logo": TREVO_LOGO,
         })
         print("Updated Navbar Settings with Trevo logo.")
+
+        # ERPNext appends "Sent via ERPNext" to every email through a hook; this is the
+        # supported switch to leave the standard footer out.
+        _set_single_values("System Settings", {"disable_standard_email_footer": 1})
+
+        # Hide help-menu links that point at Frappe's own support site.
+        for name in frappe.get_all("Navbar Item", filters={"route": ("like", "%frappe.io%")}, pluck="name"):
+            frappe.db.set_value("Navbar Item", name, "hidden", 1)
     except Exception as e:
         print(f"Error updating System Settings: {e}")
 
@@ -61,7 +69,18 @@ def run():
         "Welcome to Frappe": "Welcome to Trevo",
         "Built on Frappe": "Built for Trevo",
         "Frappe Support": "Trevo Support",
+        "ERPNext Integrations": "Trevo Next Integrations",
+        "Get to know ERPNext": "Get to know Trevo Next",
     }
+
+    # Titles stored as data (onboarding, workspaces) are shown through translation too,
+    # so cover any that mention ERPNext without editing ERPNext's own records.
+    for doctype, fieldname in (("Module Onboarding", "title"), ("Workspace", "label"), ("Workspace", "title")):
+        try:
+            for value in frappe.get_all(doctype, filters={fieldname: ("like", "%ERPNext%")}, pluck=fieldname):
+                translations.setdefault(value, value.replace("ERPNext", "Trevo Next"))
+        except Exception:
+            pass
 
     for source_text, translated_text in translations.items():
         try:

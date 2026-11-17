@@ -2,8 +2,10 @@
 //
 // Rules for this file — they are what keeps the theme update-safe:
 //   1. Prefer setting Frappe's own tokens (css/espresso/*.css) over styling components.
-//   2. Never change layout or `display` of Frappe elements. Frappe toggles visibility with
-//      classes like .hide; forcing display is what made every field render twice in the v15 theme.
+//   2. Never force `display`/visibility on elements Frappe shows and hides itself (it uses
+//      classes like .hide; forcing display is what made every field render twice in the v15
+//      theme). Layout changes are limited to the form "card" below and use child selectors so
+//      dialogs and child-table row forms are not affected.
 //   3. No !important, except where Frappe core itself uses it (marked below).
 //
 // Palette source: trevocloud.com (emerald primary on slate neutrals).
@@ -191,5 +193,64 @@
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
+	}
+}
+
+// Form canvas: the record sits on a card over a quiet background (desktop/tablet).
+// On phones the card goes edge to edge. Child selectors keep this off dialogs and grid row forms.
+.page-container.editable-form {
+	--trevo-form-width: 980px;
+
+	// The wrapper holds both the form and its footer (comments, activity).
+	.layout-main-section-wrapper {
+		background: var(--surface-gray-1);
+		min-height: calc(100vh - var(--page-head-height, 48px));
+	}
+
+	.layout-main-section {
+		padding: 16px 16px 0;
+	}
+
+	.std-form-layout > .form-layout > .form-page {
+		max-width: var(--trevo-form-width);
+		margin: 0 auto;
+		background: var(--surface-elevation-1);
+		border: 1px solid var(--outline-gray-1);
+		border-radius: 12px;
+
+		> .form-tabs-list {
+			border-radius: 12px 12px 0 0;
+		}
+
+		.tab-pane > .form-section:last-child,
+		> .form-section:last-child {
+			border-bottom: 0;
+		}
+	}
+
+	.form-footer {
+		max-width: var(--trevo-form-width);
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	@media (max-width: 767px) {
+		.layout-main-section {
+			padding: 0;
+		}
+
+		.std-form-layout > .form-layout > .form-page {
+			border-left: 0;
+			border-right: 0;
+			border-radius: 0;
+
+			> .form-tabs-list {
+				border-radius: 0;
+			}
+		}
+
+		.form-footer {
+			padding: 0 12px;
+		}
 	}
 }

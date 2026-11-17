@@ -78,7 +78,12 @@
 		}
 		.error.show { display: block; }
 		.error.notice { color: var(--brand-ink); background: var(--tint); }
-		.more { margin: 16px 0 0; text-align: center; }
+		.more { margin: 20px 0 0; padding-top: 16px; border-top: 1px solid var(--line); }
+		.more a {
+			display: flex; align-items: center; justify-content: center; height: 40px; border-radius: 10px;
+			border: 1px solid var(--line); color: var(--ink); font-size: 14px; font-weight: 500;
+		}
+		.more a:hover { background: var(--tint); text-decoration: none; }
 		@media (max-width: 860px) {
 			.wrap { grid-template-columns: 1fr; }
 			.brand { display: none; }
@@ -125,7 +130,7 @@
 				</div>
 
 				<button class="submit" id="submit" type="submit">{{ _("Sign in") }}</button>
-				<p class="more"><a href="/login-classic">{{ _("Other sign-in options") }}</a></p>
+				<p class="more"><a href="/login-classic">{{ _("More ways to sign in") }}</a></p>
 			</form>
 		</main>
 	</div>

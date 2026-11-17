@@ -38,6 +38,7 @@ def extend_bootinfo(bootinfo):
     for app in bootinfo.get("app_data") or []:
         if app.get("app_name") == "erpnext":
             app["app_logo_url"] = TREVO_LOGO
+            app["app_title"] = "Trevo Next"
 
     # Read by trevo_desk.bundle.js. Guarded: the DocType does not exist until the first migrate.
     show_sidebar = 0
