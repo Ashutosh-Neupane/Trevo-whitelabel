@@ -15,6 +15,9 @@ required_apps = ["erpnext"]
 # The v15-era overrides live in trevo_whitelabel/legacy_v15/ and are not loaded.
 app_include_css = ["trevo_theme.bundle.css"]
 web_include_css = ["trevo_theme.bundle.css"]
+# Small desk behaviours (form side-panel toggle, title image). Uses Frappe's public
+# events and Page API only.
+app_include_js = ["trevo_desk.bundle.js"]
 
 app_logo_url = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg"
 splash_image = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg"
@@ -25,15 +28,22 @@ extend_bootinfo = "trevo_whitelabel.branding.extend_bootinfo"
 website_redirects = [
 	{"source": "/", "target": "/desk"},
 	{"source": "/index", "target": "/desk"},
+	# Trevo sign-in is the front door. Frappe's own login page stays reachable at
+	# /login-classic for two-factor, email-link and social login.
+	{"source": "/login", "target": "/signin", "forward_query_parameters": True, "redirect_http_status": 302},
+]
+
+website_route_rules = [
+	{"from_route": "/login-classic", "to_route": "login"},
 ]
 
 # Install / migrate: database settings only (names, logo, home page).
 after_install = [
 	"trevo_whitelabel.scripts.rebrand_to_trevo.run",
-	"trevo_whitelabel.desk.install.set_home_page",
+	"trevo_whitelabel.desk.install.use_default_desk_home",
 ]
 
 after_migrate = [
 	"trevo_whitelabel.scripts.rebrand_to_trevo.run",
-	"trevo_whitelabel.desk.install.set_home_page",
+	"trevo_whitelabel.desk.install.use_default_desk_home",
 ]

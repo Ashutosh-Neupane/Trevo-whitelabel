@@ -38,3 +38,11 @@ def extend_bootinfo(bootinfo):
     for app in bootinfo.get("app_data") or []:
         if app.get("app_name") == "erpnext":
             app["app_logo_url"] = TREVO_LOGO
+
+    # Read by trevo_desk.bundle.js. Guarded: the DocType does not exist until the first migrate.
+    show_sidebar = 0
+    try:
+        show_sidebar = frappe.utils.cint(frappe.db.get_single_value("Trevo Settings", "show_form_sidebar"))
+    except Exception:
+        pass
+    bootinfo.trevo = {"show_form_sidebar": show_sidebar}

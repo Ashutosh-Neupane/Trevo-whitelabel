@@ -77,6 +77,8 @@
 			color: var(--danger); background: var(--danger-bg);
 		}
 		.error.show { display: block; }
+		.error.notice { color: var(--brand-ink); background: var(--tint); }
+		.more { margin: 16px 0 0; text-align: center; }
 		@media (max-width: 860px) {
 			.wrap { grid-template-columns: 1fr; }
 			.brand { display: none; }
@@ -114,7 +116,7 @@
 				<div class="field">
 					<div class="row">
 						<label for="pwd">{{ _("Password") }}</label>
-						<a href="/login#forgot">{{ _("Forgot password?") }}</a>
+						<a href="#" id="forgot">{{ _("Forgot password?") }}</a>
 					</div>
 					<div class="pw">
 						<input id="pwd" name="pwd" type="password" autocomplete="current-password" required>
@@ -123,6 +125,7 @@
 				</div>
 
 				<button class="submit" id="submit" type="submit">{{ _("Sign in") }}</button>
+				<p class="more"><a href="/login-classic">{{ _("Other sign-in options") }}</a></p>
 			</form>
 		</main>
 	</div>
@@ -135,7 +138,9 @@
 				signin: {{ _("Sign in") | tojson }}, working: {{ _("Signing in…") | tojson }},
 				missing: {{ _("Enter your email and password.") | tojson }},
 				invalid: {{ _("That email or password is not correct. Try again.") | tojson }},
-				offline: {{ _("Could not reach the server. Check your connection and try again.") | tojson }}
+				offline: {{ _("Could not reach the server. Check your connection and try again.") | tojson }},
+				need_email: {{ _("Enter your email first, then choose Forgot password.") | tojson }},
+				reset_sent: {{ _("If an account exists for that email, a password reset link is on its way.") | tojson }}
 			};
 			var form = document.getElementById("signin"), usr = document.getElementById("usr"),
 				pwd = document.getElementById("pwd"), btn = document.getElementById("submit"),
@@ -148,8 +153,24 @@
 				toggle.setAttribute("aria-pressed", String(show));
 			});
 
+			// Password reset: same API Frappe's own login page calls.
+			document.getElementById("forgot").addEventListener("click", function (e) {
+				e.preventDefault();
+				if (!usr.value.trim()) { usr.focus(); return fail(T.need_email); }
+				fetch("/api/method/frappe.core.doctype.user.user.reset_password", {
+					method: "POST",
+					credentials: "same-origin",
+					headers: { "Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json" },
+					body: new URLSearchParams({ user: usr.value.trim() })
+				}).then(function () {
+					err.textContent = T.reset_sent;
+					err.classList.add("show", "notice");
+				}).catch(function () { fail(T.offline); });
+			});
+
 			function fail(message) {
 				err.textContent = message;
+				err.classList.remove("notice");
 				err.classList.add("show");
 				btn.disabled = false;
 				btn.textContent = T.signin;
@@ -174,7 +195,7 @@
 							window.location.href = REDIRECT_TO;
 						} else if (res.ok) {
 							// Two-factor, password reset, portal user… Frappe's own page handles these.
-							window.location.href = data.home_page && data.message === "No App" ? data.home_page : "/login";
+							window.location.href = data.home_page && data.message === "No App" ? data.home_page : "/login-classic";
 						} else {
 							fail((data && data.message) || T.invalid);
 						}

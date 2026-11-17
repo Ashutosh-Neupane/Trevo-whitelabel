@@ -1,14 +1,14 @@
 import frappe
 
-HOME_PAGE = "trevo-dashboard"
+DASHBOARD_PAGE = "trevo-dashboard"
 
 
-def set_home_page():
-	"""Open the Trevo dashboard Page when a user lands on /desk.
+def use_default_desk_home():
+	"""Let /desk open Frappe's own home again.
 
-	Frappe v16 reads the desk home from the "desktop:home_page" default
-	(frappe.boot.add_home_page) and falls back to "desktop" if the page is missing,
-	so this never blocks the desk. The page itself is a standard Page (JSON) synced by migrate.
+	An earlier version pointed the "desktop:home_page" default at the Trevo dashboard.
+	Undo that if it is still set; the dashboard stays available at /desk/trevo-dashboard.
 	"""
-	if frappe.db.exists("Page", HOME_PAGE):
-		frappe.db.set_default("desktop:home_page", HOME_PAGE)
+	if frappe.db.get_default("desktop:home_page") == DASHBOARD_PAGE:
+		frappe.db.delete("DefaultValue", {"defkey": "desktop:home_page", "defvalue": DASHBOARD_PAGE})
+		frappe.clear_cache()

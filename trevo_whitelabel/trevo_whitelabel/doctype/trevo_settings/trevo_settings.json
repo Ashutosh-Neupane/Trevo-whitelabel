@@ -1,0 +1,46 @@
+{
+ "actions": [],
+ "creation": "2026-11-17 12:30:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "forms_section",
+  "show_form_sidebar"
+ ],
+ "fields": [
+  {
+   "fieldname": "forms_section",
+   "fieldtype": "Section Break",
+   "label": "Forms"
+  },
+  {
+   "default": "0",
+   "description": "The side panel holds the image, assignments, attachments, tags and sharing. When this is off, forms open without it and each user can open it with the panel button at the top of a form. The choice is remembered per document type.",
+   "fieldname": "show_form_sidebar",
+   "fieldtype": "Check",
+   "label": "Open the form side panel by default"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-11-17 12:30:00",
+ "modified_by": "Administrator",
+ "module": "Trevo Whitelabel",
+ "name": "Trevo Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

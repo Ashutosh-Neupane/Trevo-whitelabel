@@ -150,3 +150,46 @@
 	color: var(--trevo-ink);
 	border-bottom-color: var(--trevo-fill);
 }
+
+// ── Navigation icons in brand ink ──────────────────────────────
+// Desk glyphs are stroked from --icon-stroke / currentColor, so this is a colour change only.
+.dock .dock-item,
+.body-sidebar .sidebar-item-icon {
+	color: var(--trevo-ink);
+	--icon-stroke: var(--trevo-ink);
+}
+
+// ── Forms ──────────────────────────────────────────────────────
+// Side panel closed (class set by trevo_desk.bundle.js on the form's page wrapper).
+.trevo-side-closed .layout-side-section.right {
+	display: none;
+}
+
+.trevo-side-btn.trevo-side-btn--on {
+	color: var(--trevo-ink);
+	--icon-stroke: var(--trevo-ink);
+	background: var(--trevo-tint);
+}
+
+// Record image (or initial) next to the form title.
+.trevo-title-image {
+	flex: none;
+	width: 28px;
+	height: 28px;
+	margin-right: 8px;
+	border-radius: 8px;
+	overflow: hidden;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--trevo-tint);
+	color: var(--trevo-ink);
+	font-size: 13px;
+	font-weight: 600;
+
+	img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+}
