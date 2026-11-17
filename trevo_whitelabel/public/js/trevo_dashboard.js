@@ -53,15 +53,15 @@
       });
       if (!parts.length) return "#";
       if (parts[0] === "list" && parts[1]) {
-        return "/app/list/" + parts[1];
+        return "/desk/list/" + parts[1];
       }
       if (parts[0] === "form" && parts[1] && route[2]) {
-        return "/app/form/" + parts[1] + "/" + encodeURIComponent(route[2]);
+        return "/desk/form/" + parts[1] + "/" + encodeURIComponent(route[2]);
       }
-      return "/app/" + parts.join("/");
+      return "/desk/" + parts.join("/");
     }
     if (typeof route === "string" && route.charAt(0) === "/") return route;
-    return "/app/" + String(route).replace(/^\/+/, "");
+    return "/desk/" + String(route).replace(/^\/+/, "");
   }
 
   function getTheme() {
@@ -173,7 +173,7 @@
       workspaces.forEach(function (workspace) {
         var title = workspace.title || workspace.label || workspace.name || "Workspace";
         var icon = workspace.icon || "Grid";
-        var route = routeToUrl(workspace.route || ("/app/" + String(workspace.name || title).toLowerCase().replace(/\s+/g, "-")));
+        var route = routeToUrl(workspace.route || ("/desk/" + String(workspace.name || title).toLowerCase().replace(/\s+/g, "-")));
         var active = window.location.pathname === route ? " is-active" : "";
         var iconMarkup = icon.length <= 2
           ? '<span class="letter-icon">' + escapeHtml(icon.slice(0, 2).toUpperCase()) + "</span>"
@@ -191,11 +191,11 @@
     items += [
       '<div class="nav-group">',
       '<span class="nav-group-label">System</span>',
-      '<a class="nav-item" href="/app" data-route="/app">',
+      '<a class="nav-item" href="/desk/desktop" data-route="/desk/desktop">',
       '<span class="nav-icon nav-icon--char">⟡</span>',
       '<span class="nav-label">Open App</span>',
       "</a>",
-      '<a class="nav-item" href="/app/List/Notification Log" data-route="/app/List/Notification Log">',
+      '<a class="nav-item" href="/desk/List/Notification Log" data-route="/desk/List/Notification Log">',
       '<span class="nav-icon nav-icon--char">✦</span>',
       '<span class="nav-label">Notifications</span>',
       "</a>",
@@ -271,7 +271,7 @@
     }
 
     return actions.map(function (action) {
-      var route = routeToUrl(action.route || action.url || "/app");
+      var route = routeToUrl(action.route || action.url || "/desk/desktop");
       var label = action.label || action.title || "Open";
       var iconText = initials(label);
       return (
@@ -292,7 +292,7 @@
       var title = item.subject || item.operation || "Activity";
       var meta = [item.reference_doctype, item.reference_name].filter(Boolean).join(" • ");
       return (
-        '<a class="activity-row" href="' + escapeHtml(routeToUrl(item.route || "/app")) + '" data-route="' + escapeHtml(routeToUrl(item.route || "/app")) + '">' +
+        '<a class="activity-row" href="' + escapeHtml(routeToUrl(item.route || "/desk/desktop")) + '" data-route="' + escapeHtml(routeToUrl(item.route || "/desk/desktop")) + '">' +
         '<div class="activity-icon-wrap">' + escapeHtml(initials(title)) + "</div>" +
         '<div class="activity-text">' +
         '<div class="activity-subject">' + escapeHtml(title) + "</div>" +
@@ -315,7 +315,7 @@
       var priority = normalizeText(task.priority).toLowerCase() || "medium";
       var dueDate = task.date ? formatDate(task.date) : "No due date";
       return (
-        '<a class="task-item' + (overdue ? " is-overdue" : "") + '" href="' + escapeHtml(routeToUrl(task.route || (task.reference_type && task.reference_name ? [task.reference_type, task.reference_name] : "/app/List/ToDo"))) + '">' +
+        '<a class="task-item' + (overdue ? " is-overdue" : "") + '" href="' + escapeHtml(routeToUrl(task.route || (task.reference_type && task.reference_name ? [task.reference_type, task.reference_name] : "/desk/List/ToDo"))) + '">' +
         '<div class="task-checkbox">✓</div>' +
         '<div class="task-content">' +
         '<div class="task-title">' + escapeHtml(title) + "</div>" +
@@ -337,7 +337,7 @@
     return documents.map(function (doc) {
       var statusTone = doc.status_tone || "neutral";
       return (
-        '<a class="doc-row" href="' + escapeHtml(routeToUrl(doc.route || "/app")) + '" data-route="' + escapeHtml(routeToUrl(doc.route || "/app")) + '">' +
+        '<a class="doc-row" href="' + escapeHtml(routeToUrl(doc.route || "/desk/desktop")) + '" data-route="' + escapeHtml(routeToUrl(doc.route || "/desk/desktop")) + '">' +
         '<div class="doc-letter-icon">' + escapeHtml(initials(doc.doctype || "Doc")) + "</div>" +
         '<div class="doc-info">' +
         '<div class="doc-name">' + escapeHtml(doc.name || "Document") + "</div>" +
@@ -356,17 +356,16 @@
     var quickActions = Array.isArray(state.dashboardData.quick_actions) && state.dashboardData.quick_actions.length
       ? state.dashboardData.quick_actions
       : [
-          { label: "New Task", route: "/app/List/ToDo" },
-          { label: "My Tasks", route: "/app/List/ToDo" },
-          { label: "Notifications", route: "/app/List/Notification Log" },
-          { label: "Activity Log", route: "/app/List/Activity Log" },
+          { label: "New Task", route: "/desk/List/ToDo" },
+          { label: "My Tasks", route: "/desk/List/ToDo" },
+          { label: "Notifications", route: "/desk/List/Notification Log" },
+          { label: "Activity Log", route: "/desk/List/Activity Log" },
         ];
     var notifications = stats.unread_notifications || 0;
     var firstName = user.first_name || normalizeText(user.full_name).split(/\s+/)[0] || "Team";
 
-    return [
-      '<div class="trevo-layout trevo-layout--native-sidebar">',
-      '<main class="trevo-main">',
+    // Inside desk (v16) Frappe's own navbar already provides search, theme and notifications.
+    var header = state.embedded ? "" : [
       '<header class="trevo-navbar">',
       '<button class="mobile-menu-btn" id="mobileMenuBtn" type="button" aria-label="Open navigation" aria-expanded="false">☰</button>',
       '<button class="search-wrap search-launcher" id="searchLauncherBtn" type="button" aria-label="Open search">',
@@ -380,15 +379,22 @@
         "",
         { id: "themeToggleBtn", title: "Toggle theme" }
       ),
-      '<a class="icon-btn" href="/app/List/Notification Log" title="Notifications" aria-label="Notifications">',
+      '<a class="icon-btn" href="/desk/List/Notification Log" title="Notifications" aria-label="Notifications">',
       '<span aria-hidden="true">🔔</span>',
       notifications ? '<span class="notif-dot"></span>' : "",
       "</a>",
-      '<a class="btn-open-app" href="/app" aria-label="Open app">',
+      '<a class="btn-open-app" href="/desk/desktop" aria-label="Open app">',
       '<span>Open App</span><span aria-hidden="true">↗</span>',
       "</a>",
       "</div>",
       "</header>",
+    ].join("");
+
+    return [
+      '<div class="trevo-cc' + (state.embedded ? " trevo-cc--embedded" : "") + '">',
+      '<div class="trevo-layout trevo-layout--native-sidebar">',
+      '<main class="trevo-main">',
+      header,
       '<div class="dashboard-body">',
       '<section class="hero-section">',
       '<div class="hero-content">',
@@ -397,8 +403,8 @@
       '<p class="hero-subtitle">Track tasks, review activity, and jump straight into the workspaces that matter most today.</p>',
       "</div>",
       '<div class="hero-cta-group">',
-      '<a class="btn-primary" href="/app">Open App</a>',
-      '<a class="btn-ghost" href="/app/List/ToDo">My Tasks</a>',
+      '<a class="btn-primary" href="/desk/desktop">Open App</a>',
+      '<a class="btn-ghost" href="/desk/List/ToDo">My Tasks</a>',
       "</div>",
       "</section>",
       '<section class="kpi-grid">' + renderKpiCards(stats) + "</section>",
@@ -410,27 +416,28 @@
       '<div class="dash-grid">',
       '<div class="dash-col-left">',
       '<section class="dash-card">',
-      '<div class="card-header"><h2 class="card-title">Quick Actions</h2><a class="card-link" href="/app">Open App</a></div>',
+      '<div class="card-header"><h2 class="card-title">Quick Actions</h2><a class="card-link" href="/desk/desktop">Open App</a></div>',
       '<div class="shortcuts-grid">' + renderShortcuts(quickActions) + "</div>",
       "</section>",
       '<section class="dash-card">',
-      '<div class="card-header"><h2 class="card-title">Recent Activity</h2><a class="card-link" href="/app/List/Activity Log">View All</a></div>',
+      '<div class="card-header"><h2 class="card-title">Recent Activity</h2><a class="card-link" href="/desk/List/Activity Log">View All</a></div>',
       '<div class="activity-list">' + renderActivity(state.dashboardData.recent_activity || []) + "</div>",
       "</section>",
       "</div>",
       '<div class="dash-col-right">',
       '<section class="dash-card">',
-      '<div class="card-header"><h2 class="card-title">Tasks</h2><a class="card-link" href="/app/List/ToDo">Open ToDos</a></div>',
+      '<div class="card-header"><h2 class="card-title">Tasks</h2><a class="card-link" href="/desk/List/ToDo">Open ToDos</a></div>',
       '<div class="task-list">' + renderTasks(state.dashboardData.tasks || []) + "</div>",
       "</section>",
       '<section class="dash-card">',
-      '<div class="card-header"><h2 class="card-title">Recent Documents</h2><a class="card-link" href="/app">Open Workspace</a></div>',
+      '<div class="card-header"><h2 class="card-title">Recent Documents</h2><a class="card-link" href="/desk/desktop">Open Workspace</a></div>',
       '<div class="doc-list">' + renderDocuments(state.dashboardData.recent_documents || []) + "</div>",
       "</section>",
       "</div>",
       "</div>",
       "</div>",
       "</main>",
+      "</div>",
       "</div>",
     ].join("");
   }
@@ -536,9 +543,29 @@
     }
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", render);
-  } else {
-    render();
+  // Used by the "trevo-dashboard" desk Page: render into a container inside Frappe desk.
+  window.trevo_dashboard = {
+    mount: function (root, data) {
+      state.embedded = true;
+      state.dashboardData = data || {};
+      state.workspaces = (data && data.workspaces) || [];
+      try {
+        // No bindInteractions(): its header buttons don't exist here, and its
+        // click handlers would collapse Frappe's own sidebar.
+        root.innerHTML = buildDashboardMarkup();
+      } catch (error) {
+        console.error("Trevo command center render failed:", error);
+        root.innerHTML = '<div class="trevo-cc"><div class="dash-card"><div class="empty-state"><p>Trevo command center could not load.</p></div></div></div>';
+      }
+    },
+  };
+
+  // Legacy standalone page (www/desk.html) — only when its root element exists.
+  if (document.getElementById("trevo-desk-root")) {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", render);
+    } else {
+      render();
+    }
   }
 })();

@@ -41,9 +41,11 @@ after_install = [
 	"trevo_whitelabel.scripts.repaint_svgs.run",
 	"trevo_whitelabel.scripts.rebrand_to_trevo.run",
 	"trevo_whitelabel.scripts.rebrand_form_builder.run",
+	"trevo_whitelabel.desk.install.set_home_page",
 ]
 
 after_migrate = [
+	"trevo_whitelabel.desk.install.set_home_page",
 	"trevo_whitelabel.scripts.repaint_svgs.run",
 	"trevo_whitelabel.scripts.rebrand_to_trevo.run",
 	"trevo_whitelabel.inject_branding.run",
