@@ -27,3 +27,14 @@ def get_context(context):
         context.home_page = "desk"
 
     return context
+
+
+def extend_bootinfo(bootinfo):
+    """Show the Trevo mark for ERPNext in the desk (app switcher, sidebar header).
+
+    Done through the boot payload, so no ERPNext or Frappe file is modified.
+    """
+    bootinfo.app_logo_url = TREVO_LOGO
+    for app in bootinfo.get("app_data") or []:
+        if app.get("app_name") == "erpnext":
+            app["app_logo_url"] = TREVO_LOGO

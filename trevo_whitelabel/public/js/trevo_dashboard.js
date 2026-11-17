@@ -408,11 +408,6 @@
       "</div>",
       "</section>",
       '<section class="kpi-grid">' + renderKpiCards(stats) + "</section>",
-      '<section class="kpi-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top:-10px;">' +
-        '<article class="kpi-card accent-green"><div class="kpi-icon-wrap">⟡</div><div class="kpi-body"><span class="kpi-label">Active Workspaces</span><span class="kpi-value">' + escapeHtml(formatCount(workspaces.length)) + '</span><div class="kpi-hint">Visible to your role</div></div></article>' +
-        '<article class="kpi-card accent-blue"><div class="kpi-icon-wrap">⌁</div><div class="kpi-body"><span class="kpi-label">Quick Actions</span><span class="kpi-value">' + escapeHtml(formatCount(quickActions.length)) + '</span><div class="kpi-hint">One tap navigation</div></div></article>' +
-        '<article class="kpi-card accent-amber"><div class="kpi-icon-wrap">✦</div><div class="kpi-body"><span class="kpi-label">Recent Docs</span><span class="kpi-value">' + escapeHtml(formatCount((state.dashboardData.recent_documents || []).length)) + '</span><div class="kpi-hint">Latest document trail</div></div></article>' +
-      "</section>",
       '<div class="dash-grid">',
       '<div class="dash-col-left">',
       '<section class="dash-card">',

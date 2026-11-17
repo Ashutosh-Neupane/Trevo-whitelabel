@@ -2,7 +2,7 @@ import frappe
 
 
 TREVO_LOGO = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg"
-TREVO_BRAND = "#6ba44b"
+TREVO_BRAND = "#059669"  # keep in sync with --trevo-600 in trevo_theme.bundle.scss
 
 
 def _set_single_values(doctype, values):

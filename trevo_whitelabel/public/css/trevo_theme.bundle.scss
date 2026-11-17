@@ -1,0 +1,152 @@
+// Trevo theme for Frappe v16 (desk + website/login).
+//
+// Rules for this file — they are what keeps the theme update-safe:
+//   1. Prefer setting Frappe's own tokens (css/espresso/*.css) over styling components.
+//   2. Never change layout or `display` of Frappe elements. Frappe toggles visibility with
+//      classes like .hide; forcing display is what made every field render twice in the v15 theme.
+//   3. No !important, except where Frappe core itself uses it (marked below).
+//
+// Palette source: trevocloud.com (emerald primary on slate neutrals).
+// To change the brand colour, edit the --trevo-* scale only.
+
+:root,
+[data-theme="light"] {
+	// ── Brand scale ─────────────────────────────────────────────
+	--trevo-50: #ecfdf5;
+	--trevo-100: #d1fae5;
+	--trevo-200: #a7f3d0;
+	--trevo-300: #6ee7b7;
+	--trevo-400: #34d399;
+	--trevo-500: #10b981;
+	--trevo-600: #059669; // brand: filled buttons
+	--trevo-700: #047857; // text and links on white (5.5:1)
+	--trevo-800: #065f46;
+	--trevo-900: #064e3b;
+
+	--trevo-fill: var(--trevo-600);
+	--trevo-fill-hover: var(--trevo-700);
+	--trevo-fill-active: var(--trevo-800);
+	--trevo-on-fill: #ffffff;
+	--trevo-ink: var(--trevo-700);
+	--trevo-tint: #0596691a; // 10% brand, same as the site's --accent
+	--trevo-ring: #05966947;
+
+	// ── Neutrals: slate instead of pure gray ────────────────────
+	--gray-50: #f8fafc;
+	--gray-100: #f1f5f9;
+	--gray-200: #e9eef4;
+	--gray-300: #e2e8f0;
+	--gray-400: #cbd5e1;
+	--gray-500: #94a3b8;
+	--gray-600: #64748b;
+	--gray-700: #475569;
+	--gray-800: #334155;
+	--gray-900: #0f172a;
+	--gray-950: #020617;
+
+	// ── Frappe tokens that carry the "primary" colour ───────────
+	--primary: var(--trevo-fill);
+	--primary-color: var(--trevo-fill);
+	--brand-color: var(--trevo-fill);
+	--btn-primary: var(--trevo-fill);
+	--checkbox-color: var(--trevo-fill);
+	--progress-bar-bg: var(--trevo-fill);
+	--date-active-bg: var(--trevo-fill);
+	--date-active-text: #ffffff;
+	--ink-blue-link: var(--trevo-ink);
+	--focus-default: 0 0 0 3px var(--trevo-ring);
+	--focus-outline-default: 2px solid var(--trevo-ring);
+	--checkbox-focus-shadow: 0 0 0 3px var(--trevo-ring);
+	--highlight-shadow: 0 0 0 3px var(--trevo-ring);
+}
+
+[data-theme="dark"],
+.dark {
+	--trevo-fill: var(--trevo-400);
+	--trevo-fill-hover: var(--trevo-300);
+	--trevo-fill-active: var(--trevo-200);
+	--trevo-on-fill: #022c22;
+	--trevo-ink: var(--trevo-400);
+	--trevo-tint: #34d3991f;
+	--trevo-ring: #34d39952;
+
+	// Frappe's dark scale runs light → dark; keep that order, in slate.
+	--gray-50: #f8fafc;
+	--gray-100: #dbe2ea;
+	--gray-200: #b4bfcd;
+	--gray-300: #94a3b8;
+	--gray-400: #76859b;
+	--gray-450: #55647b;
+	--gray-500: #3d4b61;
+	--gray-600: #2e3a4e;
+	--gray-700: #1e293b;
+	--gray-800: #172033;
+	--gray-900: #111a2c;
+	--gray-950: #0b1220;
+
+	--primary: var(--trevo-fill);
+	--primary-color: var(--trevo-fill);
+	--brand-color: var(--trevo-fill);
+	--btn-primary: var(--trevo-fill);
+	--checkbox-color: var(--trevo-fill);
+	--progress-bar-bg: var(--trevo-fill);
+	--date-active-bg: var(--trevo-fill);
+	--date-active-text: #022c22;
+	--ink-blue-link: var(--trevo-ink);
+	--focus-default: 0 0 0 3px var(--trevo-ring);
+	--focus-outline-default: 2px solid var(--trevo-ring);
+	--checkbox-focus-shadow: 0 0 0 3px var(--trevo-ring);
+}
+
+// ── Components: only what tokens cannot reach ──────────────────
+
+// Primary button: readable label on the brand fill, brand-coloured hover/pressed.
+.btn.btn-primary {
+	color: var(--trevo-on-fill);
+
+	&:hover,
+	&:focus {
+		background-color: var(--trevo-fill-hover);
+		color: var(--trevo-on-fill);
+	}
+
+	// Frappe core sets these two with !important, so the override has to match.
+	&:active {
+		background-color: var(--trevo-fill-hover) !important;
+		color: var(--trevo-on-fill) !important;
+	}
+}
+
+// Current page in the sidebar reads in the brand ink.
+.body-sidebar .sidebar-item-container.active-sidebar .item-anchor,
+.active-sidebar .item-anchor {
+	color: var(--trevo-ink);
+}
+
+// Text selection.
+::selection {
+	background: var(--trevo-tint);
+}
+
+// ── Espresso components (v16) ──────────────────────────────────
+// These read their own local tokens, so set those rather than restyle the component.
+
+// Primary ("solid") button in the default theme. Red/other themed buttons keep their colour.
+.es-button:not([data-theme]),
+.es-button[data-theme="gray"] {
+	--bt-solid-bg: var(--trevo-fill);
+	--bt-solid-bg-hover: var(--trevo-fill-hover);
+	--bt-solid-bg-active: var(--trevo-fill-active);
+	--bt-solid-fg: var(--trevo-on-fill);
+}
+
+.es-progress__fill,
+.es-tabs__indicator {
+	background: var(--trevo-fill);
+}
+
+// Form tabs: Frappe's selector is this specific, so match it.
+.form-tabs-list .form-tabs .nav-item .nav-link.active {
+	color: var(--trevo-ink);
+	border-bottom-color: var(--trevo-fill);
+}
