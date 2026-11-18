@@ -26,6 +26,14 @@ def run():
         })
         print("Updated System Settings with Trevo naming and color.")
 
+        # Frappe's sidebar advertises its separate products ("Switch to Frappe CRM" in CRM,
+        # "Switch to Helpdesk" in Support). System Settings > "Disable Product Suggestion"
+        # is the supported switch. The desk reads it from defaults, which System Settings
+        # only syncs on save, and set_single_value does not save, so write both.
+        _set_single_values("System Settings", {"disable_product_suggestion": 1})
+        frappe.db.set_default("disable_product_suggestion", 1)
+        print("Disabled Frappe product suggestions in the sidebar.")
+
         installed_apps = frappe.get_installed_apps()
         home_page = "shop" if "denimnation_ecommerce" in installed_apps else "index"
         _set_single_values("Website Settings", {

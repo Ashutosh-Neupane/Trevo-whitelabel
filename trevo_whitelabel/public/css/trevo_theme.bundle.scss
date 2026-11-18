@@ -1515,3 +1515,47 @@ body .modal-backdrop.show {
 [data-theme="dark"] .kn-board .kn-card {
 	box-shadow: none;
 }
+
+// ── Gantt view ──
+// Frappe Gantt colours everything from --g-* variables: white bars, a black "today"
+// marker and progress that blended into the bar. Set them from Trevo tokens: bars are a
+// light brand tint with a brand edge, progress a deeper tint, today in brand green.
+.gantt-container {
+	--g-bar-color: color-mix(in srgb, var(--trevo-fill) 10%, var(--trevo-surface));
+	--g-bar-border: color-mix(in srgb, var(--trevo-fill) 45%, var(--trevo-surface));
+	--g-progress-color: color-mix(in srgb, var(--trevo-fill) 32%, var(--trevo-surface));
+	--g-expected-progress: color-mix(in srgb, var(--trevo-fill) 18%, var(--trevo-surface));
+	--g-handle-color: var(--trevo-fill);
+	--g-arrow-color: var(--trevo-muted);
+	--g-today-highlight: var(--trevo-fill);
+	--g-text-light: var(--trevo-on-fill);
+	--g-text-dark: var(--trevo-foreground);
+	--g-text-muted: var(--trevo-muted);
+	--g-header-background: var(--trevo-surface);
+	--g-row-color: var(--trevo-surface);
+	--g-row-border-color: var(--trevo-divider);
+	--g-border-color: var(--trevo-divider);
+	--g-tick-color: var(--trevo-divider);
+	--g-tick-color-thick: var(--trevo-border);
+	--g-weekend-highlight-color: var(--trevo-table-head);
+	--g-actions-background: var(--trevo-table-head);
+	--g-popup-actions: var(--trevo-table-head);
+
+	// Draw the bar edge with its own stroke in the brand tint (Frappe outlines it in the
+	// row-border grey), and set labels in the desk font instead of Helvetica.
+	.gantt .bar-wrapper .bar {
+		outline: 0;
+		stroke-width: 1;
+	}
+
+	.gantt .bar-label {
+		font-family: inherit;
+		font-weight: 500;
+	}
+
+	// The sticky month label is hard-coded white in Frappe Gantt; a white box in dark mode.
+	// The Gantt stylesheet loads after this bundle, so out-rank it by one class.
+	.upper-text.current-upper {
+		background: var(--g-header-background);
+	}
+}

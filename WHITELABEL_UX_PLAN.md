@@ -537,3 +537,20 @@ I checked this with screenshots in light and dark, and with `verify.mjs` at 390/
 - **Gantt:** not styled. There are no Tasks to render, and creating some would mean writing business records.
 
 I checked this with screenshots of the About dialog, Kanban in light and dark, and Sales Order and Customer forms at 2560px. `verify.mjs` reported no overflow and no errors.
+
+## 2026-11-18 (e): Product banners, Gantt, demo data
+
+- **"Switch to Frappe CRM" / "Switch to Helpdesk" sidebar banners:**
+  - Turned off with Frappe's own System Settings switch, "Disable Product Suggestion". There is no CSS hiding.
+  - `rebrand_to_trevo.run` writes both the field and the default that the desk reads, because `set_single_value` skips the System Settings save that normally syncs it.
+- **Gantt view:**
+  - The `--g-*` variables now come from Trevo tokens. Bars are a light brand tint with a brand edge, progress is a deeper tint, and the today line and date pill are brand green.
+  - Rows and ticks use the divider colour, weekends the table-head tint, and labels use the desk font.
+  - Frappe Gantt hard-codes a white background on the sticky month label, which showed as a white box in dark mode. It now uses the header token. The selector carries one extra class because the Gantt stylesheet loads after the bundle.
+- **Demo data** was added so these views can be reviewed with real records. The user asked for it.
+  - Project "Trevo Demo Rollout" with 6 dated Tasks (2 Completed, 1 Working at 45%, 3 Open).
+  - 5 Leads, for example "Himalayan Traders" and "Thapa Electronics".
+  - 4 Opportunities, two linked to existing Customers and two to the demo Leads.
+  - No existing records were changed.
+
+I checked this with screenshots of the Lead and Opportunity Kanban, Gantt in light and dark, and the CRM and Support sidebars (no banner). `verify.mjs` reported no overflow and no errors.
