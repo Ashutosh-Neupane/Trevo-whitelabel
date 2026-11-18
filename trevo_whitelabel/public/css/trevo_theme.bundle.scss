@@ -531,6 +531,54 @@ mark,
 	}
 }
 
+// ── Fields (shadcn-style inputs) ──
+// Shared by record forms and dialogs, so a field looks the same wherever it is typed into.
+// Apply to a direct field container (.form-column > form > .frappe-control): inline cells
+// of a child table are not matched, so grid row height is unchanged.
+@mixin trevo-field {
+	// Overlays inside a field (link arrow / clear button, select chevron backdrop) paint
+	// --control-bg to mask the text under them; on a white field that showed as a grey box.
+	--control-bg: var(--trevo-surface);
+	--input-height: 36px;
+	--input-padding: 6px 12px;
+
+	// Link arrow / clear button: Frappe sizes it to the full input height, so on a bordered
+	// field it covered the top and bottom border where it sat. Keep it inside the border.
+	.link-btn {
+		top: 1px;
+		height: calc(100% - 2px);
+	}
+
+	// Editable: white field with a hairline border.
+	.form-control:not([disabled]):not([readonly]) {
+		background-color: var(--trevo-surface);
+		border: 1px solid var(--trevo-border);
+		box-shadow: 0 1px 2px rgb(17 28 23 / 4%);
+	}
+
+	.form-control:not([disabled]):not([readonly]):focus {
+		border-color: var(--trevo-fill);
+		box-shadow: var(--focus-default);
+	}
+
+	// Read-only (submitted documents, computed fields): same border and shape as editable
+	// fields, but a faint tinted fill and no shadow, so "can I edit this?" is answered at a
+	// glance (stock Frappe signals it with a grey fill; an all-white form lost that cue).
+	.like-disabled-input,
+	.form-control[disabled],
+	.form-control[readonly] {
+		background-color: var(--trevo-table-head);
+		border: 1px solid var(--trevo-border);
+		box-shadow: none;
+	}
+
+	.like-disabled-input {
+		min-height: var(--input-height);
+		padding: 7px 12px;
+		border-radius: var(--trevo-radius-sm);
+	}
+}
+
 // Form canvas: the record sits on a card over a quiet background (desktop/tablet).
 // On phones the card goes edge to edge. Child selectors keep this off dialogs and grid row forms.
 // v16 form.js (refresh) toggles exactly one of these by docstatus 0/1/2; scoping to
@@ -630,52 +678,9 @@ mark,
 		}
 	}
 
-	// ── Fields (shadcn-style inputs) ──
-	// Only fields placed directly in a form column: the record form, the child-row editor.
-	// Inline cells of a child table are not matched (they are not direct children of a
-	// column's <form>), so grid row height is unchanged.
+	// Fields: the record form and the child-row editor.
 	.form-column > form > .frappe-control:not([data-fieldtype="Table"]) {
-		// Overlays inside a field (link arrow / clear button, select chevron backdrop) paint
-		// --control-bg to mask the text under them; on a white field that showed as a grey box.
-		--control-bg: var(--trevo-surface);
-		--input-height: 36px;
-
-		// Link arrow / clear button: Frappe sizes it to the full input height, so on a bordered
-		// field it covered the top and bottom border where it sat. Keep it inside the border.
-		.link-btn {
-			top: 1px;
-			height: calc(100% - 2px);
-		}
-		--input-padding: 6px 12px;
-
-		// Editable: white field with a hairline border.
-		.form-control:not([disabled]):not([readonly]) {
-			background-color: var(--trevo-surface);
-			border: 1px solid var(--trevo-border);
-			box-shadow: 0 1px 2px rgb(17 28 23 / 4%);
-		}
-
-		.form-control:not([disabled]):not([readonly]):focus {
-			border-color: var(--trevo-fill);
-			box-shadow: var(--focus-default);
-		}
-
-		// Read-only (submitted documents, computed fields): same border and shape as editable
-		// fields, but a faint tinted fill and no shadow, so "can I edit this?" is answered at a
-		// glance (stock Frappe signals it with a grey fill; an all-white form lost that cue).
-		.like-disabled-input,
-		.form-control[disabled],
-		.form-control[readonly] {
-			background-color: var(--trevo-table-head);
-			border: 1px solid var(--trevo-border);
-			box-shadow: none;
-		}
-
-		.like-disabled-input {
-			min-height: var(--input-height);
-			padding: 7px 12px;
-			border-radius: var(--trevo-radius-sm);
-		}
+		@include trevo-field;
 	}
 
 	// Amounts and quantities line up in columns.
@@ -1397,4 +1402,42 @@ html[data-theme="dark"] .splash {
 	[data-theme="dark"] .indicator {
 		--indicator-dot-#{$hue}: var(--#{$hue}-400);
 	}
+}
+
+// ── Dialogs ──
+// Dialog fields used Frappe's grey filled input while form fields are white and bordered;
+// the same field now looks the same in both places.
+.modal-dialog .form-column > form > .frappe-control:not([data-fieldtype="Table"]) {
+	@include trevo-field;
+}
+
+// Scrim: Frappe dims the page to 80% dark grey, which reads as a blackout behind a small
+// dialog. A lighter, slightly blurred scrim keeps focus on the dialog and the page in context.
+body .modal-backdrop.show {
+	opacity: 0.45;
+	background-color: #0b1712;
+}
+
+@supports (backdrop-filter: blur(2px)) {
+	body .modal-backdrop.show {
+		backdrop-filter: blur(2px);
+	}
+}
+
+[data-theme="dark"] body .modal-backdrop.show {
+	opacity: 0.7;
+	background-color: #000;
+}
+
+// ── Calendar view ──
+// Today's date: a brand-filled badge (was an ink-black square).
+.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+	color: var(--trevo-on-fill);
+	background-color: var(--trevo-fill);
+}
+
+// Past events: FullCalendar fades them to 50%, which left light-tinted chips unreadable.
+// 70% still says "past" without losing the text.
+.fc .fc-event-past {
+	opacity: 0.7;
 }

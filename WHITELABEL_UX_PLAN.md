@@ -504,3 +504,15 @@ Use `docstatus`-specific records that already exist, or new unsaved documents. D
 - **Dropped from the mockup** because Frappe has no equivalent: "Create an account" and "Keep me signed in". "Other ways to sign in" (to `/login-classic`) shows only when social login or the email login link is enabled (`signin.py` `_other_sign_in_enabled`).
 - **Login logic unchanged:** `/api/method/login`, `reset_password`, and the `/login-classic` fallback for 2FA.
 - **Verified:** wrong password shows Frappe's message; the correct one lands on `redirect-to`; Forgot password without an email shows the hint; Show/Hide works; no overflow at 390, 1024 or 1440.
+
+## 2026-11-18 (c): Surfaces outside forms and lists
+
+I reviewed the workspace, awesomebar, toasts, message dialogs, empty states, dropdowns, notifications, kanban and calendar. The workspace, awesomebar, toasts, empty states, dropdowns and notifications already follow the theme. I fixed three gaps:
+
+- **Dialog fields:** dialog fields used Frappe's grey filled input, while form fields were white and bordered. The field treatment is now a `trevo-field` mixin, used in both `.page-container` forms and `.modal-dialog`.
+- **Modal scrim:** the scrim was 80% dark grey. It is now 45% green-black with a 2px blur, and 70% black in dark mode.
+- **Calendar view:**
+  - Today's date uses the brand fill instead of an ink-black badge.
+  - Past events show at 70% opacity instead of 50%, so their tinted chips stay readable.
+
+I checked this with screenshots in light and dark, and with `verify.mjs` at 390/820/1440 in both themes: no overflow and no page errors.
