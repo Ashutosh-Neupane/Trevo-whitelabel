@@ -1441,3 +1441,77 @@ body .modal-backdrop.show {
 .fc .fc-event-past {
 	opacity: 0.7;
 }
+
+// ── Ultra-wide screens: record forms ──
+// Forms fill the page (--page-max-width: 100%), which on a 2560px screen stretched each
+// field column to ~700px and moved the Save button a long way from the fields. From 1920px,
+// centre the head and the body together at 1600px so the title, actions and fields stay in
+// one column. Lists and reports keep the full width for their columns. Frappe's own
+// "Toggle Full Width" (body.full-width) opts out.
+@media (min-width: 1920px) {
+	body:not(.full-width) .page-container:is(.editable-form, .submitted-form, .cancelled-form) {
+		> .page-head > .container,
+		> .container.page-body {
+			max-width: 1600px;
+			margin-inline: auto;
+		}
+	}
+}
+
+// ── Kanban (v2) ──
+// Frappe draws columns and cards from surface/outline tokens; give them Trevo's table
+// colours and the brand accent so a board matches lists and forms.
+.kn-board {
+	// Drop slot, add-card input and focus ring read this.
+	--kn-accent: var(--trevo-fill);
+}
+
+.kn-board .kn-column {
+	background-color: var(--trevo-table-head);
+	box-shadow: inset 0 0 0 1px var(--trevo-divider);
+}
+
+.kn-column-title {
+	font-weight: 600;
+}
+
+// Count as a small pill, like the list's "20 of 79".
+.kn-column-count {
+	min-width: 20px;
+	padding: 0 6px;
+	border-radius: var(--radius-full, 999px);
+	background-color: var(--trevo-surface);
+	box-shadow: inset 0 0 0 1px var(--trevo-border);
+	font-size: var(--text-xs);
+	line-height: 18px;
+	text-align: center;
+	font-variant-numeric: tabular-nums;
+}
+
+// .border is !important in Frappe's utilities, so border overrides need it too.
+.kn-board .kn-card {
+	border-color: var(--trevo-border) !important;
+	box-shadow: 0 1px 2px rgb(17 28 23 / 5%);
+
+	&:not(.kn-selected):hover {
+		border-color: color-mix(in srgb, var(--trevo-fill) 40%, var(--trevo-border)) !important;
+		box-shadow: var(--trevo-elevation);
+	}
+
+	&.kn-selected {
+		border-color: var(--trevo-fill) !important;
+		box-shadow: 0 0 0 1px var(--trevo-fill);
+		background-color: color-mix(in srgb, var(--trevo-fill) 6%, var(--trevo-surface));
+	}
+}
+
+// Dark: Frappe outlines the columns instead of filling them; keep that, in Trevo's border.
+[data-theme="dark"] .kn-board .kn-column {
+	background-color: transparent;
+	border-color: var(--trevo-border);
+	box-shadow: none;
+}
+
+[data-theme="dark"] .kn-board .kn-card {
+	box-shadow: none;
+}

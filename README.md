@@ -20,6 +20,9 @@ lists, permissions or calculations behave.
   - Sticky page heads, form tabs and list headers lift with a soft shadow once content
     scrolls under them.
   - The left-sidebar collapse button is always visible.
+  - Dialog fields match form fields; the dialog scrim is lighter and blurred.
+  - Calendar and Kanban views use the brand accent and table colours.
+  - On screens 1920px and wider, record forms are centred at 1600px. Frappe's "Toggle Full Width" turns this off.
   - The desk home greets the user and shows the apps as centred cards. Browser tabs read
     "<page> · Trevo". The 404 and message pages carry the Trevo mark.
 - **Desk behaviours** (`public/js/trevo_desk.bundle.js`):
@@ -27,6 +30,8 @@ lists, permissions or calculations behave.
   - Record image next to the form title.
   - Chart palette from the Trevo tokens.
   - Scroll-state classes for the sticky headers.
+- **About dialog:** git branch names are hidden, and Trevo Next shows the Trevo mark
+  (`branding.get_versions`, via `override_whitelisted_methods`).
 - **Sign-in:** `/signin` is the login page. `/login` redirects there, and the stock page
   remains at `/login-classic`.
 - **Settings:** the *Trevo Settings* single DocType holds site options such as whether the

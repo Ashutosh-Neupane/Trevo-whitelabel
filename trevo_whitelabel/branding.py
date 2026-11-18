@@ -30,6 +30,24 @@ def get_context(context):
     return context
 
 
+@frappe.whitelist()
+def get_versions():
+    """About dialog (Help > About): same data as Frappe's get_versions, without git branch names.
+
+    Frappe prints "version (branch)" for any app on a git branch, so customers saw internal
+    branch names such as a feature branch. Versions stay; "Copy Apps Version" still copies
+    branch_version for support. Registered via override_whitelisted_methods in hooks.py.
+    """
+    from frappe.utils.change_log import get_versions as frappe_get_versions
+
+    # Copy: never mutate whatever Frappe may have cached.
+    versions = {name: {**app, "branch": ""} for name, app in frappe_get_versions().items()}
+    # ERPNext is "Trevo Next" in the desk; show the same mark here as on the launcher tile.
+    if "erpnext" in versions:
+        versions["erpnext"]["logo"] = TREVO_LOGO
+    return versions
+
+
 def extend_bootinfo(bootinfo):
     """Show the Trevo mark for ERPNext in the desk (app switcher, sidebar header).
 

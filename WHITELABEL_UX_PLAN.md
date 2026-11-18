@@ -516,3 +516,24 @@ I reviewed the workspace, awesomebar, toasts, message dialogs, empty states, dro
   - Past events show at 70% opacity instead of 50%, so their tinted chips stay readable.
 
 I checked this with screenshots in light and dark, and with `verify.mjs` at 390/820/1440 in both themes: no overflow and no page errors.
+
+## 2026-11-18 (d): About dialog, ultra-wide forms, Kanban
+
+- **About dialog:**
+  - `branding.get_versions` replaces `frappe.utils.change_log.get_versions` through the documented `override_whitelisted_methods` hook. It clears `branch`, so customers no longer see git branch names such as `v16-desk-dashboard`. Versions and the "Copy Apps Version" button are unchanged.
+  - The "Trevo Next" row uses the Trevo mark, matching its launcher tile.
+  - The Frappe header and copyright are kept, as decided earlier.
+- **Ultra-wide forms (1920px and wider):**
+  - The record form's head and body are centred together at 1600px. On a 2560px screen, field columns had stretched to about 700px and the Save button sat far from the fields.
+  - Lists and reports keep the full width.
+  - Frappe's "Toggle Full Width" (`body.full-width`) opts out of the cap.
+- **Kanban (v2):**
+  - Columns use the table-head tint with a hairline border.
+  - Column titles are semibold, and counts are shown as pills.
+  - Cards are white with the Trevo border. Hovering lifts the card with a green-tinted border; a selected card gets a brand ring.
+  - Dark mode keeps Frappe's outlined columns, in Trevo's border colour.
+  - The `--kn-accent` drag/focus accent is brand green.
+  - No board has records, so I checked this by rendering cards with Frappe's own `.kn-card` classes in the browser. Nothing was saved.
+- **Gantt:** not styled. There are no Tasks to render, and creating some would mean writing business records.
+
+I checked this with screenshots of the About dialog, Kanban in light and dark, and Sales Order and Customer forms at 2560px. `verify.mjs` reported no overflow and no errors.

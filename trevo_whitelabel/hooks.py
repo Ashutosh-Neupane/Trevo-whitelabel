@@ -24,6 +24,11 @@ splash_image = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg"
 update_website_context = "trevo_whitelabel.branding.get_context"
 extend_bootinfo = "trevo_whitelabel.branding.extend_bootinfo"
 
+# About dialog: hide git branch names (see branding.get_versions).
+override_whitelisted_methods = {
+	"frappe.utils.change_log.get_versions": "trevo_whitelabel.branding.get_versions",
+}
+
 website_redirects = [
 	{"source": "/", "target": "/desk"},
 	{"source": "/index", "target": "/desk"},
