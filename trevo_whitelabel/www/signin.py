@@ -22,7 +22,19 @@ def get_context(context):
 	context.redirect_to = redirect_to
 	context.logo = LOGO
 	context.app_name = "Trevo"
+	context.other_sign_in = _other_sign_in_enabled()
 	return context
+
+
+def _other_sign_in_enabled():
+	"""Offer Frappe's classic page only when it has something this page does not: social
+	login providers or the email login link. Otherwise the link leads to the same form."""
+	try:
+		if frappe.get_all("Social Login Key", filters={"enable_social_login": 1}, limit=1):
+			return True
+		return bool(frappe.get_system_settings("login_with_email_link"))
+	except Exception:
+		return False
 
 
 def _safe_redirect(target):

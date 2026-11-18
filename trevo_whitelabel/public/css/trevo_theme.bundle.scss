@@ -11,6 +11,74 @@
 // Palette source: trevocloud.com (emerald primary on slate neutrals).
 // To change the brand colour, edit the --trevo-* scale only.
 
+// ── Typography (trevocloud.com) ────────────────────────────────
+// Headings: Anek Latin (SIL OFL 1.1, licence in public/fonts/anek-latin/OFL.txt), self-hosted,
+// variable weight 100–800, same latin/latin-ext subsets Google Fonts serves.
+// Body: the site's Helvetica Neue stack; Frappe's bundled Inter replaces Arial as the
+// fallback where Helvetica is not installed (Windows/Linux).
+@font-face {
+	font-family: "Anek Latin";
+	font-style: normal;
+	font-weight: 100 800;
+	font-display: swap;
+	src: url("/assets/trevo_whitelabel/fonts/anek-latin/AnekLatin-latin-ext.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+		U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113,
+		U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+	font-family: "Anek Latin";
+	font-style: normal;
+	font-weight: 100 800;
+	font-display: swap;
+	src: url("/assets/trevo_whitelabel/fonts/anek-latin/AnekLatin-latin.woff2") format("woff2");
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+		U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+// Currency symbols (U+20A0–20C0: ₨ NPR, ₹ INR, € …) from Frappe's bundled Inter.
+// Helvetica Neue draws ₨ as one cramped glyph; Inter draws it as a readable "Rs".
+// Same file Frappe already loads, so no extra download.
+@font-face {
+	font-family: "Trevo Currency";
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+	src: url("/assets/frappe/css/fonts/inter/InterVariable.woff2") format("woff2");
+	unicode-range: U+20A0-20C0;
+}
+
+:root {
+	--trevo-font-sans: "Trevo Currency", "Helvetica Neue", Helvetica, "InterVariable", "Inter", -apple-system,
+		BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+	--trevo-font-display: "Trevo Currency", "Anek Latin", "Helvetica Neue", Helvetica, "InterVariable", "Inter",
+		Arial, sans-serif;
+	// Frappe reads --font-stack everywhere (body, inputs, editor).
+	--font-stack: var(--trevo-font-sans);
+
+	// Espresso type scale, one step up for readability (Frappe: 12/13/14/16).
+	// Larger steps are left alone so page layouts keep their proportions.
+	--text-xs: 12.5px;
+	--text-sm: 14px;
+	--text-base: 15px;
+	--text-p-base: 15px;
+	--text-lg: 17px;
+}
+
+// Headings in the display face. Class names are Frappe's own (page head, form sections,
+// dialogs, workspace blocks and widgets).
+.page-head .title-text,
+.page-head .es-breadcrumbs__item:last-child,
+.section-head,
+.modal-title,
+.widget-title,
+.ce-header,
+.trevo-display {
+	font-family: var(--trevo-font-display);
+	letter-spacing: -0.005em;
+}
+
 :root,
 [data-theme="light"] {
 	// ── Brand scale ─────────────────────────────────────────────
@@ -33,18 +101,62 @@
 	--trevo-tint: #0596691a; // 10% brand, same as the site's --accent
 	--trevo-ring: #05966947;
 
-	// ── Neutrals: slate instead of pure gray ────────────────────
-	--gray-50: #f8fafc;
-	--gray-100: #f1f5f9;
-	--gray-200: #e9eef4;
-	--gray-300: #e2e8f0;
-	--gray-400: #cbd5e1;
-	--gray-500: #94a3b8;
-	--gray-600: #64748b;
-	--gray-700: #475569;
-	--gray-800: #334155;
-	--gray-900: #0f172a;
-	--gray-950: #020617;
+	// Semantic surfaces inspired by shadcn's token approach. Components consume
+	// meaning-based tokens so the same rules work in both color schemes.
+	// Neutrals carry a faint emerald tint (hue ~150°) instead of slate blue.
+	// One white sheet: page, sidebar and cards share the surface; borders give structure.
+	--trevo-canvas: #ffffff;
+	--trevo-surface: #ffffff;
+	--trevo-surface-muted: #ecf3ef;
+	--trevo-border: #dfe7e2;
+	// Lighter rule for structure inside a surface (section and row dividers, tab strip):
+	// fields and table frames keep --trevo-border so inputs stay findable.
+	--trevo-divider: #edf2ef;
+	--trevo-foreground: #111c17;
+	--trevo-muted: #5f7268; // 5.1:1 on white
+
+	// Categorical chart colours (read by trevo_desk.bundle.js): brand first, then
+	// distinguishable hues in strong/light pairs.
+	--trevo-chart-1: #059669;
+	--trevo-chart-2: #6ee7b7;
+	--trevo-chart-3: #0284c7;
+	--trevo-chart-4: #7dd3fc;
+	--trevo-chart-5: #7c3aed;
+	--trevo-chart-6: #c4b5fd;
+	--trevo-chart-7: #d97706;
+	--trevo-chart-8: #fcd34d;
+	--trevo-chart-9: #dc2626;
+	--trevo-chart-10: #fca5a5;
+	// Tables (list, child grid, report datatable): header band, row hover, sticky elevation.
+	--trevo-table-head: #f5f9f7;
+	--trevo-row-hover: #f3f8f5;
+	--trevo-elevation: 0 1px 0 var(--trevo-border), 0 6px 14px -10px rgb(17 28 23 / 28%);
+	--table-border-color: var(--trevo-border);
+	--trevo-radius-sm: 6px;
+	--trevo-radius-md: 8px;
+	--trevo-radius-lg: 10px;
+
+	// ── Neutrals: emerald-tinted gray (drives Frappe's surface/ink/outline tokens) ──
+	--gray-50: #f5f9f7;
+	--gray-100: #ecf3ef;
+	--gray-200: #e2ebe6;
+	--gray-300: #d7e2dc;
+	--gray-400: #b9c9c0;
+	--gray-500: #8a9d93;
+	--gray-600: #5f7268;
+	--gray-700: #43544b;
+	--gray-800: #2c3a33;
+	--gray-900: #111c17;
+	--gray-950: #06100b;
+
+	// ── Page vs card ──
+	// Frappe paints every page with --bg-color (= --surface-base, white). Make the page the
+	// Trevo canvas everywhere; cards, fields and overlays stay white. --modal-bg and
+	// --popover-bg default to --bg-color, so pin them to the card surface.
+	--bg-color: var(--trevo-canvas);
+	--modal-bg: var(--trevo-surface);
+	--popover-bg: var(--trevo-surface);
+	--surface-sidebar: var(--trevo-canvas);
 
 	// ── Frappe tokens that carry the "primary" colour ───────────
 	--primary: var(--trevo-fill);
@@ -57,7 +169,9 @@
 	--date-active-text: #ffffff;
 	--ink-blue-link: var(--trevo-ink);
 	--focus-default: 0 0 0 3px var(--trevo-ring);
-	--focus-outline-default: 2px solid var(--trevo-ring);
+	// Outline rings (es-button, breadcrumbs) use the solid fill: the 28% tint is only
+	// ~1.4:1 on white, below the 3:1 non-text contrast a focus indicator needs.
+	--focus-outline-default: 2px solid var(--trevo-fill);
 	--checkbox-focus-shadow: 0 0 0 3px var(--trevo-ring);
 	--highlight-shadow: 0 0 0 3px var(--trevo-ring);
 }
@@ -71,20 +185,47 @@
 	--trevo-ink: var(--trevo-400);
 	--trevo-tint: #34d3991f;
 	--trevo-ring: #34d39952;
+	--trevo-canvas: #0f1814;
+	--trevo-surface: #0f1814;
+	--trevo-surface-muted: #17221d;
+	--trevo-border: #2c3a34;
+	--trevo-divider: #1e2a25;
+	--trevo-foreground: #d9e3de;
+	--trevo-muted: #93a59c; // 6.8:1 on surface
 
-	// Frappe's dark scale runs light → dark; keep that order, in slate.
-	--gray-50: #f8fafc;
-	--gray-100: #dbe2ea;
-	--gray-200: #b4bfcd;
-	--gray-300: #94a3b8;
-	--gray-400: #76859b;
-	--gray-450: #55647b;
-	--gray-500: #3d4b61;
-	--gray-600: #2e3a4e;
-	--gray-700: #1e293b;
-	--gray-800: #172033;
-	--gray-900: #111a2c;
-	--gray-950: #0b1220;
+	--trevo-chart-1: #34d399;
+	--trevo-chart-2: #047857;
+	--trevo-chart-3: #38bdf8;
+	--trevo-chart-4: #0369a1;
+	--trevo-chart-5: #a78bfa;
+	--trevo-chart-6: #6d28d9;
+	--trevo-chart-7: #fbbf24;
+	--trevo-chart-8: #b45309;
+	--trevo-chart-9: #f87171;
+	--trevo-chart-10: #b91c1c;
+	--trevo-table-head: #131e19;
+	--trevo-row-hover: #15211b;
+	--trevo-elevation: 0 1px 0 var(--trevo-border), 0 8px 18px -10px rgb(0 0 0 / 75%);
+	--table-border-color: var(--trevo-border);
+
+	// Frappe's dark scale runs light → dark; keep that order, emerald-tinted.
+	--gray-50: #f5f9f7;
+	--gray-100: #d9e3de;
+	--gray-200: #b4c2bb;
+	--gray-300: #93a59c;
+	--gray-400: #74877e;
+	--gray-450: #56685f;
+	--gray-500: #3e4d46;
+	--gray-600: #2c3a34;
+	--gray-700: #1e2a25;
+	--gray-800: #17221d;
+	--gray-900: #111b17;
+	--gray-950: #0b1310;
+
+	--bg-color: var(--trevo-canvas);
+	--modal-bg: var(--trevo-surface);
+	--popover-bg: var(--trevo-surface);
+	--surface-sidebar: var(--trevo-canvas);
 
 	--primary: var(--trevo-fill);
 	--primary-color: var(--trevo-fill);
@@ -96,11 +237,179 @@
 	--date-active-text: #022c22;
 	--ink-blue-link: var(--trevo-ink);
 	--focus-default: 0 0 0 3px var(--trevo-ring);
-	--focus-outline-default: 2px solid var(--trevo-ring);
+	--focus-outline-default: 2px solid var(--trevo-fill);
 	--checkbox-focus-shadow: 0 0 0 3px var(--trevo-ring);
 }
 
+// ── Semantic hues harmonised with emerald ──────────────────────
+// Espresso derives every status colour (indicator pills, alerts, form banners, diffs, chart
+// fallbacks) from these hue scales via --surface-*/--ink-*/--outline-* and --bg-*/--text-on-*.
+// Frappe's own scales were tuned around its near-black brand (e.g. electric blue #0d8ef8), so
+// beside emerald they clashed. These are one perceptual family with the brand: blue→sky,
+// yellow→amber, purple→violet; meanings are unchanged. Light and dark use the same 50→950
+// direction (dark surfaces take the 900s, dark text the 200s), so one scale serves both.
+:root,
+[data-theme="light"],
+[data-theme="dark"],
+.dark {
+	--blue-50: #f0f9ff;
+	--blue-100: #e0f2fe;
+	--blue-200: #bae6fd;
+	--blue-300: #7dd3fc;
+	--blue-400: #38bdf8;
+	--blue-500: #0ea5e9;
+	--blue-600: #0284c7;
+	--blue-700: #0369a1;
+	--blue-800: #075985;
+	--blue-900: #0c4a6e;
+	--blue-950: #082f49;
+	--green-50: #ecfdf5;
+	--green-100: #d1fae5;
+	--green-200: #a7f3d0;
+	--green-300: #6ee7b7;
+	--green-400: #34d399;
+	--green-500: #10b981;
+	--green-600: #059669;
+	--green-700: #047857;
+	--green-800: #065f46;
+	--green-900: #064e3b;
+	--green-950: #022c22;
+	--yellow-50: #fffbeb;
+	--yellow-100: #fef3c7;
+	--yellow-200: #fde68a;
+	--yellow-300: #fcd34d;
+	--yellow-400: #fbbf24;
+	--yellow-500: #f59e0b;
+	--yellow-600: #d97706;
+	--yellow-700: #b45309;
+	--yellow-800: #92400e;
+	--yellow-900: #78350f;
+	--yellow-950: #451a03;
+	--orange-50: #fff7ed;
+	--orange-100: #ffedd5;
+	--orange-200: #fed7aa;
+	--orange-300: #fdba74;
+	--orange-400: #fb923c;
+	--orange-500: #f97316;
+	--orange-600: #ea580c;
+	--orange-700: #c2410c;
+	--orange-800: #9a3412;
+	--orange-900: #7c2d12;
+	--orange-950: #431407;
+	--red-50: #fef2f2;
+	--red-100: #fee2e2;
+	--red-200: #fecaca;
+	--red-300: #fca5a5;
+	--red-400: #f87171;
+	--red-500: #ef4444;
+	--red-600: #dc2626;
+	--red-700: #b91c1c;
+	--red-800: #991b1b;
+	--red-900: #7f1d1d;
+	--red-950: #450a0a;
+	--purple-50: #f5f3ff;
+	--purple-100: #ede9fe;
+	--purple-200: #ddd6fe;
+	--purple-300: #c4b5fd;
+	--purple-400: #a78bfa;
+	--purple-500: #8b5cf6;
+	--purple-600: #7c3aed;
+	--purple-700: #6d28d9;
+	--purple-800: #5b21b6;
+	--purple-900: #4c1d95;
+	--purple-950: #2e1065;
+	--pink-50: #fdf2f8;
+	--pink-100: #fce7f3;
+	--pink-200: #fbcfe8;
+	--pink-300: #f9a8d4;
+	--pink-400: #f472b6;
+	--pink-500: #ec4899;
+	--pink-600: #db2777;
+	--pink-700: #be185d;
+	--pink-800: #9d174d;
+	--pink-900: #831843;
+	--pink-950: #500724;
+}
+
+// Dark: Espresso fills pills and alerts with the hue's 900 shade, which on a near-black canvas
+// reads as a heavy saturated block. Use a translucent tint of the 500 shade instead (text keeps
+// Espresso's light ink), the usual treatment for status colour on dark surfaces. Only steps 1-2
+// (pill and light backgrounds): step 3 also paints indicator dots, which must stay solid.
+[data-theme="dark"],
+.dark {
+	--surface-blue-1: color-mix(in srgb, var(--blue-500) 10%, transparent);
+	--surface-blue-2: color-mix(in srgb, var(--blue-500) 16%, transparent);
+	--surface-green-1: color-mix(in srgb, var(--green-500) 10%, transparent);
+	--surface-green-2: color-mix(in srgb, var(--green-500) 16%, transparent);
+	--surface-yellow-1: color-mix(in srgb, var(--yellow-500) 10%, transparent);
+	--surface-yellow-2: color-mix(in srgb, var(--yellow-500) 16%, transparent);
+	--surface-orange-1: color-mix(in srgb, var(--orange-500) 10%, transparent);
+	--surface-orange-2: color-mix(in srgb, var(--orange-500) 16%, transparent);
+	--surface-red-1: color-mix(in srgb, var(--red-500) 10%, transparent);
+	--surface-red-2: color-mix(in srgb, var(--red-500) 16%, transparent);
+	--surface-purple-1: color-mix(in srgb, var(--purple-500) 10%, transparent);
+	--surface-purple-2: color-mix(in srgb, var(--purple-500) 16%, transparent);
+	--surface-pink-1: color-mix(in srgb, var(--pink-500) 10%, transparent);
+	--surface-pink-2: color-mix(in srgb, var(--pink-500) 16%, transparent);
+	--alert-bg-danger: color-mix(in srgb, var(--red-500) 14%, transparent);
+	--alert-bg-info: color-mix(in srgb, var(--blue-500) 14%, transparent);
+	--alert-bg-success: color-mix(in srgb, var(--green-500) 14%, transparent);
+	--alert-bg-warning: color-mix(in srgb, var(--yellow-500) 14%, transparent);
+}
+
 // ── Components: only what tokens cannot reach ──────────────────
+
+// Shared control finish: restrained borders, compact rounding, and no movement
+// on hover. Keep Frappe's semantic variants and disabled/read-only states intact.
+.btn {
+	border-radius: var(--trevo-radius-sm);
+	transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+}
+
+// Secondary ("outline") button. Do not set box-shadow here: at this specificity it
+// would also cancel Bootstrap's .btn-light:focus ring (Frappe extends .btn-light).
+.btn.btn-default {
+	color: var(--trevo-foreground);
+	background: var(--trevo-surface);
+	border-color: var(--trevo-border);
+
+	// Same guard as Frappe's hover-only-with-pointer: no sticky hover after a tap.
+	@media (hover: hover) {
+		&:hover {
+			background: var(--trevo-surface-muted);
+			color: var(--trevo-foreground);
+		}
+	}
+
+	&:active {
+		background: var(--trevo-surface-muted);
+		color: var(--trevo-foreground);
+	}
+
+	&:focus-visible {
+		box-shadow: var(--focus-default);
+	}
+}
+
+.form-control {
+	border-radius: var(--trevo-radius-sm);
+	transition: border-color 120ms ease, box-shadow 120ms ease;
+
+	// Bootstrap compiles this ring as a fixed gray (#7c7c7c40), so no token reaches it.
+	// Same specificity as Bootstrap's rule; Frappe's more specific grid-row, datatable
+	// and .has-error focus rules still win.
+	&:focus {
+		border-color: var(--trevo-fill);
+		box-shadow: var(--focus-default);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.btn,
+	.form-control {
+		transition-duration: 0.01ms;
+	}
+}
 
 // Primary button: readable label on the brand fill, brand-coloured hover/pressed.
 .btn.btn-primary {
@@ -130,6 +439,18 @@
 	background: var(--trevo-tint);
 }
 
+// Search-match highlight (awesomebar, global search, filters). Bootstrap gives <mark> a
+// yellow background but inherits the text colour, which is near-white in dark mode, so
+// matched letters became white-on-yellow. Use the brand tint with brand ink instead.
+mark,
+.mark {
+	padding: 0 1px;
+	border-radius: 3px;
+	background-color: var(--trevo-tint);
+	color: var(--trevo-ink);
+	font-weight: 600;
+}
+
 // ── Espresso components (v16) ──────────────────────────────────
 // These read their own local tokens, so set those rather than restyle the component.
 
@@ -140,6 +461,20 @@
 	--bt-solid-bg-hover: var(--trevo-fill-hover);
 	--bt-solid-bg-active: var(--trevo-fill-active);
 	--bt-solid-fg: var(--trevo-on-fill);
+}
+
+// Neutral buttons, one style: Espresso's default/subtle button is a grey-green fill while
+// .btn-default is a white outline, so page heads mixed both. In page chrome (page head,
+// grid actions, list paging, dialog footers, form toolbars) the neutral es-button becomes
+// the same white surface + hairline border + soft shadow. Green stays for primary actions.
+// Ghost/solid/outline variants and red-themed buttons keep their own look.
+:is(.page-head, .grid-bulk-actions, .grid-buttons, .list-paging-area, .modal-footer, .page-form, .form-message)
+	.es-button:not([data-theme="red"]):is(:not([data-variant]), [data-variant="subtle"]) {
+	--bt-fill-bg: var(--trevo-surface);
+	--bt-fill-bg-hover: var(--trevo-row-hover);
+	--bt-fill-bg-active: var(--trevo-surface-muted);
+	--bt-fg: var(--trevo-foreground);
+	box-shadow: inset 0 0 0 1px var(--trevo-border), 0 1px 2px rgb(17 28 23 / 5%);
 }
 
 .es-progress__fill,
@@ -179,7 +514,7 @@
 	width: 28px;
 	height: 28px;
 	margin-right: 8px;
-	border-radius: 8px;
+	border-radius: var(--trevo-radius-md);
 	overflow: hidden;
 	display: inline-flex;
 	align-items: center;
@@ -198,28 +533,53 @@
 
 // Form canvas: the record sits on a card over a quiet background (desktop/tablet).
 // On phones the card goes edge to edge. Child selectors keep this off dialogs and grid row forms.
-.page-container.editable-form {
-	--trevo-form-width: 980px;
+// v16 form.js (refresh) toggles exactly one of these by docstatus 0/1/2; scoping to
+// .editable-form alone dropped the whole layout once a document was submitted.
+.page-container:is(.editable-form, .submitted-form, .cancelled-form) {
+	// Frappe defaults this to 900px and uses it on section heads and bodies.
+	// Widen it only for full record forms so configured columns can use the page.
+	--page-max-width: 100%;
+	// Space between the canvas edge and the card; the footer reuses it to line up.
+	--trevo-form-gutter: 16px;
+	// Inner padding of each card section (Frappe: --padding-md, 15px). Columns add 15px more.
+	--trevo-section-pad: 12px;
+
+	// The child-row editor (grid.scss: .grid-row-open .form-in-grid, fixed, 80% wide)
+	// is inside this container and is capped by the same token; keep its native 900px.
+	.form-in-grid {
+		--page-max-width: 900px;
+	}
 
 	// The wrapper holds both the form and its footer (comments, activity).
 	.layout-main-section-wrapper {
-		background: var(--surface-gray-1);
+		background: var(--trevo-canvas);
 		min-height: calc(100vh - var(--page-head-height, 48px));
 	}
 
 	.layout-main-section {
-		padding: 16px 16px 0;
+		width: 100%;
+		min-width: 0;
+		padding: 16px var(--trevo-form-gutter) 0;
 	}
 
 	.std-form-layout > .form-layout > .form-page {
-		max-width: var(--trevo-form-width);
-		margin: 0 auto;
-		background: var(--surface-elevation-1);
-		border: 1px solid var(--outline-gray-1);
-		border-radius: 12px;
+		width: 100%;
+		max-width: none;
+		min-width: 0;
+		margin: 0;
+		background: var(--trevo-surface);
+		// White card on a white page: the frame only added a box around boxes. Keep a single
+		// divider under the form so it still separates from comments and activity.
+		border: 0;
+		border-bottom: 1px solid var(--trevo-divider);
+		border-radius: 0;
 
 		> .form-tabs-list {
-			border-radius: 12px 12px 0 0;
+			border-radius: 0;
+			// Same surface as the tab links: v16 paints each .nav-link with --card-bg,
+			// so a muted strip here showed through between tabs as stripes.
+			background: var(--trevo-surface);
+			border-bottom: 1px solid var(--trevo-divider);
 		}
 
 		.tab-pane > .form-section:last-child,
@@ -228,29 +588,813 @@
 		}
 	}
 
+	.form-section.card-section,
+	.form-dashboard-section {
+		border-color: var(--trevo-divider);
+	}
+
+	.form-section,
+	.form-dashboard-section {
+		padding-inline: var(--trevo-section-pad);
+	}
+
+	// Section rhythm: a little more air above a section title and below the last field.
+	.form-section.card-section .section-head {
+		padding-top: 18px;
+	}
+
+	.form-section.card-section .section-body {
+		padding-bottom: 6px;
+	}
+
+	.section-head {
+		color: var(--trevo-foreground);
+		font-weight: 600;
+	}
+
+	.control-label {
+		color: var(--trevo-muted);
+		font-weight: 500;
+		// One step below field values (15px) so labels don't compete with data.
+		font-size: var(--text-sm);
+	}
+
+	// Comment composer: same field treatment as the form. Frappe sets the editor background
+	// to var(--control-bg) with !important (desk/form.scss), so change the tokens it reads.
+	.comment-input-container {
+		--control-bg: var(--trevo-surface);
+		--border-color: var(--trevo-border);
+
+		.ql-editor {
+			border-radius: var(--trevo-radius-sm);
+		}
+	}
+
+	// ── Fields (shadcn-style inputs) ──
+	// Only fields placed directly in a form column: the record form, the child-row editor.
+	// Inline cells of a child table are not matched (they are not direct children of a
+	// column's <form>), so grid row height is unchanged.
+	.form-column > form > .frappe-control:not([data-fieldtype="Table"]) {
+		// Overlays inside a field (link arrow / clear button, select chevron backdrop) paint
+		// --control-bg to mask the text under them; on a white field that showed as a grey box.
+		--control-bg: var(--trevo-surface);
+		--input-height: 36px;
+
+		// Link arrow / clear button: Frappe sizes it to the full input height, so on a bordered
+		// field it covered the top and bottom border where it sat. Keep it inside the border.
+		.link-btn {
+			top: 1px;
+			height: calc(100% - 2px);
+		}
+		--input-padding: 6px 12px;
+
+		// Editable: white field with a hairline border.
+		.form-control:not([disabled]):not([readonly]) {
+			background-color: var(--trevo-surface);
+			border: 1px solid var(--trevo-border);
+			box-shadow: 0 1px 2px rgb(17 28 23 / 4%);
+		}
+
+		.form-control:not([disabled]):not([readonly]):focus {
+			border-color: var(--trevo-fill);
+			box-shadow: var(--focus-default);
+		}
+
+		// Read-only (submitted documents, computed fields): same border and shape as editable
+		// fields, but a faint tinted fill and no shadow, so "can I edit this?" is answered at a
+		// glance (stock Frappe signals it with a grey fill; an all-white form lost that cue).
+		.like-disabled-input,
+		.form-control[disabled],
+		.form-control[readonly] {
+			background-color: var(--trevo-table-head);
+			border: 1px solid var(--trevo-border);
+			box-shadow: none;
+		}
+
+		.like-disabled-input {
+			min-height: var(--input-height);
+			padding: 7px 12px;
+			border-radius: var(--trevo-radius-sm);
+		}
+	}
+
+	// Amounts and quantities line up in columns.
+	.like-disabled-input,
+	.grid-static-col,
+	.frappe-control:is([data-fieldtype="Currency"], [data-fieldtype="Float"], [data-fieldtype="Int"], [data-fieldtype="Percent"]) .form-control {
+		font-variant-numeric: tabular-nums;
+	}
+
+	// Sibling of .layout-main-section: indent by gutter + card border + section padding
+	// so comments and activity share the card's content edge.
 	.form-footer {
-		max-width: var(--trevo-form-width);
-		margin-left: auto;
-		margin-right: auto;
+		width: 100%;
+		max-width: none;
+		margin-inline: 0;
+		// Field edge = gutter + card border + section padding + column padding (15px).
+		padding-inline: calc(var(--trevo-form-gutter) + 1px + var(--trevo-section-pad) + 15px);
+		// Timeline items, dots and headers paint var(--bg-color); on the canvas they
+		// should read as part of the page, not as a white band.
+		--bg-color: var(--trevo-canvas);
+	}
+
+	@media (max-width: 900px) {
+		--trevo-form-gutter: 12px;
+
+		.layout-main-section {
+			padding-top: 12px;
+		}
 	}
 
 	@media (max-width: 767px) {
+		--trevo-form-gutter: 0px;
+		--trevo-section-pad: 2px;
+
 		.layout-main-section {
-			padding: 0;
+			padding-top: 0;
 		}
 
 		.std-form-layout > .form-layout > .form-page {
 			border-left: 0;
 			border-right: 0;
 			border-radius: 0;
+			box-shadow: none;
 
 			> .form-tabs-list {
 				border-radius: 0;
 			}
 		}
 
+		// No side border on phones.
 		.form-footer {
+			padding-inline: calc(var(--trevo-section-pad) + 15px);
+		}
+	}
+}
+
+// ── Workspaces ─────────────────────────────────────────────────
+// Same canvas as forms; content uses up to 1200px instead of Frappe's 900px column.
+#page-Workspaces {
+	--page-max-width: 1200px;
+	background: var(--trevo-canvas);
+
+	.layout-main-section {
+		background: transparent;
+	}
+
+	// Every workspace block is a card on the canvas. In dark mode Frappe paints chart and
+	// number widgets with the page colour, which made them darker than the onboarding card.
+	.widget:is(.onboarding-widget-box, .dashboard-widget-box, .number-widget-box, .links-widget-box, .shortcut-widget-box, .quick-list-widget-box) {
+		background: var(--trevo-surface);
+		border: 1px solid var(--trevo-border);
+	}
+
+	.onboarding-step.is-open {
+		background: var(--trevo-surface-muted);
+	}
+}
+
+// Query reports and tree views: the page itself takes the canvas colour so every Desk
+// page shares one background.
+#page-query-report,
+.page-container.treeview {
+	background: var(--trevo-canvas);
+
+	.layout-main-section-wrapper {
+		background: var(--trevo-canvas);
+	}
+}
+
+// Query reports use the same .layout-main-list > .page-form structure as lists.
+#page-query-report .layout-main-list {
+	padding: 8px 16px 0;
+
+	> .page-form {
+		background: transparent;
+		padding: 4px 0 8px;
+	}
+
+	@media (max-width: 767px) {
+		padding: 8px 12px 0;
+	}
+}
+
+// Onboarding / step progress: filled segments in brand, not near-black.
+.es-progress__segment[data-filled] {
+	background: var(--trevo-fill);
+}
+
+// ── List views ─────────────────────────────────────────────────
+// Filters and results sit on cards over the canvas. Selectors are the v16 list DOM:
+// .layout-main-section-wrapper.list-view > .layout-main-list > (.page-form, .frappe-list).
+// Filter bars (list, report view, query report, tree): same field look as forms,
+// compact height for a toolbar.
+.page-form .frappe-control {
+	--input-height: 32px;
+
+	.form-control {
+		background-color: var(--trevo-surface);
+		border: 1px solid var(--trevo-border);
+		font-size: var(--text-sm);
+	}
+
+	.form-control:focus {
+		border-color: var(--trevo-fill);
+	}
+}
+
+// Report view shares the list DOM (.layout-main-list), so it gets the same cards.
+.layout-main-section-wrapper:is(.list-view, .report-view) {
+	background: var(--trevo-canvas);
+	min-height: calc(100vh - var(--page-head-height, 48px));
+
+	.layout-main-list {
+		padding: 8px 16px 16px;
+	}
+
+	// Filters are a toolbar on the canvas (shadcn data-table pattern); only results are a card.
+	.layout-main-list > .page-form {
+		background: transparent;
+		border: 0;
+		padding: 4px 0 8px;
+		margin: 0;
+	}
+
+	.layout-main-list > .frappe-list {
+		background: var(--trevo-surface);
+		border: 1px solid var(--trevo-border);
+		border-radius: var(--trevo-radius-lg);
+		// Row parts (e.g. the sticky activity cell at the row end) paint var(--bg-color);
+		// on a card that must be the card surface, or it shows as a darker block in dark mode.
+		--bg-color: var(--trevo-surface);
+		// v16 gives .frappe-list a 15px side margin; inside the padded canvas that pushed the
+		// results card in further than the filter card.
+		margin-inline: 0;
+		padding: 8px 12px 0;
+		overflow: hidden;
+	}
+
+
+	@media (max-width: 767px) {
+		.layout-main-list {
+			padding: 8px 0;
+		}
+
+		.layout-main-list > .page-form {
+			padding-inline: 12px;
+		}
+
+		.layout-main-list > .frappe-list {
+			border-inline: 0;
+			border-radius: 0;
+		}
+	}
+}
+
+// ── Tables: one language everywhere ────────────────────────────
+// List results, child tables (Items, Taxes…) and report datatables share: a soft header band
+// (--trevo-table-head) with muted 500-weight labels, hairline --trevo-border rules, a white
+// body, one hover tint, radius-lg outer corners. Frappe's markup is untouched.
+
+// List results.
+.layout-main-section-wrapper.list-view .layout-main-list > .frappe-list {
+	padding: 0;
+
+	// Opaque band: list.scss makes the first row container sticky inside .result-container.
+	.list-row-head {
+		height: 42px;
+		padding: 0 16px;
+		background: var(--trevo-table-head);
+		border-radius: 0;
+		border-bottom: 1px solid var(--trevo-divider);
+		font-size: var(--text-sm);
+		font-weight: 500;
+		color: var(--trevo-muted);
+		transition: box-shadow 150ms ease;
+
+		.level-right {
+			background: var(--trevo-table-head);
+		}
+	}
+
+	// Sticky activity cell at the row end: Frappe draws a 2px highlight rule on its left;
+	// on a flat table that reads as a stray column line.
+	.list-row .level-right {
+		border-left-color: transparent;
+	}
+
+	// Frappe already draws the row divider on .list-row (list.scss); just recolour it.
+	.list-row {
+		padding: 0 16px;
+		min-height: 46px;
+		font-size: var(--text-sm);
+		border-radius: 0;
+		border-bottom-color: var(--trevo-divider);
+	}
+
+	.list-row-container:hover .list-row,
+	.list-row-container:hover .list-row .level-right {
+		background-color: var(--trevo-row-hover);
+	}
+
+	// The record name gets twice the share of the other columns (Frappe: flex 1 for all),
+	// so customer and item names are not cut off at the first word.
+	.list-row-col.list-subject {
+		flex: 2 1 0%;
+		font-weight: 600;
+		color: var(--trevo-foreground);
+	}
+
+	.list-paging-area {
+		padding: 10px 16px;
+		border-top: 0;
+	}
+
+	@media (max-width: 767px) {
+		.list-row-head,
+		.list-row {
 			padding: 0 12px;
 		}
+	}
+}
+
+// Child tables.
+.form-grid {
+	--subtle-fg: var(--trevo-table-head);
+	--subtle-accent: var(--trevo-surface);
+	border-color: var(--trevo-border);
+	border-radius: var(--trevo-radius-lg);
+	background-color: var(--trevo-surface);
+
+	.grid-heading-row {
+		height: 38px;
+		border-bottom-color: var(--trevo-border);
+		border-top-left-radius: var(--trevo-radius-lg);
+		border-top-right-radius: var(--trevo-radius-lg);
+		color: var(--trevo-muted);
+		font-weight: 500;
+
+		.grid-row {
+			border-top-left-radius: var(--trevo-radius-lg);
+			border-top-right-radius: var(--trevo-radius-lg);
+		}
+
+		.grid-static-col,
+		.row-check,
+		.row-index {
+			height: 38px;
+			display: flex;
+			align-items: center;
+		}
+
+		.grid-static-col.text-right {
+			justify-content: flex-end;
+		}
+	}
+
+	// Column rules: header keeps them so widths read; body rows use row dividers only.
+	.grid-body .data-row:not(.editable-row) .col:not(.row-check) {
+		border-right-color: transparent;
+	}
+
+	.grid-body .grid-row {
+		border-bottom-color: var(--trevo-divider);
+	}
+
+	.grid-body .data-row {
+		color: var(--trevo-foreground);
+	}
+
+	.grid-body .row-index {
+		color: var(--trevo-muted);
+	}
+
+	.grid-body .grid-row:not(.grid-row-open) .data-row:not(.editable-row):hover {
+		.grid-static-col,
+		.row-check,
+		.col:last-child {
+			background-color: var(--trevo-row-hover);
+		}
+	}
+
+	.grid-body {
+		border-bottom-left-radius: var(--trevo-radius-lg);
+		border-bottom-right-radius: var(--trevo-radius-lg);
+	}
+}
+
+.grid-empty {
+	background-color: var(--trevo-surface);
+}
+
+// Grid footer (Add Row / Download) paints its own --bg-color strip; on the white sheet in
+// dark mode that showed as a darker block under the table.
+.form-grid-container .grid-footer {
+	background-color: transparent;
+}
+
+
+// Report view and query reports (frappe-datatable).
+.datatable {
+	--dt-border-color: var(--trevo-border);
+	--dt-header-cell-bg: var(--trevo-table-head);
+	--dt-cell-bg: var(--trevo-surface);
+	--dt-border-radius: var(--trevo-radius-lg);
+
+	.dt-header .dt-row-header,
+	.dt-header .dt-cell--header .dt-cell__content {
+		background-color: var(--trevo-table-head);
+		color: var(--trevo-muted);
+		font-weight: 500;
+	}
+
+	.dt-row:not(.dt-row-header):hover .dt-cell {
+		background-color: var(--trevo-row-hover);
+	}
+}
+
+// ── Sticky layers ──────────────────────────────────────────────
+// v16 scrolls .main-section (forms, workspaces, reports) and .result-container (list
+// results), not the document. trevo_desk.bundle.js marks body.trevo-scrolled from
+// .main-section and .trevo-scrolled on the list scroller. At rest every sticky layer is part
+// of the white sheet; once content passes under it, the lowest stuck layer casts
+// --trevo-elevation, and the page head turns frosted so content blurs beneath it.
+.page-head,
+.form-tabs-list {
+	transition: box-shadow 150ms ease, background-color 150ms ease;
+}
+
+body.trevo-scrolled .page-head {
+	background: color-mix(in srgb, var(--trevo-surface) 84%, transparent);
+	backdrop-filter: saturate(1.4) blur(10px);
+	-webkit-backdrop-filter: saturate(1.4) blur(10px);
+	border-bottom-color: transparent;
+	box-shadow: var(--trevo-elevation);
+}
+
+// Forms: the tab strip sticks just under the head, so it carries the shadow instead.
+body.trevo-scrolled .page-container:has(.form-tabs-list) .page-head {
+	box-shadow: 0 1px 0 var(--trevo-border);
+}
+
+body.trevo-scrolled .page-container:is(.editable-form, .submitted-form, .cancelled-form)
+	.std-form-layout > .form-layout > .form-page > .form-tabs-list {
+	box-shadow: var(--trevo-elevation);
+	border-bottom-color: transparent;
+}
+
+// List: the header band lifts off the rows scrolling under it.
+.result-container.trevo-scrolled .list-row-container:first-child .list-row-head {
+	box-shadow: var(--trevo-elevation);
+	border-bottom-color: transparent;
+}
+
+// Mobile list paging bar is sticky at the bottom (list.scss): give it an edge.
+@media (max-width: 767px) {
+	.frappe-list .list-paging-area {
+		background-color: var(--trevo-surface);
+		border-top: 1px solid var(--trevo-border);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.page-head,
+	.form-tabs-list,
+	.list-row-head {
+		transition: none;
+	}
+}
+
+// ── Left sidebar collapse ──────────────────────────────────────
+// Frappe's round edge button (sidebar.js toggle_width, remembered per browser) is the primary
+// control. Stock v16 hides it (opacity 0) until the pointer finds the sidebar's edge, parks it
+// at the bottom by the avatar, and, once collapsed beside a pinned dock, moves it to left:-12px
+// under the dock's higher z-index (1030), so half of it is covered. Here it is always visible,
+// sits near the top of the edge (just under the page head), and stays above the dock in both
+// states. The arrow already flips: Frappe rotates the icon 180deg when collapsed.
+@media (min-width: 768px) {
+	.sidebar-collapse-arrow {
+		top: 60px;
+		bottom: auto;
+		z-index: 1031;
+		width: 26px;
+		height: 26px;
+		opacity: 1;
+		pointer-events: auto;
+		color: var(--trevo-ink);
+		border: 1px solid var(--trevo-border);
+		background: var(--trevo-surface);
+		box-shadow: 0 1px 2px rgb(17 28 23 / 8%), 0 2px 6px rgb(17 28 23 / 6%);
+
+		svg {
+			width: 14px;
+			height: 14px;
+		}
+
+		&:hover {
+			color: var(--trevo-on-fill);
+			border-color: var(--trevo-fill);
+			background: var(--trevo-fill);
+		}
+
+		&:focus-visible {
+			outline: var(--focus-outline-default);
+			outline-offset: 2px;
+		}
+	}
+
+	[data-theme="dark"] .sidebar-collapse-arrow {
+		box-shadow: 0 1px 0 var(--trevo-border), 0 4px 10px rgb(0 0 0 / 50%);
+	}
+}
+
+// ── Desk home (app launcher) ───────────────────────────────────
+// Frappe sizes the launcher as a fixed 6-column grid, so a site with two apps showed two small
+// icons stuck to the left of an empty canvas. Centre the tiles (auto-fit collapses empty
+// tracks), make each tile a card, and show the greeting trevo_desk.bundle.js adds above them.
+.desktop-page .desktop-container {
+	.icons-container {
+		flex-direction: column;
+		align-items: center;
+		margin-top: 72px;
+	}
+
+	.trevo-greeting {
+		text-align: center;
+		margin-bottom: 28px;
+
+		h1 {
+			margin: 0 0 6px;
+			font-size: 30px;
+			font-weight: 600;
+			letter-spacing: -0.01em;
+			color: var(--trevo-foreground);
+		}
+
+		p {
+			margin: 0;
+			font-size: var(--text-base);
+			color: var(--trevo-muted);
+		}
+	}
+
+	.icons {
+		// Frappe sets repeat(N, 1fr) inline.
+		grid-template-columns: repeat(auto-fit, 148px) !important;
+		justify-content: center;
+		width: 100%;
+	}
+
+	.desktop-icon {
+		padding: 20px 12px 16px;
+		background: var(--trevo-surface);
+		border: 1px solid var(--trevo-border);
+		border-radius: var(--trevo-radius-lg);
+		box-shadow: 0 1px 2px rgb(17 28 23 / 4%);
+		transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+
+		@media (hover: hover) {
+			&:hover {
+				border-color: var(--trevo-fill);
+				box-shadow: 0 0 0 3px var(--trevo-ring);
+			}
+		}
+
+		&:focus-within {
+			border-color: var(--trevo-fill);
+			box-shadow: var(--focus-default);
+		}
+
+		.icon-title {
+			font-weight: 600;
+			color: var(--trevo-foreground);
+		}
+	}
+
+	@media (max-width: 767px) {
+		.icons-container {
+			margin-top: 32px;
+		}
+
+		.trevo-greeting h1 {
+			font-size: 24px;
+		}
+
+		.icons {
+			grid-template-columns: repeat(auto-fit, minmax(100px, 132px)) !important;
+		}
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.desktop-page .desktop-icon {
+		transition: none;
+	}
+}
+
+// ── Web error and message pages ────────────────────────────────
+// 404, "Logged out", permission and other message pages (frappe/www/404.html, message.html)
+// share .error-page: faint grey text on a tinted page, no brand. Give them the Trevo mark,
+// a readable heading, a white page and a real primary action.
+body:has(.error-page) {
+	background-color: var(--trevo-canvas);
+}
+
+.error-page {
+	padding: 24px 16px;
+
+	> div {
+		width: 100%;
+		max-width: 400px;
+		text-align: center;
+
+		// Trevo mark above every message.
+		&::before {
+			content: "";
+			display: block;
+			width: 48px;
+			height: 48px;
+			margin: 0 auto 20px;
+			background: url("/assets/trevo_whitelabel/images/TrevoCloudLogo.svg") center / contain no-repeat;
+		}
+	}
+
+	h4 {
+		margin-bottom: 8px;
+		font-family: var(--trevo-font-display);
+		font-size: 24px;
+		font-weight: 600;
+		color: var(--trevo-foreground);
+	}
+
+	p {
+		color: var(--trevo-muted);
+	}
+
+	.details {
+		border-top: 0;
+		margin-top: 12px;
+
+		// 404's "Back to Home" is a muted text link: make it the page's primary action.
+		> a {
+			display: inline-flex;
+			align-items: center;
+			height: 40px;
+			padding: 0 20px;
+			border-radius: var(--trevo-radius-md);
+			background: var(--trevo-fill);
+			color: var(--trevo-on-fill) !important;
+			font-weight: 600;
+			text-decoration: none;
+
+			&:hover {
+				background: var(--trevo-fill-hover);
+			}
+		}
+	}
+}
+
+// ── Loading splash ─────────────────────────────────────────────
+// desk.html shows .splash (the splash_image hook: the Trevo leaf) until the desk boots. Stock
+// sizing left a 200px logo in the corner. Centre a 64px mark with the wordmark under it and a
+// slow pulse. Painted before desk.js sets data-theme, so dark follows the OS preference too.
+.splash {
+	position: fixed;
+	inset: 0;
+	// The element also has Frappe's .centered (absolute + translate(-50%, -50%)).
+	transform: none;
+	width: auto;
+	height: auto;
+	z-index: 2000;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 14px;
+	background: #ffffff;
+
+	img {
+		width: 64px !important;
+		height: 64px;
+		max-width: none !important;
+		animation: trevo-splash-pulse 1.6s ease-in-out infinite;
+	}
+
+	&::after {
+		content: "Trevo";
+		font-family: "Anek Latin", "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-size: 20px;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		color: #111c17;
+	}
+}
+
+@media (prefers-color-scheme: dark) {
+	html:is([data-theme="automatic"], [data-theme="dark"]) .splash {
+		background: #0f1814;
+
+		&::after {
+			color: #d9e3de;
+		}
+	}
+}
+
+html[data-theme="dark"] .splash {
+	background: #0f1814;
+
+	&::after {
+		color: #d9e3de;
+	}
+}
+
+@media (prefers-color-scheme: dark) {
+	html[data-theme="automatic"] body {
+		background-color: #0f1814 !important;
+	}
+}
+
+@keyframes trevo-splash-pulse {
+	0%,
+	100% {
+		transform: scale(1);
+		opacity: 1;
+	}
+
+	50% {
+		transform: scale(0.94);
+		opacity: 0.75;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.splash img {
+		animation: none;
+	}
+}
+
+// ── Scrollbars ─────────────────────────────────────────────────
+// Thin, tinted, on a transparent track instead of the OS default grey gutter.
+// Chrome/Firefox use the standard properties; Safari falls back to ::-webkit-scrollbar.
+* {
+	scrollbar-width: thin;
+	scrollbar-color: var(--gray-300) transparent;
+}
+
+@supports not (scrollbar-color: auto) {
+	::-webkit-scrollbar {
+		width: 10px;
+		height: 10px;
+	}
+
+	::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	::-webkit-scrollbar-thumb {
+		background: var(--gray-300);
+		border: 3px solid transparent;
+		border-radius: 999px;
+		background-clip: padding-box;
+	}
+
+	::-webkit-scrollbar-thumb:hover {
+		background-color: var(--gray-400);
+	}
+}
+
+[data-theme="dark"] * {
+	scrollbar-color: var(--gray-700) transparent;
+}
+
+// Form banners ("Submit this document to confirm", "Not saved"…): Frappe draws a full-bleed bar.
+// With the harmonised hues they are soft tints; round them to sit like the other surfaces.
+.page-container:is(.editable-form, .submitted-form, .cancelled-form) .form-message {
+	border-radius: var(--trevo-radius-md);
+	border-bottom: 0;
+	margin-bottom: 8px;
+	font-weight: 500;
+}
+
+// Dark banners: form.scss paints them with the hue's 800 shade, a heavy bar on the dark sheet.
+@each $hue in blue, green, yellow, orange, red {
+	[data-theme="dark"] .form-message.#{$hue} {
+		background: color-mix(in srgb, var(--#{$hue}-500) 14%, transparent);
+		border-color: transparent;
+		color: var(--#{$hue}-200);
+	}
+}
+
+// Form tabs: v16 paints each tab link with --card-bg, which differs from the Trevo surface in
+// dark mode and showed as a box behind every inactive tab.
+.form-tabs-list .form-tabs .nav-item .nav-link {
+	background-color: transparent;
+}
+
+// Dark indicator dots: desk/dark.scss draws them with --bg-<hue> (the pill background), which is
+// now a translucent tint. Dots need a solid mark, so use the hue's 400 step.
+@each $hue in green, blue, orange, yellow, red, purple, pink {
+	[data-theme="dark"] .indicator {
+		--indicator-dot-#{$hue}: var(--#{$hue}-400);
 	}
 }

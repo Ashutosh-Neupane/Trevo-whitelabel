@@ -1,5 +1,5 @@
 app_name = "trevo_whitelabel"
-app_title = "Trevo Whitelabel"
+app_title = "Trevo"
 app_publisher = "Ashutosh"
 app_description = "Whitelabel app for Trevo Cloud"
 app_email = "contact@dndts.net"
@@ -12,11 +12,10 @@ required_apps = ["erpnext"]
 # -----
 # One bundle for desk and website. It sets Frappe's own design tokens and styles a
 # handful of components; it never patches Frappe/ERPNext files or templates.
-# The v15-era overrides live in trevo_whitelabel/legacy_v15/ and are not loaded.
 app_include_css = ["trevo_theme.bundle.css"]
 web_include_css = ["trevo_theme.bundle.css"]
-# Small desk behaviours (form side-panel toggle, title image). Uses Frappe's public
-# events and Page API only.
+# Small desk behaviours (form side-panel toggle, title image, chart palette, sticky-header
+# scroll state). Uses Frappe's public events and Page API only.
 app_include_js = ["trevo_desk.bundle.js"]
 
 app_logo_url = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg"

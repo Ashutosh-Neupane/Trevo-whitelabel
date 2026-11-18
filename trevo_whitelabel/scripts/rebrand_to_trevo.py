@@ -60,8 +60,6 @@ def run():
         "Frappe Framework": "Trevo Framework",
         "Frappe Cloud": "Trevo Cloud",
         "Powered by Frappe": "Powered by Trevo",
-        "Frappe Technologies": "Dots and Dashes Technology Limited",
-        "Frappe Technologies Pvt. Ltd. and contributors": "Dots and Dashes Technology Limited",
         "ERPNext": "Trevo Next",
         "About ERPNext": "About Trevo Next",
         "ERPNext Settings": "Trevo Next Settings",
@@ -81,6 +79,15 @@ def run():
                 translations.setdefault(value, value.replace("ERPNext", "Trevo Next"))
         except Exception:
             pass
+
+    # Copyright notices name the actual copyright holders (Frappe/ERPNext are GPL/MIT) and are
+    # not rebranded. Remove translations an earlier version of this script added for them.
+    for source_text in ("Frappe Technologies", "Frappe Technologies Pvt. Ltd. and contributors"):
+        frappe.db.delete("Translation", {
+            "source_text": source_text,
+            "language": "en",
+            "translated_text": "Dots and Dashes Technology Limited",
+        })
 
     for source_text, translated_text in translations.items():
         try:

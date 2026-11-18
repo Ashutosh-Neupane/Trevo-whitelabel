@@ -2,6 +2,7 @@ import frappe
 
 
 TREVO_LOGO = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg"
+SYSTEM_ICON = "/assets/trevo_whitelabel/images/trevo-system.svg"
 
 
 def get_context(context):
@@ -39,6 +40,11 @@ def extend_bootinfo(bootinfo):
         if app.get("app_name") == "erpnext":
             app["app_logo_url"] = TREVO_LOGO
             app["app_title"] = "Trevo Next"
+        elif app.get("app_name") == "frappe":
+            # Frappe's admin app (users, settings, integrations) is titled "Framework", which
+            # means nothing to business users, and wears a grey cube. Same app, clearer label.
+            app["app_logo_url"] = SYSTEM_ICON
+            app["app_title"] = "System"
 
     # Read by trevo_desk.bundle.js. Guarded: the DocType does not exist until the first migrate.
     show_sidebar = 0
@@ -46,4 +52,5 @@ def extend_bootinfo(bootinfo):
         show_sidebar = frappe.utils.cint(frappe.db.get_single_value("Trevo Settings", "show_form_sidebar"))
     except Exception:
         pass
-    bootinfo.trevo = {"show_form_sidebar": show_sidebar}
+    # brand_name: appended to browser-tab titles by trevo_desk.bundle.js.
+    bootinfo.trevo = {"show_form_sidebar": show_sidebar, "brand_name": "Trevo"}
