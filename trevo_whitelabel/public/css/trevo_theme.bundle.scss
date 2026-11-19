@@ -1113,34 +1113,15 @@ body.trevo-scrolled .page-container:is(.editable-form, .submitted-form, .cancell
 	}
 }
 
-// ── Desk home (app launcher) ───────────────────────────────────
-// Frappe sizes the launcher as a fixed 6-column grid, so a site with two apps showed two small
-// icons stuck to the left of an empty canvas. Centre the tiles (auto-fit collapses empty
-// tracks), make each tile a card, and show the greeting trevo_desk.bundle.js adds above them.
+// ── Frappe apps screen (/desk/desktop) ─────────────────────────
+// Reached from the Trevo home's user menu ("All Apps"). Frappe sizes it as a fixed 6-column
+// grid, so two apps sat at the left of an empty canvas. Centre the tiles (auto-fit collapses
+// empty tracks) and make each a card. Styling only; the page is Frappe's.
 .desktop-page .desktop-container {
 	.icons-container {
 		flex-direction: column;
 		align-items: center;
 		margin-top: 72px;
-	}
-
-	.trevo-greeting {
-		text-align: center;
-		margin-bottom: 28px;
-
-		h1 {
-			margin: 0 0 6px;
-			font-size: 30px;
-			font-weight: 600;
-			letter-spacing: -0.01em;
-			color: var(--trevo-foreground);
-		}
-
-		p {
-			margin: 0;
-			font-size: var(--text-base);
-			color: var(--trevo-muted);
-		}
 	}
 
 	.icons {
@@ -1156,7 +1137,7 @@ body.trevo-scrolled .page-container:is(.editable-form, .submitted-form, .cancell
 		border: 1px solid var(--trevo-border);
 		border-radius: var(--trevo-radius-lg);
 		box-shadow: 0 1px 2px rgb(17 28 23 / 4%);
-		transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+		transition: border-color 150ms ease, box-shadow 150ms ease;
 
 		@media (hover: hover) {
 			&:hover {
@@ -1181,18 +1162,601 @@ body.trevo-scrolled .page-container:is(.editable-form, .submitted-form, .cancell
 			margin-top: 32px;
 		}
 
-		.trevo-greeting h1 {
-			font-size: 24px;
-		}
-
 		.icons {
 			grid-template-columns: repeat(auto-fit, minmax(100px, 132px)) !important;
 		}
 	}
 }
 
+// ── Trevo home (page/trevo_home) ───────────────────────────────
+// Top bar, greeting, Create, At a glance (Number Cards), Modules and Recent in one column.
+$trevo-home-width: 1120px;
+
+#page-trevo-home {
+	// The page draws its own bar and column; drop the page container's gutters.
+	.page-body,
+	.layout-main-section-wrapper,
+	.layout-main-section {
+		max-width: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.layout-main-section {
+		border: 0;
+		background: transparent;
+	}
+}
+
+.trevo-home-page {
+	min-height: 100vh;
+	background: var(--trevo-surface);
+}
+
+// ── Top bar ──
+.trevo-topbar {
+	position: sticky;
+	top: 0;
+	z-index: 10;
+	display: grid;
+	grid-template-columns: 1fr minmax(0, 480px) 1fr;
+	align-items: center;
+	gap: 16px;
+	height: 56px;
+	padding: 0 20px;
+	border-bottom: 1px solid var(--trevo-divider);
+	background: color-mix(in srgb, var(--trevo-surface) 88%, transparent);
+	backdrop-filter: blur(8px);
+}
+
+.trevo-topbar__brand {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	justify-self: start;
+	color: var(--trevo-foreground);
+	font-family: var(--trevo-font-display, inherit);
+	font-size: 18px;
+	font-weight: 600;
+	text-decoration: none;
+
+	img {
+		width: 28px;
+		height: 28px;
+	}
+
+	&:hover {
+		color: var(--trevo-foreground);
+		text-decoration: none;
+	}
+}
+
+.trevo-topbar__search {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 8px;
+	width: 100%;
+	height: 36px;
+	padding: 0 8px 0 12px;
+	border: 1px solid var(--trevo-border);
+	border-radius: var(--trevo-radius-md, 8px);
+	background: var(--trevo-table-head);
+	color: var(--trevo-muted);
+	font-size: var(--text-sm);
+	text-align: left;
+	cursor: text;
+	transition: border-color 150ms ease, background-color 150ms ease;
+
+	.icon {
+		flex: none;
+		color: var(--trevo-muted);
+	}
+
+	&:hover {
+		border-color: color-mix(in srgb, var(--trevo-fill) 40%, var(--trevo-border));
+		background: var(--trevo-surface);
+	}
+
+	&:focus-visible {
+		outline: none;
+		border-color: var(--trevo-fill);
+		box-shadow: var(--focus-default);
+	}
+
+	kbd {
+		margin-left: auto;
+		padding: 1px 6px;
+		border: 1px solid var(--trevo-border);
+		border-radius: 5px;
+		background: var(--trevo-surface);
+		box-shadow: none;
+		color: var(--trevo-muted);
+		font-family: inherit;
+		font-size: var(--text-xs);
+	}
+}
+
+.trevo-topbar__search-label {
+	flex: 1 1 auto;
+	min-width: 0;
+	text-align: left;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.trevo-topbar__actions {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	justify-self: end;
+
+	.desktop-notification-icon {
+		color: var(--trevo-muted);
+		border-radius: 50%;
+
+		&:hover {
+			color: var(--trevo-foreground);
+			background: var(--trevo-row-hover);
+		}
+	}
+}
+
+.trevo-topbar__avatar {
+	display: flex;
+	border-radius: 50%;
+
+	&:focus-visible {
+		outline: none;
+		box-shadow: var(--focus-default);
+	}
+}
+
+// ── Home column ──
+.trevo-home {
+	display: flex;
+	flex-direction: column;
+	gap: 32px;
+	width: min(#{$trevo-home-width}, 100%);
+	margin: 0 auto;
+	padding: 40px 20px 72px;
+}
+
+.trevo-greeting {
+	h1 {
+		margin: 0 0 6px;
+		font-size: 30px;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		color: var(--trevo-foreground);
+	}
+
+	p {
+		margin: 0;
+		font-size: var(--text-base);
+		color: var(--trevo-muted);
+	}
+
+	.trevo-greeting__date {
+		margin-bottom: 6px;
+		font-size: var(--text-sm);
+		font-weight: 600;
+		color: var(--trevo-ink);
+	}
+}
+
+.trevo-home__label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 12px;
+	font-family: inherit;
+	font-size: var(--text-sm);
+	font-weight: 600;
+	letter-spacing: 0;
+	color: var(--trevo-muted);
+
+	img {
+		width: 18px;
+		height: 18px;
+		object-fit: contain;
+	}
+}
+
+// Create: one row of pill buttons.
+.trevo-home__create-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.trevo-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	height: 34px;
+	padding: 0 14px 0 11px;
+	border: 1px solid var(--trevo-border);
+	border-radius: 999px;
+	background: var(--trevo-surface);
+	box-shadow: 0 1px 2px rgb(17 28 23 / 4%);
+	font-size: var(--text-sm);
+	font-weight: 500;
+	color: var(--trevo-foreground);
+	cursor: pointer;
+	transition: border-color 150ms ease, background-color 150ms ease;
+
+	.icon {
+		color: var(--trevo-ink);
+	}
+
+	&:hover {
+		border-color: color-mix(in srgb, var(--trevo-fill) 45%, var(--trevo-border));
+		background: var(--trevo-row-hover);
+	}
+
+	&:focus-visible {
+		outline: none;
+		border-color: var(--trevo-fill);
+		box-shadow: var(--focus-default);
+	}
+}
+
+// At a glance: module tabs over a row of Number Cards.
+.trevo-home__kpi-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px 16px;
+	margin-bottom: 12px;
+
+	.trevo-home__label {
+		margin: 0;
+	}
+}
+
+.trevo-tabs {
+	display: flex;
+	gap: 2px;
+	max-width: 100%;
+	padding: 3px;
+	border-radius: 10px;
+	background: var(--trevo-table-head);
+	box-shadow: inset 0 0 0 1px var(--trevo-divider);
+	overflow-x: auto;
+	scrollbar-width: none;
+
+	&::-webkit-scrollbar {
+		display: none;
+	}
+}
+
+.trevo-tab {
+	flex: none;
+	height: 28px;
+	padding: 0 12px;
+	border: 0;
+	border-radius: 7px;
+	background: transparent;
+	color: var(--trevo-muted);
+	font-size: var(--text-sm);
+	font-weight: 500;
+	white-space: nowrap;
+	cursor: pointer;
+
+	&:hover {
+		color: var(--trevo-foreground);
+	}
+
+	&.active {
+		background: var(--trevo-surface);
+		box-shadow: 0 1px 2px rgb(17 28 23 / 10%), 0 0 0 1px var(--trevo-border);
+		color: var(--trevo-foreground);
+	}
+
+	&:focus-visible {
+		outline: none;
+		box-shadow: var(--focus-default);
+	}
+}
+
+.trevo-home__kpi-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: 12px;
+}
+
+// Frappe's NumberCardWidget, in the home's card style.
+.trevo-kpi {
+	min-width: 0;
+
+	.widget.number-widget-box {
+		height: 100%;
+		margin: 0;
+		border: 1px solid var(--trevo-border);
+		border-radius: var(--trevo-radius-lg);
+		background: var(--trevo-surface);
+		box-shadow: 0 1px 2px rgb(17 28 23 / 4%);
+
+		&:hover {
+			border-color: var(--trevo-fill);
+			box-shadow: 0 0 0 3px var(--trevo-ring);
+		}
+	}
+
+	.widget-title {
+		color: var(--trevo-muted);
+		font-weight: 500;
+	}
+
+	// Up to two lines (Frappe's .ellipsis span keeps it to one), so "Total Outgoing
+	// Payment" is readable in a half-width card.
+	.widget-title .ellipsis {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		overflow: hidden;
+		white-space: normal;
+		text-overflow: clip;
+	}
+
+	.number {
+		color: var(--trevo-foreground);
+		font-variant-numeric: tabular-nums;
+	}
+}
+
+// Modules (main) beside Recent (aside).
+.trevo-home__columns {
+	display: grid;
+	grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+	gap: 32px;
+	align-items: start;
+}
+
+.trevo-home__main {
+	display: flex;
+	flex-direction: column;
+	gap: 28px;
+}
+
+.trevo-home__modules {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+	gap: 8px;
+}
+
+.trevo-module {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+	padding: 8px 10px;
+	border: 1px solid var(--trevo-border);
+	border-radius: var(--trevo-radius-lg);
+	background: var(--trevo-surface);
+	box-shadow: 0 1px 2px rgb(17 28 23 / 4%);
+	color: var(--trevo-foreground);
+	text-decoration: none;
+	transition: border-color 150ms ease, box-shadow 150ms ease;
+
+	&:hover {
+		border-color: var(--trevo-fill);
+		box-shadow: 0 0 0 3px var(--trevo-ring);
+		color: var(--trevo-foreground);
+		text-decoration: none;
+	}
+
+	&:focus-visible {
+		outline: none;
+		border-color: var(--trevo-fill);
+		box-shadow: var(--focus-default);
+	}
+}
+
+.trevo-module__icon {
+	display: inline-flex;
+	flex: 0 0 32px;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	border-radius: var(--trevo-radius-md, 8px);
+	background: color-mix(in srgb, var(--trevo-fill) 9%, var(--trevo-surface));
+	color: var(--trevo-ink);
+}
+
+.trevo-module__label {
+	overflow: hidden;
+	font-size: var(--text-base);
+	font-weight: 600;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+// Secondary group (System): same grid, quieter tiles, so business modules lead.
+.trevo-home__group--secondary {
+	.trevo-module {
+		padding: 6px 8px;
+		border-color: transparent;
+		background: transparent;
+		box-shadow: none;
+
+		&:hover {
+			border-color: var(--trevo-border);
+			background: var(--trevo-row-hover);
+			box-shadow: none;
+		}
+	}
+
+	.trevo-module__icon {
+		flex-basis: 28px;
+		width: 28px;
+		height: 28px;
+		background: var(--trevo-table-head);
+		color: var(--trevo-muted);
+	}
+
+	.trevo-module__label {
+		font-size: var(--text-sm);
+		font-weight: 500;
+	}
+}
+
+// Recent: a quiet list in a card.
+.trevo-home__recent-list {
+	display: flex;
+	flex-direction: column;
+	min-height: 56px;
+	padding: 4px;
+	border: 1px solid var(--trevo-border);
+	border-radius: var(--trevo-radius-lg);
+	background: var(--trevo-surface);
+}
+
+.trevo-recent {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+	padding: 8px 10px;
+	border-radius: var(--trevo-radius-md, 8px);
+	color: var(--trevo-foreground);
+	text-decoration: none;
+
+	&:hover {
+		background: var(--trevo-row-hover);
+		color: var(--trevo-foreground);
+		text-decoration: none;
+	}
+
+	&:focus-visible {
+		outline: none;
+		box-shadow: var(--focus-default);
+	}
+}
+
+.trevo-recent__icon {
+	display: inline-flex;
+	flex: 0 0 28px;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border-radius: var(--trevo-radius-sm);
+	background: var(--trevo-table-head);
+	color: var(--trevo-muted);
+}
+
+.trevo-recent__text {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.trevo-recent__title,
+.trevo-recent__meta {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.trevo-recent__title {
+	font-size: var(--text-sm);
+	font-weight: 500;
+}
+
+.trevo-recent__meta {
+	font-size: var(--text-xs);
+	color: var(--trevo-muted);
+}
+
+.trevo-recent__action {
+	font-weight: 500;
+	color: var(--trevo-foreground);
+
+	&.is-submitted {
+		color: var(--trevo-ink);
+	}
+
+	&.is-cancelled {
+		color: var(--red-600);
+	}
+}
+
+[data-theme="dark"] .trevo-recent__action.is-cancelled {
+	color: var(--red-400);
+}
+
+.trevo-home__empty {
+	margin: 0;
+	padding: 12px;
+	font-size: var(--text-sm);
+	color: var(--trevo-muted);
+}
+
+@media (max-width: 991px) {
+	.trevo-home__columns {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+@media (max-width: 767px) {
+	.trevo-topbar {
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		gap: 10px;
+		padding: 0 12px;
+	}
+
+	.trevo-topbar__brand span,
+	.trevo-topbar__search kbd {
+		display: none;
+	}
+
+	.trevo-home {
+		gap: 24px;
+		padding: 24px 16px 56px;
+	}
+
+	.trevo-greeting h1 {
+		font-size: 24px;
+	}
+
+	.trevo-home__modules {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.trevo-home__kpi-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 8px;
+	}
+
+	// One scrollable row instead of wrapped rows; the bleed to the screen edge keeps the
+	// row from looking clipped at the gutter.
+	.trevo-home__create-list {
+		flex-wrap: nowrap;
+		margin: 0 -16px;
+		padding: 2px 16px 4px;
+		overflow-x: auto;
+		scrollbar-width: none;
+
+		&::-webkit-scrollbar {
+			display: none;
+		}
+	}
+
+	.trevo-chip {
+		flex: 0 0 auto;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
-	.desktop-page .desktop-icon {
+	.desktop-page .desktop-icon,
+	.trevo-topbar__search,
+	.trevo-chip,
+	.trevo-module {
 		transition: none;
 	}
 }

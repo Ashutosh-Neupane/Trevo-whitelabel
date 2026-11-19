@@ -4,9 +4,12 @@
 // 1. Form side panel (image, assign, attachments, tags, share) is closed by default.
 //    A button in the form header opens/closes it; the choice is remembered per DocType.
 //    Site default: Trevo Settings > "Open the form side panel by default".
+//    Opened documents are remembered in localStorage for "Recent" on the Trevo home.
 // 2. DocTypes with an image field show that image next to the form title.
 // 3. Charts use Trevo's palette instead of Frappe's blue-first default.
 // 4. Scroll state classes so sticky headers can show elevation once content passes under them.
+// 5. Browser-tab titles end in "· Trevo".
+// 7. Install identity: manifest, touch icon and theme-color.
 
 (function () {
 	const KEY = (doctype) => `trevo:form-side:${doctype}`;
@@ -69,11 +72,38 @@
 		$title.prepend($el);
 	}
 
+	// Documents opened, for "Recent" on the Trevo home. Frappe keeps no server record of form
+	// visits (Route History skips forms), so remember the last few in this browser, per user.
+	// Only doctype, name and time; the home re-checks each against permissions on the server.
+	const OPENED_KEY = () => `trevo:opened:${frappe.session.user}`;
+	const OPENED_MAX = 30;
+	function record_opened(frm) {
+		if (frm.is_new()) return;
+		try {
+			const list = JSON.parse(localStorage.getItem(OPENED_KEY()) || "[]").filter(
+				(row) => !(row.doctype === frm.doctype && row.name === frm.docname)
+			);
+			list.unshift({ doctype: frm.doctype, name: frm.docname, when: frappe.datetime.now_datetime() });
+			localStorage.setItem(OPENED_KEY(), JSON.stringify(list.slice(0, OPENED_MAX)));
+		} catch (e) {
+			// storage blocked or full: Recent simply shows edits and lists
+		}
+	}
+	frappe.provide("trevo");
+	trevo.get_opened = function () {
+		try {
+			return JSON.parse(localStorage.getItem(OPENED_KEY()) || "[]");
+		} catch (e) {
+			return [];
+		}
+	};
+
 	$(document).on("form-refresh", function (_e, frm) {
 		if (!frm || !frm.page || frm.meta.istable) return;
 		setup_toggle(frm);
 		apply(frm);
 		setup_title_image(frm);
+		record_opened(frm);
 	});
 
 	// 4. Scroll state for sticky headers. v16 scrolls .main-section (forms, workspaces,
@@ -127,28 +157,9 @@
 		};
 	}
 
-	// 6. Desk home (app launcher): a greeting above the app tiles. Added next to Frappe's grid;
-	//    the grid itself is untouched.
-	function greeting() {
-		const hour = new Date().getHours();
-		if (hour < 12) return __("Good morning");
-		if (hour < 17) return __("Good afternoon");
-		return __("Good evening");
-	}
-	function setup_desktop_greeting() {
-		const $container = $(".desktop-container .icons-container").first();
-		if (!$container.length || $container.find(".trevo-greeting").length) return;
-		const name = frappe.boot.user && (frappe.boot.user.first_name || frappe.session.user_fullname);
-		$(`<div class="trevo-greeting">
-			<h1 class="trevo-display"></h1>
-			<p></p>
-		</div>`)
-			.find("h1").text(name ? `${greeting()}, ${name}` : greeting()).end()
-			.find("p").text(__("Choose an app to get started.")).end()
-			.prependTo($container);
-	}
-	$(document).on("page-change", () => requestAnimationFrame(setup_desktop_greeting));
-	$(() => setTimeout(setup_desktop_greeting, 300));
+	// 6. The desk home is its own Page (trevo_whitelabel/page/trevo_home), set as the
+	//    "desktop:home_page" default. Frappe's apps screen (/desk/desktop) is left as Frappe
+	//    renders it; the theme only styles its tiles.
 
 	// 7. Install / home-screen identity. desk.html ships Frappe's blue theme-color (#0089FF) and
 	//    no manifest or touch icon, so "Add to Home Screen" showed a screenshot icon and a blue

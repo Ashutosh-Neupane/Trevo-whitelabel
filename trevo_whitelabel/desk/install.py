@@ -1,19 +1,27 @@
 import frappe
 
-# Removed in Nov 2026: the separate Trevo dashboard desk Page. /desk uses Frappe's own home.
-DASHBOARD_PAGE = "trevo-dashboard"
+# The Trevo home Page (trevo_whitelabel/page/trevo_home), opened at /desk.
+HOME_PAGE = "trevo-home"
+# Removed in Nov 2026: an earlier Trevo dashboard desk Page.
+RETIRED_PAGES = ("trevo-dashboard",)
+# Frappe's own home; a site on it has not chosen a home page of its own.
+FRAPPE_HOME = "desktop"
 
 
-def use_default_desk_home():
-	"""Let /desk open Frappe's own home and drop the retired Trevo dashboard Page.
+def use_trevo_home():
+	"""Make /desk open the Trevo home Page.
 
-	An earlier version pointed the "desktop:home_page" default at the Trevo dashboard and
-	shipped it as a desk Page. Its files are gone; remove what it left in the database.
+	Frappe reads the "desktop:home_page" default at boot and falls back to its apps screen
+	("desktop") when the page is missing or not permitted, so removing this app restores the
+	stock home. A home page a site chose for itself is kept.
 	"""
-	if frappe.db.get_default("desktop:home_page") == DASHBOARD_PAGE:
-		frappe.db.delete("DefaultValue", {"defkey": "desktop:home_page", "defvalue": DASHBOARD_PAGE})
+	for page in RETIRED_PAGES:
+		if frappe.db.exists("Page", page):
+			frappe.delete_doc("Page", page, force=True, ignore_permissions=True)
 
-	if frappe.db.exists("Page", DASHBOARD_PAGE):
-		frappe.delete_doc("Page", DASHBOARD_PAGE, force=True, ignore_permissions=True)
+	current = frappe.db.get_default("desktop:home_page")
+	if not current or current == FRAPPE_HOME or current in RETIRED_PAGES:
+		if frappe.db.exists("Page", HOME_PAGE):
+			frappe.db.set_default("desktop:home_page", HOME_PAGE)
 
 	frappe.clear_cache()

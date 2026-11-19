@@ -1,0 +1,394 @@
+// Trevo Home: the desk's home page (set as the "desktop:home_page" default on install).
+//
+// A Page of its own rather than changes to Frappe's apps screen, so Frappe can change that
+// screen without breaking this one. Built from public desk APIs only:
+//   - top bar: logo, search (the desk's awesomebar), notifications (frappe.ui.Notifications),
+//     user menu (frappe.ui.Dropdown)
+//   - greeting with today's date
+//   - Create: new-document buttons, only for DocTypes the user may create
+//   - At a glance: the Number Cards of the modules the user can open, one module at a time,
+//     drawn by Frappe's own NumberCardWidget (permission filtering: desk/home.py)
+//   - Modules: each app's dock entries, the same list, icons and routes as the left rail
+//   - Recent: what the user submitted, edited, opened and viewed (desk/home.py)
+// Frappe's apps screen stays at /desk/desktop and is linked from the user menu.
+
+// Wrapped: Frappe evaluates page scripts in the global scope.
+(() => {
+	frappe.pages["trevo-home"].on_page_load = function (wrapper) {
+		const page = frappe.ui.make_app_page({
+			parent: wrapper,
+			title: __("Home"),
+			single_column: true,
+			hide_sidebar: true,
+			hide_dock: true,
+		});
+		page.page_head.hide();
+		frappe.pages["trevo-home"].home = new TrevoHome(page);
+	};
+
+	frappe.pages["trevo-home"].on_page_show = function () {
+		frappe.pages["trevo-home"].home?.refresh();
+	};
+
+	const esc = (s) => frappe.utils.escape_html(String(s == null ? "" : s));
+	const icon = (name, size) => frappe.utils.icon(name, size || "sm");
+	const store = {
+		get(key) {
+			try {
+				return localStorage.getItem(key);
+			} catch (e) {
+				return null;
+			}
+		},
+		set(key, value) {
+			try {
+				localStorage.setItem(key, value);
+			} catch (e) {
+				// storage blocked: the choice just isn't remembered
+			}
+		},
+	};
+
+	// Common first actions in a business desk. Shown only when the user may create the
+	// DocType, so a role without Selling never sees "New Sales Order".
+	const QUICK_CREATE = [
+		"Sales Invoice",
+		"Sales Order",
+		"Quotation",
+		"Customer",
+		"Item",
+		"Purchase Order",
+		"Payment Entry",
+		"Lead",
+	];
+	const QUICK_CREATE_MAX = 6;
+	const KPI_MODULE_KEY = () => `trevo:home-kpi-module:${frappe.session.user}`;
+	// Read-only: the home shows cards, it does not edit workspaces.
+	const KPI_WIDGET_OPTIONS = {
+		allow_sorting: false,
+		allow_create: false,
+		allow_delete: false,
+		allow_hiding: false,
+		allow_edit: false,
+		allow_resize: false,
+		for_workspace: true,
+	};
+	const ACTION_CLASS = {
+		Submitted: "is-submitted",
+		Cancelled: "is-cancelled",
+	};
+
+	class TrevoHome {
+		constructor(page) {
+			this.page = page;
+			this.$root = $(`<div class="trevo-home-page">
+				<header class="trevo-topbar"></header>
+				<main class="trevo-home"></main>
+			</div>`).appendTo(page.body);
+			this.$topbar = this.$root.find(".trevo-topbar");
+			this.$home = this.$root.find(".trevo-home");
+			this.make_topbar();
+		}
+
+		refresh() {
+			this.$home.empty();
+			this.render_greeting();
+			this.render_create();
+			const $kpis = $(`<section class="trevo-home__kpis hidden"></section>`).appendTo(this.$home);
+			const $columns = $(`<div class="trevo-home__columns">
+				<div class="trevo-home__main"></div>
+				<aside class="trevo-home__aside"></aside>
+			</div>`).appendTo(this.$home);
+			this.render_modules($columns.find(".trevo-home__main"));
+			const $recent = this.make_recent_section($columns.find(".trevo-home__aside"));
+
+			const opened = (window.trevo && trevo.get_opened && trevo.get_opened()) || [];
+			frappe
+				.xcall("trevo_whitelabel.desk.home.get_home_data", { opened: JSON.stringify(opened) })
+				.then((data) => {
+					this.render_kpis($kpis, data.kpis || []);
+					this.render_recent($recent, data.recent || []);
+				})
+				.catch(() => {
+					$kpis.remove();
+					$recent.remove();
+				});
+		}
+
+		// ── Top bar ──
+		make_topbar() {
+			const logo = frappe.boot.app_logo_url || "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg";
+			const shortcut = frappe.utils.is_mac() ? "⌘K" : "Ctrl+K";
+			this.$topbar.html(`
+				<a class="trevo-topbar__brand" href="/desk" aria-label="${esc(__("Home"))}">
+					<img src="${esc(logo)}" alt="">
+					<span>Trevo</span>
+				</a>
+				<button type="button" class="trevo-topbar__search">
+					${icon("search", "sm")}
+					<span class="trevo-topbar__search-label">${esc(__("Search or type a command"))}</span>
+					<kbd>${esc(shortcut)}</kbd>
+				</button>
+				<div class="trevo-topbar__actions">
+					<div class="trevo-topbar__notifications">
+						<button type="button" class="btn-reset desktop-notification-icon" aria-label="${esc(__("Notifications"))}">
+							${icon("bell", "md")}
+							<span class="notification-count hidden" aria-live="polite"></span>
+						</button>
+					</div>
+					<button type="button" class="btn-reset trevo-topbar__avatar" aria-label="${esc(__("User menu"))}">
+						${frappe.avatar(frappe.session.user, "avatar-medium")}
+					</button>
+				</div>
+			`);
+
+			// The desk's awesomebar (made by make_app_page); Ctrl/⌘+K already opens it globally.
+			const $search = this.$topbar.find(".trevo-topbar__search");
+			if (frappe.boot.desk_settings?.search_bar) {
+				$search.on("click", () => frappe.search.open_awesomebar_from_global_search_shortcut?.());
+			} else {
+				$search.addClass("hidden");
+			}
+
+			if (frappe.boot.desk_settings?.notifications !== 0) {
+				this.notifications = new frappe.ui.Notifications({
+					wrapper: this.$topbar.find(".trevo-topbar__notifications"),
+					popover: true,
+				});
+			} else {
+				this.$topbar.find(".trevo-topbar__notifications").addClass("hidden");
+			}
+
+			this.make_user_menu();
+		}
+
+		make_user_menu() {
+			const is_dark = document.documentElement.getAttribute("data-theme") === "dark";
+			new frappe.ui.Dropdown({
+				trigger: this.$topbar.find(".trevo-topbar__avatar"),
+				align: "end",
+				options: [
+					{
+						label: __("My Profile"),
+						icon: "user",
+						href: `/desk/user/${encodeURIComponent(frappe.session.user)}`,
+					},
+					{ label: __("All Apps"), icon: "layout-grid", href: "/desk/desktop" },
+					{
+						label: __("Toggle Theme"),
+						icon: is_dark ? "sun" : "moon",
+						onclick: () => new frappe.ui.ThemeSwitcher().show(),
+					},
+					{ label: __("About"), icon: "info", onclick: () => frappe.ui.toolbar.show_about() },
+					{ label: __("Log out"), icon: "log-out", onclick: () => frappe.app.logout() },
+				],
+			});
+		}
+
+		// ── Greeting and Create ──
+		render_greeting() {
+			const hour = new Date().getHours();
+			const hello =
+				hour < 12 ? __("Good morning") : hour < 17 ? __("Good afternoon") : __("Good evening");
+			const name = frappe.boot.user?.first_name || frappe.session.user_fullname;
+			let date = "";
+			try {
+				date = new Date().toLocaleDateString(frappe.boot.lang || undefined, {
+					weekday: "long",
+					day: "numeric",
+					month: "long",
+				});
+			} catch (e) {
+				// unknown locale: leave the date out
+			}
+			$(`<header class="trevo-greeting">
+				<p class="trevo-greeting__date">${esc(date)}</p>
+				<h1 class="trevo-display">${esc(name ? `${hello}, ${name}` : hello)}</h1>
+				<p class="trevo-greeting__lead">${esc(__("Everything in Trevo, one click away."))}</p>
+			</header>`).appendTo(this.$home);
+		}
+
+		render_create() {
+			const can = new Set(frappe.boot.user.can_create || []);
+			const doctypes = QUICK_CREATE.filter((dt) => can.has(dt)).slice(0, QUICK_CREATE_MAX);
+			if (!doctypes.length) return;
+			const $section = $(`<section class="trevo-home__create" aria-label="${esc(__("Create"))}">
+				<h2 class="trevo-home__label">${esc(__("Create"))}</h2>
+				<div class="trevo-home__create-list"></div>
+			</section>`).appendTo(this.$home);
+			doctypes.forEach((dt) => {
+				$(`<button type="button" class="trevo-chip">${icon("plus", "xs")}<span>${esc(__(dt))}</span></button>`)
+					.on("click", () => frappe.new_doc(dt))
+					.appendTo($section.find(".trevo-home__create-list"));
+			});
+		}
+
+		// ── At a glance ──
+		// Business modules in the order of the user's own dock, so the first tab is the module
+		// they put first. Each tab's cards are drawn once, on first open.
+		dock_modules() {
+			const sidebar = frappe.app?.sidebar;
+			if (!sidebar?.collect_dock_entries) return [];
+			return (frappe.boot.app_data || [])
+				.filter((app) => app.on_apps_screen)
+				.sort((a, b) => (a.sequence_id ?? 100) - (b.sequence_id ?? 100))
+				.flatMap((app) => sidebar.collect_dock_entries(app).map((entry) => entry.module))
+				.filter(Boolean);
+		}
+
+		module_label(module) {
+			const sidebars = frappe.boot.module_sidebars || {};
+			const sidebar = sidebars[module] || Object.values(sidebars).find((s) => s.module === module);
+			return __(sidebar?.label || module);
+		}
+
+		render_kpis($section, groups) {
+			if (!groups.length || !frappe.widget?.make_widget) {
+				$section.remove();
+				return;
+			}
+			const order = this.dock_modules();
+			const rank = (m) => (order.includes(m) ? order.indexOf(m) : order.length);
+			groups = groups.slice().sort((a, b) => rank(a.module) - rank(b.module));
+
+			$section.removeClass("hidden").html(`
+				<div class="trevo-home__kpi-head">
+					<h2 class="trevo-home__label">${esc(__("At a glance"))}</h2>
+					<div class="trevo-tabs" role="tablist" aria-label="${esc(__("Module"))}"></div>
+				</div>
+				<div class="trevo-home__kpi-panels"></div>
+			`);
+			const $tabs = $section.find(".trevo-tabs");
+			const $panels = $section.find(".trevo-home__kpi-panels");
+			const panels = {};
+
+			const select = (module) => {
+				$tabs.find(".trevo-tab").each(function () {
+					const on = this.dataset.module === module;
+					this.classList.toggle("active", on);
+					this.setAttribute("aria-selected", String(on));
+					this.tabIndex = on ? 0 : -1;
+				});
+				Object.values(panels).forEach(($p) => $p.addClass("hidden"));
+				if (!panels[module]) {
+					const group = groups.find((g) => g.module === module);
+					panels[module] = $(`<div class="trevo-home__kpi-grid" role="tabpanel"></div>`).appendTo($panels);
+					group.cards.forEach((card) => {
+						const $cell = $(`<div class="trevo-kpi"></div>`).appendTo(panels[module]);
+						frappe.widget.make_widget({
+							widget_type: "number_card",
+							container: $cell,
+							name: card.name,
+							number_card_name: card.name,
+							label: card.label,
+							options: KPI_WIDGET_OPTIONS,
+						});
+					});
+				}
+				panels[module].removeClass("hidden");
+				store.set(KPI_MODULE_KEY(), module);
+			};
+
+			groups.forEach((group) => {
+				$(`<button type="button" class="trevo-tab" role="tab" data-module="${esc(group.module)}">
+					${esc(this.module_label(group.module))}
+				</button>`)
+					.on("click", () => select(group.module))
+					.appendTo($tabs);
+			});
+			// Arrow keys move between tabs, as in any tab list.
+			$tabs.on("keydown", ".trevo-tab", (e) => {
+				if (!["ArrowRight", "ArrowLeft"].includes(e.key)) return;
+				const $all = $tabs.find(".trevo-tab");
+				const i = $all.index(e.currentTarget) + (e.key === "ArrowRight" ? 1 : -1);
+				const next = $all.get((i + $all.length) % $all.length);
+				next.focus();
+				next.click();
+				e.preventDefault();
+			});
+
+			const saved = store.get(KPI_MODULE_KEY());
+			select(groups.some((g) => g.module === saved) ? saved : groups[0].module);
+		}
+
+		// ── Modules ──
+		// One group per app on the apps screen, in Frappe's order (business apps first; the
+		// framework's "System" declares sequence 1000 so it trails, and is styled as secondary).
+		render_modules($main) {
+			const sidebar = frappe.app?.sidebar;
+			if (!sidebar?.collect_dock_entries || !sidebar.dock_entry_route) return;
+			const apps = (frappe.boot.app_data || [])
+				.filter((app) => app.on_apps_screen)
+				.sort((a, b) => (a.sequence_id ?? 100) - (b.sequence_id ?? 100));
+
+			apps.forEach((app) => {
+				const entries = sidebar
+					.collect_dock_entries(app)
+					.map((entry) => ({ entry, route: sidebar.dock_entry_route(entry) }))
+					.filter((x) => x.route);
+				if (!entries.length) return;
+
+				const secondary = app.app_name === "frappe";
+				const $group = $(`<section class="trevo-home__group${secondary ? " trevo-home__group--secondary" : ""}">
+					<h2 class="trevo-home__label">
+						${app.app_logo_url ? `<img src="${esc(app.app_logo_url)}" alt="">` : ""}
+						<span>${esc(__(app.app_title))}</span>
+					</h2>
+					<div class="trevo-home__modules"></div>
+				</section>`).appendTo($main);
+
+				entries.forEach(({ entry, route }) => {
+					const external = route.startsWith("http");
+					$(`<a class="trevo-module" href="${esc(route)}"${external ? ' target="_blank" rel="noopener"' : ""}>
+						<span class="trevo-module__icon">${entry.icon ? icon(entry.icon, "md") : ""}</span>
+						<span class="trevo-module__label">${esc(__(entry.label))}</span>
+					</a>`)
+						.on("click", (e) => {
+							// Same as the rail: select the module's sidebar first, then route.
+							if (external || e.metaKey || e.ctrlKey || e.shiftKey) return;
+							e.preventDefault();
+							sidebar.open_dock_entry(entry);
+						})
+						.appendTo($group.find(".trevo-home__modules"));
+				});
+			});
+		}
+
+		// ── Recent ──
+		make_recent_section($aside) {
+			return $(`<section class="trevo-home__recent" aria-label="${esc(__("Recent"))}">
+				<h2 class="trevo-home__label">${esc(__("Recent"))}</h2>
+				<div class="trevo-home__recent-list" aria-busy="true"></div>
+			</section>`).appendTo($aside);
+		}
+
+		recent_link(item) {
+			if (item.type === "Form") return frappe.utils.get_form_link(item.doctype, item.name);
+			if (item.type === "List") return `/desk/${frappe.router.slug(item.doctype)}`;
+			return `/desk/query-report/${encodeURIComponent(item.name)}`;
+		}
+
+		render_recent($section, items) {
+			const $list = $section.find(".trevo-home__recent-list").attr("aria-busy", "false");
+			if (!items.length) {
+				$list.append(
+					`<p class="trevo-home__empty">${esc(__("Documents you open or change will show up here."))}</p>`
+				);
+				return;
+			}
+			const icons = { Form: "file-text", List: "list", Report: "chart-bar" };
+			items.forEach((item) => {
+				$(`<a class="trevo-recent" href="${esc(this.recent_link(item))}">
+					<span class="trevo-recent__icon">${icon(icons[item.type] || "file", "sm")}</span>
+					<span class="trevo-recent__text">
+						<span class="trevo-recent__title">${esc(item.title)}</span>
+						<span class="trevo-recent__meta">
+							<span class="trevo-recent__action ${ACTION_CLASS[item.action_key] || ""}">${esc(item.action)}</span>
+							· ${esc(item.subtitle)} · ${esc(frappe.datetime.prettyDate(item.when, true))}
+						</span>
+					</span>
+				</a>`).appendTo($list);
+			});
+		}
+	}
+})();

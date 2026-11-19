@@ -41,13 +41,13 @@ website_route_rules = [
 	{"from_route": "/login-classic", "to_route": "login"},
 ]
 
-# Install / migrate: database settings only (names, logo, home page).
+# Install / migrate: database settings only (names, logo, and /desk opening the Trevo home page).
 after_install = [
 	"trevo_whitelabel.scripts.rebrand_to_trevo.run",
-	"trevo_whitelabel.desk.install.use_default_desk_home",
+	"trevo_whitelabel.desk.install.use_trevo_home",
 ]
 
 after_migrate = [
 	"trevo_whitelabel.scripts.rebrand_to_trevo.run",
-	"trevo_whitelabel.desk.install.use_default_desk_home",
+	"trevo_whitelabel.desk.install.use_trevo_home",
 ]

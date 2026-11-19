@@ -554,3 +554,47 @@ I checked this with screenshots of the About dialog, Kanban in light and dark, a
   - No existing records were changed.
 
 I checked this with screenshots of the Lead and Opportunity Kanban, Gantt in light and dark, and the CRM and Support sidebars (no banner). `verify.mjs` reported no overflow and no errors.
+
+## 2026-11-19: Trevo home Page with KPIs
+
+**Why a Page of its own.** The first version rewrote Frappe's apps screen through its `desktop_screen` event and hid its tiles. Following the user's suggestion, the home is now a standard desk Page, `trevo-home` (`trevo_whitelabel/page/trevo_home`), set as the `desktop:home_page` default.
+- Frappe can change its apps screen without breaking the home.
+- The apps screen is left untouched and stays at `/desk/desktop` (user menu → All Apps).
+- `desk/install.py` (`use_trevo_home`) sets the default only when the site has no home page of its own (empty, "desktop" or the retired "trevo-dashboard").
+- Frappe falls back to its apps screen if the Page is missing, so uninstalling restores the stock home.
+
+**Top bar.** It uses only public desk APIs:
+- the desk's awesomebar (`frappe.search.open_awesomebar_from_global_search_shortcut`; Ctrl/⌘+K already works globally);
+- `frappe.ui.Notifications` in popover mode;
+- `frappe.ui.Dropdown` for the user menu: My Profile, All Apps, Toggle Theme, About, Log out. Frappe's hard-coded "Frappe Support" item is not carried over.
+
+**Sections:**
+- Greeting with the date.
+- Create: up to 6 creatable DocTypes from `frappe.boot.user.can_create`.
+- At a glance: KPIs.
+- Modules: each app's dock entries via `frappe.app.sidebar`. The framework's System group is styled as secondary.
+- Recent.
+
+**KPIs** (`desk/home.py`, `get_home_data`):
+- A card is offered when:
+  1. it sits on a public workspace the user may open (`Workspace.is_permitted`: module not blocked, role allowed),
+  2. the user may read it (Number Card permission: its DocType or report),
+  3. it belongs to a business app (framework admin cards are excluded).
+- Values are drawn by Frappe's own NumberCardWidget (`frappe.widget.make_widget`, read-only options). They go through `number_card.get_result` → `frappe.get_list`, so User Permissions apply.
+- Cards are grouped by module. Tabs follow the user's dock order; the chosen tab is remembered per user.
+- Clicking a card opens the filtered list.
+
+**Recent** (server-side). Frappe keeps no server record of form visits: Route History skips forms, and `user_recent` is never written in v16. Recent therefore merges three sources:
+- Submitted / Cancelled / Edited: the user's Version rows (docstatus changes give the verb).
+- Opened: documents opened in this browser. The desk bundle records doctype, name and time in localStorage on `form-refresh`.
+- Viewed: lists and reports from Route History.
+
+Every document is re-checked for existence and read permission, and shown by its title with its ID as subtitle.
+
+**Verification:**
+- Administrator sees 10 KPI tabs. A demo Sales User (`sales.demo@trevo.example`, created for this check) sees Selling, Stock, Quality and CRM only, and Create without Sales Invoice or Purchase Order.
+- A KPI click opened Sales Orders filtered "To Deliver".
+- Search, notifications, the user menu, the remembered tab, module and Recent links all worked.
+- Screenshots in light, dark and at 390px.
+- `verify.mjs`: no overflow, no page errors.
+- Console socket.io errors come from this Docker setup (no realtime server), not from the page.
