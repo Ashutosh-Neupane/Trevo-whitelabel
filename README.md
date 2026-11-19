@@ -33,9 +33,11 @@ lists, permissions or calculations behave.
   - Chart palette from the Trevo tokens.
   - Scroll-state classes for the sticky headers.
 - **Home** (`page/trevo_home`, `desk/home.py`): `/desk` opens the Trevo home, with search,
-  notifications and the user menu; Create buttons; KPI cards (Number Cards) for the modules the
+  notifications and the user menu; a "Needs your attention" sidebar (workflow approvals with inline
+  Approve/Reject, the user's own documents to move on, assigned ToDos); Create buttons that follow
+  the selected module tab (configurable in Trevo Settings > Home); KPI cards (Number Cards) for the modules the
   user may open, filtered by their permissions, with each module workspace's first chart and a
-  link to that workspace; each app's modules the user can actually open; DocTypes made on the
+  links to that workspace, the module's full Dashboard and, when installed, Frappe Insights; each app's modules the user can actually open; DocTypes made on the
   site, grouped under their module ("Selling · Custom", "Field Service · Custom"); and Recent (what the user
   submitted, edited, opened and viewed). Frappe's apps screen stays at `/desk/desktop`.
 - **Landing (`www/start.py`):** `/`, `/index` and sign-in go through `/start`, which sends desk
@@ -48,7 +50,7 @@ lists, permissions or calculations behave.
 - **Sign-in:** `/signin` is the login page. `/login` redirects there, and the stock page
   remains at `/login-classic`.
 - **Settings:** the *Trevo Settings* single DocType holds site options such as whether the
-  form side panel opens by default.
+  form side panel opens by default, and which documents the home's Create offers.
 
 ## Install
 

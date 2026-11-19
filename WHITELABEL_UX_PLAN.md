@@ -690,3 +690,72 @@ business apps and before the framework's System group. Permissions still apply p
 the Sales user sees only "Selling · Custom". For a full module tile in the rail, the apps screen
 and the KPI tabs, give the module a Workspace and sidebar and add it to the app's dock; the home
 then shows it with the business modules automatically.
+
+## 2026-11-19 (b): Role-based home — work queue, usage, module-driven Create
+
+**What this page is.** Business software calls this a *Role Center* (Microsoft Dynamics) or
+role-based home page. It combines a work queue (what is waiting on me), KPIs (how the business
+is doing), and shortcuts (what I usually create or open). A "KPI dashboard" is only the middle
+part. Deep analysis stays in each module's Dashboard and, when installed, Frappe Insights.
+
+**Frappe Insights (researched, not installed).**
+- Insights v3 (`frappe/insights`, branch `version-3`) supports Frappe 15 and 16. It runs as a
+  separate SPA at `/insights` with its own query builder, workbooks and dashboards. It uses
+  desk permissions.
+- Its public-embed mode shows the owner's data to every viewer, so the home does not iframe it.
+- Frappe/ERPNext v16.60 can let Insights claim Number Cards and Dashboard Charts. The home's
+  Frappe widgets then render through Insights with no change here.
+- What the home borrows from it:
+  - every number links to deeper analysis (workspace → full Dashboard → Insights);
+  - one focused chart per module instead of many;
+  - a per-user choice of module, remembered.
+
+**Changes**
+- **Needs your attention** (sidebar, sticky on desktop, first on phones). Built from active
+  Workflows and the user's roles (`get_approvals`).
+  - "Waiting for your approval": documents in a state where this user has a transition.
+  - "Your documents to move on": the user's own documents with a next step.
+  - "Assigned to you": open ToDos, with overdue, due-date and High pills.
+  - Approve/Reject inline. They call Frappe's own `bulk_workflow_approval`, after a
+    confirmation that names the document number, party and amount.
+- **Headline** under the greeting: "2 waiting for your approval · 1 overdue task", or "You're
+  all caught up."
+- **Usage ranking** (`get_usage`, last 90 days). Scores come from Version edits, Route History
+  visits and recently opened documents. Usage orders the KPI tabs and the Create buttons.
+- **Create follows the selected module.**
+  - Create sits beside the greeting: two inline buttons and a "New" menu.
+  - Selecting a KPI tab (e.g. Stock) redraws it with that module's documents: Stock Entry,
+    Material Request, Purchase Receipt, …
+  - The menu has the module's section first, then "Other".
+  - The module's documents come from its sidebar's DocType links, with common documents
+    first, filtered by `can_create`, without Single DocTypes, ordered by usage.
+- **Trevo Settings > Home > Create buttons** (child table *Trevo Home Create*).
+  - An administrator lists the DocTypes to offer. Module is fetched from the DocType.
+  - When rows exist they replace the general list, and a module tab shows its configured rows.
+  - A module with no configured rows falls back to its own sidebar documents.
+  - Users still see only what they may create.
+- **Dashboard links** under each tab: "Open <workspace>", "Full dashboard" (the module's
+  Dashboard at `/desk/dashboard-view/<name>`, if the user may read it) and "Analyse in
+  Insights" (only when Insights is installed and readable).
+- **Layout.** Main column plus a 340px sidebar.
+  - ≥1680px: content 1440px, sidebar 380px.
+  - ≥2200px (TV): content 1760px, sidebar 420px.
+  - ≥2560px: forms up to 2000px wide.
+  - Frappe caps menus at 320px; the Create menu allows up to 70vh so "Other" isn't hidden.
+
+**Verified on the running site (2026-11-19)**
+- Administrator:
+  - Selling tab → Sales Order, Delivery Note…; Stock → Delivery Note, Stock Entry, Purchase
+    Receipt…; Accounts → Payment Entry, Sales Invoice, Journal Entry…; Buying → Purchase Order….
+  - "Full dashboard" opens "Buying Dashboard".
+- Settings override, tested with 5 rows and then cleared:
+  - Stock tab → Stock Entry, Material Request; Accounts → Payment Entry, Sales Invoice.
+  - Buying, which had no rows, kept its own documents.
+- Stock user opens on Stock with Stock Entry and Material Request.
+- Finance user:
+  - Approving PUR-ORD-2026-00017 showed "Approve Purchase Order: PUR-ORD-2026-00017 · MA Inc.
+    · ₨ 500.00?".
+  - After approval the count went 2 → 1.
+- 1920×1080 and 2560×1440: centred, no horizontal scroll.
+- Persona sweep: no new page errors (only the known frappe-charts `removeChild`).
+- Not re-checked this round: dark theme and phone width of the new Create menu sections.

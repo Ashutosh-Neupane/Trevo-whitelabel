@@ -34,13 +34,204 @@ RECENT_SCAN = 80
 @frappe.whitelist()
 def get_home_data(opened=None):
 	readable = set(frappe.get_user().get_can_read())
+	opened_rows = frappe.parse_json(opened) or []
 	return {
+		"approvals": get_approvals(),
+		"assigned": get_assigned(),
+		"usage": get_usage(opened_rows),
 		"kpis": get_kpi_groups(),
-		"recent": get_recent(frappe.parse_json(opened) or []),
+		"recent": get_recent(opened_rows),
 		"modules": get_usable_modules(readable),
 		"doctype_modules": get_doctype_modules(),
 		"custom": get_custom_doctypes(readable),
+		"create_config": get_create_config(),
 	}
+
+
+def get_create_config():
+	"""Create buttons chosen in Trevo Settings > Home, in order, with each DocType's module.
+	Empty when the site has not chosen any (the home then uses each module's own DocTypes)."""
+	return frappe.get_all(
+		"Trevo Home Create",
+		filters={"parent": "Trevo Settings", "parenttype": "Trevo Settings"},
+		fields=["document_type as doctype", "module"],
+		order_by="idx asc",
+	)
+
+
+def _insights_available():
+	"""Frappe Insights (BI app, /insights) is installed and the user may read its dashboards.
+	The home then links each module tab to it for deeper analysis; the cards and charts on the
+	home itself are Frappe widgets, which Insights renders when it has claimed them."""
+	if "insights" not in frappe.get_installed_apps():
+		return False
+	for doctype in ("Insights Dashboard v3", "Insights Dashboard"):
+		if frappe.db.exists("DocType", doctype):
+			return bool(frappe.has_permission(doctype, "read"))
+	return False
+
+
+def _module_dashboard(module):
+	"""The module's full Frappe Dashboard (/desk/dashboard-view/<name>) the user may open:
+	the one named like the module first ("Accounts" over "Payments")."""
+	names = frappe.get_all("Dashboard", filters={"module": module}, pluck="name", order_by="name asc")
+	names.sort(key=lambda n: n != module)
+	for name in names:
+		if frappe.has_permission("Dashboard", doc=name):
+			return name
+	return None
+
+
+APPROVAL_SCAN = 30  # documents read per workflow
+APPROVAL_LIMIT = 8  # shown on the home
+
+
+def get_approvals():
+	"""Documents waiting for this user's workflow action, oldest first.
+
+	For every active Workflow, documents in a state from which one of the user's roles has a
+	transition are checked with Frappe's own get_transitions (roles, self-approval rule and
+	transition conditions), so an entry appears exactly when the form would offer the user an
+	action button. Reads go through frappe.get_list, so User Permissions apply. Independent of
+	Workflow Action records, which need a background worker."""
+	from frappe.model.workflow import get_transitions
+
+	roles = set(frappe.get_roles())
+	user = frappe.session.user
+	# Others' documents waiting on the user (approvals) vs. the user's own documents they can
+	# move on (e.g. a draft to "Submit for Approval"), shown apart so a draft is not an "approval".
+	items, total, mine, mine_total = [], 0, [], 0
+	for wf in frappe.get_all(
+		"Workflow", filters={"is_active": 1}, fields=["name", "document_type", "workflow_state_field"]
+	):
+		doctype, state_field = wf.document_type, wf.workflow_state_field
+		if not frappe.has_permission(doctype, "read"):
+			continue
+		states = {
+			t.state
+			for t in frappe.get_all(
+				"Workflow Transition", filters={"parent": wf.name}, fields=["state", "allowed"]
+			)
+			if t.allowed in roles
+		}
+		if not states:
+			continue
+		meta = frappe.get_meta(doctype)
+		title_field = meta.get_title_field()
+		for row in frappe.get_list(
+			doctype,
+			filters={state_field: ["in", list(states)], "docstatus": ["<", 2]},
+			fields=["name"],
+			order_by="modified asc",
+			limit=APPROVAL_SCAN,
+		):
+			try:
+				doc = frappe.get_doc(doctype, row.name)
+				actions = [t.action for t in get_transitions(doc)]
+			except Exception:
+				continue
+			if not actions:
+				continue
+			own = doc.owner == user
+			if own:
+				mine_total += 1
+			else:
+				total += 1
+			target = mine if own else items
+			if len(target) >= APPROVAL_LIMIT:
+				continue
+			title = doc.get(title_field) if title_field and title_field != "name" else None
+			target.append(
+				{
+					"doctype": doctype,
+					"name": doc.name,
+					"title": str(title or doc.name),
+					"state": doc.get(state_field),
+					"actions": actions,
+					"owner": frappe.utils.get_fullname(doc.owner),
+					"waiting_since": doc.modified,
+					"amount": _doc_amount(doc),
+				}
+			)
+	items.sort(key=lambda i: i["waiting_since"])
+	mine.sort(key=lambda i: i["waiting_since"])
+	return {"items": items, "total": total, "mine": mine, "mine_total": mine_total}
+
+
+def _doc_amount(doc):
+	"""Grand total, formatted in the document's currency, when the document has one."""
+	for field in ("grand_total", "total_amount", "paid_amount", "total"):
+		if doc.meta.has_field(field) and doc.get(field):
+			currency = doc.get("currency") or doc.get("paid_from_account_currency")
+			return frappe.utils.fmt_money(doc.get(field), currency=currency)
+	return None
+
+
+def get_assigned():
+	"""Open assignments (ToDo) for the user, due first, with the document they point at."""
+	rows = frappe.get_list(
+		"ToDo",
+		filters={"allocated_to": frappe.session.user, "status": "Open"},
+		fields=["name", "description", "reference_type", "reference_name", "date", "priority"],
+		order_by="creation desc",
+		limit=20,
+	)
+	# Due ones first (earliest date), then undated, newest first.
+	rows.sort(key=lambda r: (r.date is None, str(r.date or "")))
+	items = []
+	for row in rows:
+		item = {
+			"todo": row.name,
+			"description": frappe.utils.strip_html(row.description or "")[:140],
+			"date": row.date,
+			"priority": row.priority,
+		}
+		if row.reference_type and row.reference_name:
+			doc = _doc_item(row.reference_type, row.reference_name)
+			if not doc:
+				continue
+			item.update({"doctype": row.reference_type, "name": row.reference_name, "title": doc["title"]})
+		items.append(item)
+	return {"items": items[:8], "total": len(items)}
+
+
+USAGE_DAYS = 90
+
+
+def get_usage(opened):
+	"""How much the user works with each DocType and module lately: edits (Version), list and
+	report visits (Route History) and documents opened in this browser. The home orders KPI
+	tabs and Create buttons by it, so the page follows the user's own workflow."""
+	since = frappe.utils.add_days(frappe.utils.now_datetime(), -USAGE_DAYS)
+	score = {}
+
+	for row in frappe.get_all(
+		"Version",
+		filters={"owner": frappe.session.user, "creation": [">", since]},
+		fields=["ref_doctype"],
+		limit=500,
+	):
+		score[row.ref_doctype] = score.get(row.ref_doctype, 0) + 3
+	for row in frappe.get_all(
+		"Route History",
+		filters={"user": frappe.session.user, "creation": [">", since]},
+		fields=["route"],
+		limit=500,
+	):
+		parts = (row.route or "").split("/")
+		if len(parts) >= 2 and parts[0] == "List":
+			score[parts[1]] = score.get(parts[1], 0) + 1
+	for row in (opened or [])[:OPENED_LIMIT]:
+		if isinstance(row, dict) and row.get("doctype"):
+			score[row["doctype"]] = score.get(row["doctype"], 0) + 2
+
+	modules = {}
+	if score:
+		for dt, module in frappe.get_all(
+			"DocType", filters={"name": ["in", list(score)]}, fields=["name", "module"], as_list=True
+		):
+			modules[module] = modules.get(module, 0) + score[dt]
+	return {"doctypes": score, "modules": modules}
 
 
 def get_doctype_modules():
@@ -157,12 +348,15 @@ def get_kpi_groups():
 			workspace_of[row.workspace_module] = row.workspace
 
 	charts = _module_charts(permitted_workspace)
+	insights = _insights_available()
 	return [
 		{
 			"module": module,
 			"workspace": workspace_of.get(module),
 			"cards": cards,
 			"chart": charts.get(module),
+			"dashboard": _module_dashboard(module),
+			"insights": bool(insights),
 		}
 		for module, cards in groups.items()
 	]

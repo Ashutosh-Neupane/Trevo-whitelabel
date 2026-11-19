@@ -84,8 +84,12 @@
 		"Event",
 		"Note",
 	];
-	const QUICK_CREATE_MAX = 6;
+	const QUICK_CREATE_MAX = 8;
+	const CREATE_INLINE = 2; // shown as buttons; all of them are in the "New" menu
 	const CUSTOM_CREATE_MAX = 3;
+	// A DocType outside QUICK_CREATE joins Create once the user has worked with it this much
+	// (desk/home.py get_usage: an edit is 3, an open 2, a list visit 1).
+	const FREQUENT_MIN = 6;
 	// Role name prefix → module, for ERPNext's standard "<Area> User / Manager" roles.
 	const ROLE_MODULES = {
 		Accounts: "Accounts",
@@ -147,30 +151,161 @@
 
 		// Sections appear only when the user has something in them. A user with no business
 		// role gets an explanation instead of an empty page.
+		// Layout: a main column (Create, KPIs, modules) and a sidebar that stays in view (work
+		// waiting on the user, then Recent). On phones the waiting work comes first.
 		render_body(data) {
 			const custom = data.custom || [];
-			const has_create = this.render_create(custom);
-			const $kpis = $(`<section class="trevo-home__kpis"></section>`).appendTo(this.$home);
-			const has_kpis = this.render_kpis($kpis, data.kpis || []);
-
-			const $columns = $(`<div class="trevo-home__columns">
+			this.custom = custom;
+			this.create_config = data.create_config || [];
+			this.usage = data.usage || { doctypes: {}, modules: {} };
+			const $layout = $(`<div class="trevo-home__layout">
 				<div class="trevo-home__main"></div>
 				<aside class="trevo-home__aside"></aside>
 			</div>`).appendTo(this.$home);
-			const $main = $columns.find(".trevo-home__main");
+			const $main = $layout.find(".trevo-home__main");
+			const $aside = $layout.find(".trevo-home__aside");
+
+			this.set_headline(data);
+			this.render_attention($aside, data.approvals, data.assigned);
+			// The numbers lead; Create follows them.
+			// Create sits beside the greeting and follows the selected KPI tab (Stock → Stock
+			// documents); without KPIs it shows the general list.
+			const has_create = this.render_create(null);
+			const $kpis = $(`<section class="trevo-home__kpis"></section>`).appendTo($main);
+			const has_kpis = this.render_kpis($kpis, data.kpis || []);
 			const has_modules = this.render_modules($main, this.module_filter(data));
 			const has_custom = this.render_custom($main, custom);
 			// The framework's System group stays last, after the site's own modules.
 			$main.find(".trevo-home__group--secondary").appendTo($main);
-			if (!has_modules && !has_custom) {
-				$main.remove();
-				$columns.addClass("trevo-home__columns--single");
-			}
-			this.render_recent(this.make_recent_section($columns.find(".trevo-home__aside")), data.recent || []);
+			this.render_recent(this.make_recent_section($aside), data.recent || []);
 
 			if (!has_create && !has_kpis && !has_modules && !has_custom) {
-				this.render_no_access().insertAfter(this.$home.find(".trevo-greeting"));
+				this.render_no_access().prependTo($main);
 			}
+		}
+
+		// ── Needs your attention ──
+		// Work waiting on this user, above everything else: documents in a workflow state where
+		// they can act (a finance head sees purchase orders waiting for approval) and open
+		// assignments. Hidden when there is nothing waiting.
+		render_attention($aside, approvals, assigned) {
+			approvals = approvals || { items: [], total: 0, mine: [], mine_total: 0 };
+			assigned = assigned || { items: [], total: 0 };
+			if (!approvals.total && !approvals.mine_total && !assigned.total) return;
+
+			const $section = $(`<section class="trevo-attention" aria-label="${esc(__("Needs your attention"))}">
+				<h2 class="trevo-home__label">${esc(__("Needs your attention"))}</h2>
+				<div class="trevo-attention__grid"></div>
+			</section>`).appendTo($aside);
+			const $grid = $section.find(".trevo-attention__grid");
+
+			if (approvals.total) {
+				const $card = this.attention_card($grid, "check-check", __("Waiting for your approval"), approvals.total);
+				approvals.items.forEach((item) => this.approval_row(item).appendTo($card.find(".trevo-attention__list")));
+				this.more_note($card, approvals.total - approvals.items.length);
+			}
+			// The user's own documents with a next step (e.g. a draft to submit for approval).
+			if (approvals.mine_total) {
+				const $card = this.attention_card($grid, "send", __("Your documents to move on"), approvals.mine_total);
+				approvals.mine.forEach((item) => this.approval_row(item, true).appendTo($card.find(".trevo-attention__list")));
+				this.more_note($card, approvals.mine_total - approvals.mine.length);
+			}
+			if (assigned.total) {
+				const $card = this.attention_card($grid, "user-check", __("Assigned to you"), assigned.total);
+				assigned.items.forEach((item) => this.assigned_row(item).appendTo($card.find(".trevo-attention__list")));
+				this.more_note($card, assigned.total - assigned.items.length, "/desk/todo?status=Open");
+			}
+		}
+
+		attention_card($grid, icon_name, title, total) {
+			return $(`<div class="trevo-attention__card">
+				<div class="trevo-attention__head">
+					<span class="trevo-attention__icon">${icon(icon_name, "sm")}</span>
+					<span class="trevo-attention__title">${esc(title)}</span>
+					<span class="trevo-attention__count">${esc(total)}</span>
+				</div>
+				<div class="trevo-attention__list"></div>
+			</div>`).appendTo($grid);
+		}
+
+		more_note($card, more, href) {
+			if (more <= 0) return;
+			const text = esc(__("{0} more", [more]));
+			$card.append(
+				href
+					? `<a class="trevo-attention__more" href="${esc(href)}">${text}${icon("arrow-right", "xs")}</a>`
+					: `<p class="trevo-attention__more">${text}</p>`
+			);
+		}
+
+		approval_row(item, own) {
+			const link = frappe.utils.get_form_link(item.doctype, item.name);
+			// Line 1: who/what and the amount. Line 2: document number, who sent it, how long it
+			// has waited. The pill names the DocType (approvals) or the state (own documents).
+			const meta = [item.title !== item.name ? item.name : null, own ? null : item.owner, frappe.datetime.prettyDate(item.waiting_since, true)]
+				.filter(Boolean)
+				.map(esc)
+				.join(" · ");
+			const $row = $(`<div class="trevo-attention__row">
+				<a class="trevo-attention__main" href="${esc(link)}">
+					<span class="trevo-attention__name">${esc(item.title)}</span>
+					<span class="trevo-attention__meta">${meta}</span>
+				</a>
+				<div class="trevo-attention__side">
+					${item.amount ? `<span class="trevo-attention__amount">${esc(item.amount)}</span>` : ""}
+					<span class="trevo-attention__state">${esc(own ? __(item.state) : __(item.doctype))}</span>
+				</div>
+				<div class="trevo-attention__actions"></div>
+			</div>`);
+			// The first two actions (usually Approve / Reject) inline; the form has the rest.
+			item.actions.slice(0, 2).forEach((action, i) => {
+				$(`<button type="button" class="trevo-action ${i === 0 ? "trevo-action--primary" : ""}">${esc(__(action))}</button>`)
+					.on("click", () => this.apply_action(item, action))
+					.appendTo($row.find(".trevo-attention__actions"));
+			});
+			return $row;
+		}
+
+		// Frappe's own workflow API, the same call the list view's bulk action makes: it checks
+		// the transition, roles and conditions and saves/submits as the form would.
+		apply_action(item, action) {
+			// Name the document exactly (number, party, amount) so the decision is unambiguous.
+			const what = [item.name, item.title !== item.name ? item.title : null, item.amount].filter(Boolean).join(" · ");
+			frappe.confirm(__("{0} {1}: {2}?", [__(action), __(item.doctype), what]), () => {
+				frappe
+					.xcall("frappe.model.workflow.bulk_workflow_approval", {
+						docnames: JSON.stringify([item.name]),
+						doctype: item.doctype,
+						action,
+					})
+					.then(() => {
+						frappe.show_alert({ message: __("{0}: {1}", [__(action), item.title]), indicator: "green" });
+						this.refresh();
+					});
+			});
+		}
+
+		assigned_row(item) {
+			const link = item.doctype ? frappe.utils.get_form_link(item.doctype, item.name) : `/desk/todo/${encodeURIComponent(item.todo)}`;
+			const overdue = item.date && frappe.datetime.get_diff(item.date, frappe.datetime.get_today()) < 0;
+			// One pill: overdue, else the due date, else high priority.
+			const pill = overdue
+				? `<span class="trevo-attention__due is-overdue">${esc(__("Overdue"))}</span>`
+				: item.date
+				? `<span class="trevo-attention__due">${esc(__("Due {0}", [frappe.datetime.str_to_user(item.date)]))}</span>`
+				: item.priority === "High"
+				? `<span class="trevo-attention__state is-high">${esc(__("High"))}</span>`
+				: "";
+			// A task on a document: the task is the headline, the document underneath.
+			const name = item.description || item.title || __("To Do");
+			const meta = item.doctype ? `${__(item.doctype)} · ${item.title}` : __("To Do");
+			return $(`<div class="trevo-attention__row">
+				<a class="trevo-attention__main" href="${esc(link)}">
+					<span class="trevo-attention__name">${esc(name)}</span>
+					<span class="trevo-attention__meta">${esc(meta)}</span>
+				</a>
+				<div class="trevo-attention__side">${pill}</div>
+			</div>`);
 		}
 
 		render_no_access() {
@@ -278,32 +413,115 @@
 				// unknown locale: leave the date out
 			}
 			$(`<header class="trevo-greeting">
-				<p class="trevo-greeting__date">${esc(date)}</p>
-				<h1 class="trevo-display">${esc(name ? `${hello}, ${name}` : hello)}</h1>
-				<p class="trevo-greeting__lead">${esc(__("Everything in Trevo, one click away."))}</p>
+				<div class="trevo-greeting__text">
+					<p class="trevo-greeting__date">${esc(date)}</p>
+					<h1 class="trevo-display">${esc(name ? `${hello}, ${name}` : hello)}</h1>
+					<p class="trevo-greeting__lead">&nbsp;</p>
+				</div>
+				<div class="trevo-greeting__actions"></div>
 			</header>`).appendTo(this.$home);
 		}
 
-		render_create(custom) {
+		// Headline under the greeting: what is waiting today, in one sentence.
+		set_headline(data) {
+			const approvals = data.approvals?.total || 0;
+			const mine = data.approvals?.mine_total || 0;
+			const tasks = data.assigned?.items || [];
+			const today = frappe.datetime.get_today();
+			const overdue = tasks.filter((t) => t.date && t.date < today).length;
+			const parts = [];
+			if (approvals) parts.push(__("{0} waiting for your approval", [approvals]));
+			if (overdue) parts.push(overdue === 1 ? __("1 overdue task") : __("{0} overdue tasks", [overdue]));
+			else if (data.assigned?.total) parts.push(__("{0} assigned to you", [data.assigned.total]));
+			if (mine) parts.push(__("{0} of your documents to move on", [mine]));
+			this.$home
+				.find(".trevo-greeting__lead")
+				.text(parts.length ? parts.join(" · ") : __("You're all caught up."))
+				.toggleClass("has-work", parts.length > 0);
+		}
+
+		// Documents this user may create, most used first (desk/home.py: get_usage), so an
+		// accountant who mostly posts Payment Entries sees that first.
+		creatable(doctypes) {
 			const can = new Set(frappe.boot.user.can_create || []);
-			// The site's own DocTypes first (that is what a role made for them is for), then the
-			// first standard ones this user may create.
-			const doctypes = [
-				...custom.filter((c) => c.can_create).slice(0, CUSTOM_CREATE_MAX).map((c) => c.doctype),
-				...QUICK_CREATE.filter((dt) => can.has(dt)),
-			]
-				.filter((dt, i, all) => all.indexOf(dt) === i)
-				.slice(0, QUICK_CREATE_MAX);
-			if (!doctypes.length) return false;
-			const $section = $(`<section class="trevo-home__create" aria-label="${esc(__("Create"))}">
-				<h2 class="trevo-home__label">${esc(__("Create"))}</h2>
-				<div class="trevo-home__create-list"></div>
-			</section>`).appendTo(this.$home);
-			doctypes.forEach((dt) => {
-				$(`<button type="button" class="trevo-chip">${icon("plus", "xs")}<span>${esc(__(dt))}</span></button>`)
+			const singles = new Set(frappe.boot.single_types || []);
+			const used = this.usage?.doctypes || {};
+			return doctypes
+				.filter((dt, i, all) => dt && all.indexOf(dt) === i && can.has(dt) && !singles.has(dt))
+				.map((dt, i) => ({ dt, i, use: used[dt] || 0 }))
+				.sort((a, b) => b.use - a.use || a.i - b.i)
+				.map((x) => x.dt);
+		}
+
+		// The general list. Trevo Settings > Home > Create buttons replaces the default when set.
+		// Default: the site's own DocTypes, the common ERPNext documents, and anything the user
+		// creates often.
+		general_create() {
+			if (this.create_config.length) return this.creatable(this.create_config.map((r) => r.doctype));
+			const used = this.usage?.doctypes || {};
+			return this.creatable([
+				...this.custom.filter((c) => c.can_create).slice(0, CUSTOM_CREATE_MAX).map((c) => c.doctype),
+				...QUICK_CREATE,
+				...Object.keys(used).filter((dt) => used[dt] >= FREQUENT_MIN),
+			]);
+		}
+
+		// Documents of one module: the rows configured for it in Trevo Settings, else the
+		// DocTypes its sidebar lists (common documents first, then sidebar order).
+		module_create(module) {
+			if (!module) return [];
+			const configured = this.create_config.filter((r) => r.module === module).map((r) => r.doctype);
+			if (configured.length) return this.creatable(configured);
+			const listed = Object.values(frappe.boot.module_sidebars || {})
+				.filter((bar) => bar.module === module)
+				.flatMap((bar) => bar.items || [])
+				.filter((item) => item.link_type === "DocType")
+				.map((item) => item.link_to);
+			return this.creatable([...QUICK_CREATE.filter((dt) => listed.includes(dt)), ...listed]);
+		}
+
+		// Beside the greeting: the two most likely documents as buttons and a "New" menu with
+		// the selected module's documents first, then the rest. Redrawn when the tab changes.
+		render_create(module) {
+			const $actions = this.$home.find(".trevo-greeting__actions").empty();
+			const own = this.module_create(module).slice(0, QUICK_CREATE_MAX);
+			const other = this.general_create()
+				.filter((dt) => !own.includes(dt))
+				.slice(0, own.length ? QUICK_CREATE_MAX - Math.min(own.length, 4) : QUICK_CREATE_MAX);
+			const first = own.length ? own : other;
+			if (!first.length) return false;
+
+			first.slice(0, CREATE_INLINE).forEach((dt) => {
+				$(`<button type="button" class="btn btn-default btn-sm trevo-create-btn">${icon("plus", "xs")}<span>${esc(__(dt))}</span></button>`)
 					.on("click", () => frappe.new_doc(dt))
-					.appendTo($section.find(".trevo-home__create-list"));
+					.appendTo($actions);
 			});
+			const $menu = $(`<div class="dropdown trevo-create-menu">
+				<button type="button" class="btn btn-primary btn-sm" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					${icon("plus", "xs")}<span>${esc(__("New"))}</span>${icon("chevron-down", "xs")}
+				</button>
+				<div class="dropdown-menu dropdown-menu-right" role="menu"></div>
+			</div>`).appendTo($actions);
+			const $list = $menu.find(".dropdown-menu");
+			const section = (title, doctypes) => {
+				if (!doctypes.length) return;
+				if (title) $(`<h6 class="dropdown-header">${esc(title)}</h6>`).appendTo($list);
+				doctypes.forEach((dt) => {
+					$(`<a class="dropdown-item" href="#" role="menuitem">${esc(__(dt))}</a>`)
+						.on("click", (e) => {
+							e.preventDefault();
+							frappe.new_doc(dt);
+						})
+						.appendTo($list);
+				});
+			};
+			if (own.length) {
+				section(this.module_label(module), own);
+				if (other.length) $(`<div class="dropdown-divider"></div>`).appendTo($list);
+				section(__("Other"), other);
+			} else {
+				section(null, other);
+			}
 			return true;
 		}
 
@@ -344,8 +562,11 @@
 			// The user's own modules first (a Stock User opens on Stock), then dock order.
 			const order = this.dock_modules();
 			const own = this.role_modules();
+			// Most-used module first (from the user's own edits and visits), then their role's
+			// modules, then dock order.
+			const use = this.usage?.modules || {};
 			const rank = (m) =>
-				(own.has(m) ? 0 : 1000) + (order.includes(m) ? order.indexOf(m) : order.length);
+				-(use[m] || 0) * 10000 + (own.has(m) ? 0 : 1000) + (order.includes(m) ? order.indexOf(m) : order.length);
 			groups = groups.slice().sort((a, b) => rank(a.module) - rank(b.module));
 
 			// One module: a tab bar with a single tab is noise, so name the module in the heading.
@@ -379,6 +600,7 @@
 				}
 				panels[module].removeClass("hidden");
 				store.set(KPI_MODULE_KEY(), module);
+				this.render_create(module);
 			};
 
 			groups.forEach((group) => {
@@ -431,15 +653,28 @@
 					chart_name: group.chart.name,
 					label: group.chart.label,
 					width: "Full",
-					height: 220,
+					height: 180,
 					options: KPI_WIDGET_OPTIONS,
 				});
 			}
 
+			// The home is the at-a-glance layer; deeper analysis lives in the module's workspace,
+			// its full Dashboard (every card and chart) and, when installed, Frappe Insights.
+			const links = [];
 			if (group.workspace) {
-				$(`<a class="trevo-home__kpi-more" href="/desk/${esc(frappe.router.slug(group.workspace))}">
-					<span>${esc(__("Open {0}", [__(group.workspace)]))}</span>${icon("arrow-right", "xs")}
-				</a>`).appendTo($panel);
+				links.push([`/desk/${frappe.router.slug(group.workspace)}`, __("Open {0}", [__(group.workspace)])]);
+			}
+			if (group.dashboard) {
+				links.push([`/desk/dashboard-view/${encodeURIComponent(group.dashboard)}`, __("Full dashboard")]);
+			}
+			if (group.insights) links.push(["/insights", __("Analyse in Insights")]);
+			if (links.length) {
+				const $links = $(`<div class="trevo-home__kpi-links"></div>`).appendTo($panel);
+				links.forEach(([href, text]) => {
+					$(`<a class="trevo-home__kpi-more" href="${esc(href)}">
+						<span>${esc(text)}</span>${icon("arrow-right", "xs")}
+					</a>`).appendTo($links);
+				});
 			}
 			return $panel;
 		}
@@ -467,17 +702,32 @@
 			};
 		}
 
+		// Entries for an app: its dock, or, for an installed app that declares no apps-screen
+		// entry (e.g. a client app such as SaathiMart), the module sidebars Frappe made for it.
+		app_entries(app) {
+			const sidebar = frappe.app.sidebar;
+			if (app.on_apps_screen) return sidebar.collect_dock_entries(app);
+			return Object.values(frappe.boot.module_sidebars || {})
+				.filter((bar) => bar.app === app.app_name && (bar.items || []).length)
+				.map((bar) => sidebar.dock_entry({ link_type: "Sidebar", link_to: bar.name }))
+				.filter(Boolean);
+		}
+
 		render_modules($main, is_usable) {
 			const sidebar = frappe.app?.sidebar;
-			if (!sidebar?.collect_dock_entries || !sidebar.dock_entry_route) return false;
+			if (!sidebar?.collect_dock_entries || !sidebar.dock_entry_route || !sidebar.dock_entry) return false;
+			// This app (the white label itself) has nothing to open.
 			const apps = (frappe.boot.app_data || [])
-				.filter((app) => app.on_apps_screen)
-				.sort((a, b) => (a.sequence_id ?? 100) - (b.sequence_id ?? 100));
+				.filter((app) => app.app_name !== "trevo_whitelabel")
+				.sort(
+					(a, b) =>
+						(b.on_apps_screen ? 1 : 0) - (a.on_apps_screen ? 1 : 0) ||
+						(a.sequence_id ?? 100) - (b.sequence_id ?? 100)
+				);
 			let shown = false;
 
 			apps.forEach((app) => {
-				const entries = sidebar
-					.collect_dock_entries(app)
+				const entries = this.app_entries(app)
 					.filter(is_usable)
 					.map((entry) => ({ entry, route: sidebar.dock_entry_route(entry) }))
 					.filter((x) => x.route);
@@ -496,7 +746,7 @@
 				entries.forEach(({ entry, route }) => {
 					const external = route.startsWith("http");
 					$(`<a class="trevo-module" href="${esc(route)}"${external ? ' target="_blank" rel="noopener"' : ""}>
-						<span class="trevo-module__icon">${entry.icon ? icon(entry.icon, "md") : ""}</span>
+						<span class="trevo-module__icon">${icon(entry.icon || "package", "md")}</span>
 						<span class="trevo-module__label">${esc(__(entry.label))}</span>
 					</a>`)
 						.on("click", (e) => {

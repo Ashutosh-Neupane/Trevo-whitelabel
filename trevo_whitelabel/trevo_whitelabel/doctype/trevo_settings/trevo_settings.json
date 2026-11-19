@@ -5,7 +5,9 @@
  "engine": "InnoDB",
  "field_order": [
   "forms_section",
-  "show_form_sidebar"
+  "show_form_sidebar",
+  "home_section",
+  "home_create"
  ],
  "fields": [
   {
@@ -19,11 +21,23 @@
    "fieldname": "show_form_sidebar",
    "fieldtype": "Check",
    "label": "Open the form side panel by default"
+  },
+  {
+   "fieldname": "home_section",
+   "fieldtype": "Section Break",
+   "label": "Home"
+  },
+  {
+   "fieldname": "home_create",
+   "fieldtype": "Table",
+   "label": "Create buttons",
+   "options": "Trevo Home Create",
+   "description": "Document types offered under Create on the home page, in this order. Each user sees only those they may create; selecting a module tab under At a glance shows that module's rows. Leave empty to use each module's own documents (from its sidebar), ordered by what each user works with most."
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-11-17 12:30:00",
+ "modified": "2026-11-19 14:00:00",
  "modified_by": "Administrator",
  "module": "Trevo Whitelabel",
  "name": "Trevo Settings",

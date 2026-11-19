@@ -1358,6 +1358,12 @@ $trevo-home-width: 1120px;
 }
 
 .trevo-greeting {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 16px 24px;
+
 	h1 {
 		margin: 0 0 6px;
 		font-size: 30px;
@@ -1395,6 +1401,263 @@ $trevo-home-width: 1120px;
 		width: 18px;
 		height: 18px;
 		object-fit: contain;
+	}
+}
+
+// Needs your attention: approvals and assignments waiting on the user, above the KPIs.
+.trevo-attention__grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 12px;
+}
+
+.trevo-attention__card {
+	min-width: 0;
+	border: 1px solid var(--trevo-border);
+	border-radius: var(--trevo-radius-lg);
+	background: var(--trevo-surface);
+	box-shadow: 0 1px 2px rgb(17 28 23 / 4%);
+}
+
+.trevo-attention__head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--trevo-divider);
+}
+
+.trevo-attention__icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border-radius: 8px;
+	background: var(--trevo-tint);
+
+	.icon {
+		stroke: var(--trevo-ink);
+	}
+}
+
+.trevo-attention__title {
+	flex: 1 1 auto;
+	font-weight: 600;
+	color: var(--trevo-foreground);
+}
+
+.trevo-attention__count {
+	min-width: 24px;
+	padding: 0 8px;
+	border-radius: 999px;
+	background: var(--trevo-fill);
+	color: var(--trevo-on-fill);
+	font-size: var(--text-xs);
+	font-weight: 600;
+	line-height: 22px;
+	text-align: center;
+}
+
+.trevo-attention__row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	grid-template-areas: "main side" "actions actions";
+	gap: 6px 12px;
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--trevo-divider);
+
+	&:last-child {
+		border-bottom: 0;
+	}
+}
+
+
+.trevo-attention__main {
+	grid-area: main;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	color: inherit;
+
+	&:hover {
+		text-decoration: none;
+
+		.trevo-attention__name {
+			color: var(--trevo-ink);
+		}
+	}
+}
+
+.trevo-attention__name {
+	overflow: hidden;
+	font-weight: 500;
+	color: var(--trevo-foreground);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.trevo-attention__meta {
+	overflow: hidden;
+	font-size: var(--text-xs);
+	color: var(--trevo-muted);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.trevo-attention__side {
+	grid-area: side;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 2px;
+}
+
+.trevo-attention__amount {
+	font-weight: 600;
+	color: var(--trevo-foreground);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.trevo-attention__state,
+.trevo-attention__due {
+	padding: 0 8px;
+	border-radius: 999px;
+	background: var(--trevo-table-head);
+	color: var(--trevo-muted);
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 18px;
+	white-space: nowrap;
+}
+
+.trevo-attention__state.is-high,
+.trevo-attention__due.is-overdue {
+	background: var(--bg-red, #fde8e8);
+	color: var(--text-on-red, #b42318);
+}
+
+.trevo-attention__actions {
+	grid-area: actions;
+	display: flex;
+	gap: 6px;
+}
+
+.trevo-attention__more {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin: 0;
+	padding: 10px 16px;
+	border-top: 1px solid var(--trevo-divider);
+	color: var(--trevo-ink);
+	font-size: var(--text-sm);
+	font-weight: 500;
+}
+
+// Headline: work waiting reads in the brand ink; "all caught up" stays muted.
+.trevo-greeting .trevo-greeting__lead.has-work {
+	color: var(--trevo-foreground);
+	font-weight: 500;
+}
+
+// Create, beside the greeting: frequent DocTypes as buttons plus a "New" menu.
+.trevo-greeting__actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+
+	&:empty {
+		display: none;
+	}
+
+	// The module's documents and the rest fit without an inner scroll (Frappe caps menus at 320px).
+	.trevo-create-menu .dropdown-menu {
+		min-width: 220px;
+		max-height: min(70vh, 600px);
+
+		.dropdown-header {
+			padding: 6px 12px 2px;
+			color: var(--trevo-muted);
+			font-size: var(--text-xs);
+			font-weight: 500;
+		}
+	}
+
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 32px;
+		padding: 0 12px;
+		border-radius: var(--trevo-radius-md);
+		font-weight: 500;
+	}
+
+	.btn-default {
+		border: 1px solid var(--trevo-border);
+		background: var(--trevo-surface);
+		color: var(--trevo-foreground);
+
+		&:hover {
+			border-color: var(--trevo-fill);
+		}
+	}
+
+	.btn-primary .icon {
+		stroke: currentColor;
+	}
+
+	.dropdown-menu {
+		min-width: 200px;
+		max-height: 320px;
+		overflow-y: auto;
+	}
+}
+
+// Workflow action buttons in the attention list (Approve / Reject).
+.trevo-action {
+	height: 28px;
+	padding: 0 12px;
+	border: 1px solid var(--trevo-border);
+	border-radius: var(--trevo-radius-sm);
+	background: var(--trevo-surface);
+	color: var(--trevo-foreground);
+	font-size: var(--text-sm);
+	font-weight: 500;
+	cursor: pointer;
+
+	&:hover {
+		border-color: var(--trevo-fill);
+	}
+
+	&:focus-visible {
+		outline: none;
+		box-shadow: var(--focus-default);
+	}
+}
+
+.trevo-action--primary {
+	border-color: var(--trevo-fill);
+	background: var(--trevo-fill);
+	color: var(--trevo-on-fill);
+
+	&:hover {
+		border-color: var(--trevo-fill-hover);
+		background: var(--trevo-fill-hover);
+	}
+}
+
+// In the sidebar the empty Recent note is compact.
+.trevo-home__aside .trevo-home__empty {
+	padding: 16px;
+
+	.trevo-home__empty-icon {
+		width: 32px;
+		height: 32px;
+		margin-bottom: 4px;
 	}
 }
 
@@ -1509,7 +1772,8 @@ $trevo-home-width: 1120px;
 
 .trevo-home__kpi-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	// auto-fit: 4 cards share one row instead of leaving an orphan on a second row.
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 	gap: 12px;
 }
 
@@ -1624,11 +1888,17 @@ $trevo-home-width: 1120px;
 	}
 }
 
+.trevo-home__kpi-links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 20px;
+	margin-top: 12px;
+}
+
 .trevo-home__kpi-more {
 	display: inline-flex;
 	align-items: center;
 	gap: 4px;
-	margin-top: 12px;
 	color: var(--trevo-ink);
 	font-size: var(--text-sm);
 	font-weight: 500;
@@ -1649,11 +1919,22 @@ $trevo-home-width: 1120px;
 }
 
 // Modules (main) beside Recent (aside).
-.trevo-home__columns {
+.trevo-home__layout {
 	display: grid;
-	grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+	grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
 	gap: 32px;
 	align-items: start;
+}
+
+// Sidebar: work waiting on the user, then Recent. Stays in view under the top bar while the
+// main column scrolls (when it fits; a long sidebar scrolls with the page).
+.trevo-home__aside {
+	position: sticky;
+	top: 72px;
+	display: flex;
+	flex-direction: column;
+	gap: 28px;
+	min-width: 0;
 }
 
 .trevo-home__main {
@@ -1953,9 +2234,6 @@ $trevo-home-width: 1120px;
 }
 
 // Only Recent (no module the user can open): let it use the full width.
-.trevo-home__columns--single {
-	grid-template-columns: minmax(0, 1fr);
-}
 
 @media (max-width: 767px) {
 	.trevo-home__notice {
@@ -1963,9 +2241,22 @@ $trevo-home-width: 1120px;
 	}
 }
 
+// One column: waiting work first, then the main column, then Recent.
 @media (max-width: 991px) {
-	.trevo-home__columns {
+	.trevo-home__layout {
 		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.trevo-home__aside {
+		display: contents;
+	}
+
+	.trevo-attention {
+		order: -1;
+	}
+
+	.trevo-home__recent {
+		order: 1;
 	}
 }
 
@@ -2285,6 +2576,43 @@ body .modal-backdrop.show {
 			max-width: 1600px;
 			margin-inline: auto;
 		}
+	}
+}
+
+// Large monitors and TVs (2560px CSS width and up): forms use more of the screen.
+@media (min-width: 2560px) {
+	body:not(.full-width) .page-container:is(.editable-form, .submitted-form, .cancelled-form) {
+		> .page-head > .container,
+		> .container.page-body {
+			max-width: 2000px;
+		}
+	}
+}
+
+// Trevo home on wide screens: the page widens in steps and the sidebar with it, so a
+// 1920px or 2560px screen shows more KPI cards and modules per row instead of empty margins.
+@media (min-width: 1680px) {
+	.trevo-home {
+		width: min(1440px, 100%);
+	}
+
+	.trevo-home__layout {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+	}
+}
+
+@media (min-width: 2200px) {
+	.trevo-home {
+		width: min(1760px, 100%);
+	}
+
+	.trevo-home__layout {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+		gap: 40px;
+	}
+
+	.trevo-topbar {
+		grid-template-columns: 1fr minmax(0, 560px) 1fr;
 	}
 }
 
