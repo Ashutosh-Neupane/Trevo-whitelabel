@@ -986,6 +986,40 @@ mark,
 		border-bottom-left-radius: var(--trevo-radius-lg);
 		border-bottom-right-radius: var(--trevo-radius-lg);
 	}
+
+	// Row in inline edit (click a cell). grid.scss marks this "TODO: Dark and Light Mode" and
+	// hard-sets --control-bg to --neutral, read-only cells to --gray-50 and a grey focus ring,
+	// so the row being edited looked like another theme, most of all in dark mode. Point the
+	// same tokens at Trevo's: editable cells on the surface, read-only cells tinted like
+	// read-only form fields, brand focus ring.
+	.grid-body .editable-row {
+		--control-bg: var(--trevo-surface);
+		--input-disabled-bg: var(--trevo-table-head);
+		--bg-color: var(--trevo-surface); // link arrow / clear button backdrop
+
+		.grid-static-col:not(.row-check) {
+			background-color: var(--trevo-surface);
+			border-right-color: var(--trevo-divider);
+		}
+
+		.form-control[disabled],
+		.form-control[readonly],
+		.like-disabled-input {
+			background-color: var(--trevo-table-head);
+			color: var(--trevo-muted);
+		}
+
+		.form-control:focus {
+			border-color: transparent;
+			box-shadow: inset 0 0 0 2px var(--trevo-ring);
+		}
+
+		// Amounts stay right-aligned while editing, as they are in the row at rest
+		// (grid.scss left-aligns the number after the currency symbol).
+		.grid-currency-input.grid-currency-has-value:not(.grid-currency-symbol-right) .form-control {
+			text-align: right;
+		}
+	}
 }
 
 .grid-empty {
@@ -1502,9 +1536,104 @@ $trevo-home-width: 1120px;
 		text-overflow: clip;
 	}
 
-	.number {
+	// Frappe's rules sit under .widget.number-widget-box .widget-body (desk/desktop.scss),
+	// so these match that depth to apply.
+	.widget.number-widget-box .widget-body {
+		margin-top: 6px;
+
+		.widget-content .number {
+			color: var(--trevo-foreground);
+			font-family: var(--trevo-font-display);
+			font-size: 24px;
+			font-weight: 600;
+			line-height: 1.2;
+			letter-spacing: -0.01em;
+			font-variant-numeric: tabular-nums;
+		}
+
+		// Frappe's change since the last period ("↗ 12 % since last month"), shown when the
+		// card has percentage stats and there is a previous period to compare with.
+		.card-stats {
+			font-size: var(--text-xs);
+			font-weight: 500;
+
+			&.green-stat {
+				color: var(--trevo-ink);
+			}
+
+			&.grey-stat {
+				color: var(--trevo-muted);
+			}
+		}
+
+		// Loading: a quiet placeholder bar where the number will be, in place of "Loading...".
+		.number-card-loading {
+			width: 60%;
+			height: 29px;
+			border-radius: var(--trevo-radius-sm);
+			background: linear-gradient(90deg, var(--trevo-table-head) 0%, var(--trevo-divider) 50%, var(--trevo-table-head) 100%);
+			background-size: 200% 100%;
+			color: transparent !important;
+			overflow: hidden;
+			animation: trevo-shimmer 1.2s ease-in-out infinite;
+		}
+	}
+}
+
+@keyframes trevo-shimmer {
+	from {
+		background-position: 100% 0;
+	}
+	to {
+		background-position: -100% 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.trevo-kpi .widget.number-widget-box .widget-body .number-card-loading {
+		animation: none;
+	}
+}
+
+// The module workspace's first chart, under its cards (Frappe's ChartWidget).
+.trevo-kpi-chart {
+	margin-top: 12px;
+
+	.widget.dashboard-widget-box {
+		margin: 0;
+		border: 1px solid var(--trevo-border);
+		border-radius: var(--trevo-radius-lg);
+		background: var(--trevo-surface);
+		box-shadow: 0 1px 2px rgb(17 28 23 / 4%);
+	}
+
+	.widget-title {
 		color: var(--trevo-foreground);
-		font-variant-numeric: tabular-nums;
+		font-weight: 600;
+	}
+}
+
+.trevo-home__kpi-more {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-top: 12px;
+	color: var(--trevo-ink);
+	font-size: var(--text-sm);
+	font-weight: 500;
+
+	&:hover {
+		color: var(--trevo-fill-hover);
+		text-decoration: none;
+
+		.icon {
+			transform: translateX(2px);
+		}
+	}
+
+	.icon {
+		stroke: currentColor;
+		transition: transform 0.15s ease;
 	}
 }
 

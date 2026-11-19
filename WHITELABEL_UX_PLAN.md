@@ -598,3 +598,35 @@ Every document is re-checked for existence and read permission, and shown by its
 - Screenshots in light, dark and at 390px.
 - `verify.mjs`: no overflow, no page errors.
 - Console socket.io errors come from this Docker setup (no realtime server), not from the page.
+
+## 2026-11-19: KPI dashboard and child-table edit row
+
+**Child table (Sales Order items).** Clicking a cell puts the row into inline edit. Frappe's
+`grid.scss` marks that row "TODO: Dark and Light Mode". It sets `--control-bg: var(--neutral)`,
+read-only cells to `--gray-50` and a grey `rgba(124,124,124,.25)` focus ring, so the edited row
+looked like a different theme, most of all in dark mode. The theme now points the same tokens at
+Trevo's under `.form-grid .grid-body .editable-row`:
+- editable cells on `--trevo-surface`,
+- read-only cells (Amount) on `--trevo-table-head` with muted text, as read-only form fields are,
+- focus as an inset `--trevo-ring`,
+- currency inputs right-aligned, as the row is at rest.
+
+The row editor (`.form-in-grid`) already used the form field mixin, so it was unchanged.
+
+**KPI dashboard.** Each module tab now shows:
+- Number Cards with a 24px display-font value. The selectors match Frappe's depth under
+  `.widget.number-widget-box .widget-body`, so they apply.
+- Frappe's percentage stat ("since last month"), styled. It appears only when the card has
+  `show_percentage_stats` and there is a previous period to compare with.
+- A shimmer placeholder in place of "Loading...", which stops under `prefers-reduced-motion`.
+- The first Dashboard Chart of the module's workspaces, drawn by Frappe's ChartWidget. It has the
+  same gates as the cards (public workspace the user may open, public or own chart), plus
+  `frappe.has_permission("Dashboard Chart", doc=...)`.
+- "Open <workspace>", linking to the workspace that holds the cards.
+
+**Verification:**
+- Administrator: all 10 tabs have a chart and a workspace link.
+- Sales User: Selling and CRM have charts. Stock (non-public chart) and Quality (no Quality
+  Inspection read) correctly show cards only.
+- Screenshots in light, dark and at 390px.
+- `verify.mjs`: no overflow, no page errors.

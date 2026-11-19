@@ -21,6 +21,9 @@ lists, permissions or calculations behave.
     scrolls under them.
   - The left-sidebar collapse button is always visible.
   - Dialog fields match form fields; the dialog scrim is lighter and blurred.
+  - A child-table row being edited inline (click a cell) uses the theme in both modes:
+    surface-coloured cells, tinted read-only cells, the brand focus ring, and amounts kept
+    right-aligned. Frappe's grid styles leave this row on fixed greys.
   - Calendar, Kanban and Gantt views use the brand accent and table colours.
   - On screens 1920px and wider, record forms are centred at 1600px. Frappe's "Toggle Full Width" turns this off.
   - Browser tabs read "<page> · Trevo". The 404 and message pages carry the Trevo mark.
@@ -31,7 +34,8 @@ lists, permissions or calculations behave.
   - Scroll-state classes for the sticky headers.
 - **Home** (`page/trevo_home`, `desk/home.py`): `/desk` opens the Trevo home, with search,
   notifications and the user menu; Create buttons; KPI cards (Number Cards) for the modules the
-  user may open, filtered by their permissions; each app's modules; and Recent (what the user
+  user may open, filtered by their permissions, with each module workspace's first chart and a
+  link to that workspace; each app's modules; and Recent (what the user
   submitted, edited, opened and viewed). Frappe's apps screen stays at `/desk/desktop`.
 - **About dialog:** git branch names are hidden, and Trevo Next shows the Trevo mark
   (`branding.get_versions`, via `override_whitelisted_methods`).

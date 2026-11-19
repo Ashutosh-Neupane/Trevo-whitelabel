@@ -79,7 +79,60 @@ def get_kpi_groups():
 		module = row.card_module if row.card_module in visible_modules else row.workspace_module
 		groups.setdefault(module, []).append({"name": row.card, "label": _(row.label or row.card)})
 
-	return [{"module": module, "cards": cards} for module, cards in groups.items()]
+	# The module's own workspace (Selling for "Selling"), linked from its tab.
+	workspace_of = {}
+	for row in usable:
+		if row.workspace == row.workspace_module or row.workspace_module not in workspace_of:
+			workspace_of[row.workspace_module] = row.workspace
+
+	charts = _module_charts(permitted_workspace)
+	return [
+		{
+			"module": module,
+			"workspace": workspace_of.get(module),
+			"cards": cards,
+			"chart": charts.get(module),
+		}
+		for module, cards in groups.items()
+	]
+
+
+def _module_charts(permitted_workspace):
+	"""First Dashboard Chart of each module's workspaces that the user may read.
+
+	Same rules as the cards: a public workspace the user may open, a public chart (or their
+	own), and Dashboard Chart permission (the DocType or report behind it). Values are drawn
+	by Frappe's ChartWidget, which reads through the same permission checks."""
+	if not frappe.has_permission("Dashboard Chart", throw=False):
+		return {}
+
+	rows = frappe.db.sql(
+		"""
+		select ws.name as workspace, ws.module, wc.chart_name as chart, wc.label,
+			dc.is_public, dc.owner, md.app_name
+		from `tabWorkspace Chart` wc
+		join `tabWorkspace` ws on ws.name = wc.parent
+		join `tabDashboard Chart` dc on dc.name = wc.chart_name
+		left join `tabModule Def` md on md.name = ws.module
+		where wc.parenttype = 'Workspace' and ws.public = 1
+		order by ws.sequence_id, ws.name, wc.idx
+		""",
+		as_dict=True,
+	)
+	charts = {}
+	for row in rows:
+		if row.module in charts or row.app_name in KPI_EXCLUDED_APPS:
+			continue
+		if not (row.is_public or row.owner == frappe.session.user):
+			continue
+		if row.workspace not in permitted_workspace:
+			permitted_workspace[row.workspace] = _workspace_permitted(row.workspace)
+		if not permitted_workspace[row.workspace]:
+			continue
+		if not frappe.has_permission("Dashboard Chart", doc=row.chart):
+			continue
+		charts[row.module] = {"name": row.chart, "label": _(row.label or row.chart)}
+	return charts
 
 
 def _workspace_permitted(name):

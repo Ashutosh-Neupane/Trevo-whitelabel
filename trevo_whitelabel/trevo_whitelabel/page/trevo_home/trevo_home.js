@@ -7,7 +7,8 @@
 //   - greeting with today's date
 //   - Create: new-document buttons, only for DocTypes the user may create
 //   - At a glance: the Number Cards of the modules the user can open, one module at a time,
-//     drawn by Frappe's own NumberCardWidget (permission filtering: desk/home.py)
+//     with the module workspace's first chart and a link to the workspace, drawn by Frappe's
+//     own NumberCardWidget and ChartWidget (permission filtering: desk/home.py)
 //   - Modules: each app's dock entries, the same list, icons and routes as the left rail
 //   - Recent: what the user submitted, edited, opened and viewed (desk/home.py)
 // Frappe's apps screen stays at /desk/desktop and is linked from the user menu.
@@ -271,19 +272,9 @@
 				});
 				Object.values(panels).forEach(($p) => $p.addClass("hidden"));
 				if (!panels[module]) {
-					const group = groups.find((g) => g.module === module);
-					panels[module] = $(`<div class="trevo-home__kpi-grid" role="tabpanel"></div>`).appendTo($panels);
-					group.cards.forEach((card) => {
-						const $cell = $(`<div class="trevo-kpi"></div>`).appendTo(panels[module]);
-						frappe.widget.make_widget({
-							widget_type: "number_card",
-							container: $cell,
-							name: card.name,
-							number_card_name: card.name,
-							label: card.label,
-							options: KPI_WIDGET_OPTIONS,
-						});
-					});
+					panels[module] = this.make_kpi_panel(groups.find((g) => g.module === module)).appendTo(
+						$panels
+					);
 				}
 				panels[module].removeClass("hidden");
 				store.set(KPI_MODULE_KEY(), module);
@@ -309,6 +300,46 @@
 
 			const saved = store.get(KPI_MODULE_KEY());
 			select(groups.some((g) => g.module === saved) ? saved : groups[0].module);
+		}
+
+		// One module: its Number Cards, then the first chart of its workspace, then a link to
+		// the workspace for everything else. Frappe's widgets fetch and draw the values.
+		make_kpi_panel(group) {
+			const label = this.module_label(group.module);
+			const $panel = $(`<div class="trevo-home__kpi-panel" role="tabpanel" aria-label="${esc(label)}">
+				<div class="trevo-home__kpi-grid"></div>
+			</div>`);
+			const $grid = $panel.find(".trevo-home__kpi-grid");
+			group.cards.forEach((card) => {
+				frappe.widget.make_widget({
+					widget_type: "number_card",
+					container: $(`<div class="trevo-kpi"></div>`).appendTo($grid),
+					name: card.name,
+					number_card_name: card.name,
+					label: card.label,
+					options: KPI_WIDGET_OPTIONS,
+				});
+			});
+
+			if (group.chart) {
+				frappe.widget.make_widget({
+					widget_type: "chart",
+					container: $(`<div class="trevo-kpi-chart"></div>`).appendTo($panel),
+					name: group.chart.name,
+					chart_name: group.chart.name,
+					label: group.chart.label,
+					width: "Full",
+					height: 220,
+					options: KPI_WIDGET_OPTIONS,
+				});
+			}
+
+			if (group.workspace) {
+				$(`<a class="trevo-home__kpi-more" href="/desk/${esc(frappe.router.slug(group.workspace))}">
+					<span>${esc(__("Open {0}", [__(group.workspace)]))}</span>${icon("arrow-right", "xs")}
+				</a>`).appendTo($panel);
+			}
+			return $panel;
 		}
 
 		// ── Modules ──
