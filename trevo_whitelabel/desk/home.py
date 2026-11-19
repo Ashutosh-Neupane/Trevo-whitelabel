@@ -35,10 +35,13 @@ RECENT_SCAN = 80
 def get_home_data(opened=None):
 	readable = set(frappe.get_user().get_can_read())
 	opened_rows = frappe.parse_json(opened) or []
+	usage = get_usage(opened_rows)
 	return {
 		"approvals": get_approvals(),
 		"assigned": get_assigned(),
-		"usage": get_usage(opened_rows),
+		"cues": get_cues(usage.get("modules")),
+		"events": get_upcoming_events(),
+		"usage": usage,
 		"kpis": get_kpi_groups(),
 		"recent": get_recent(opened_rows),
 		"modules": get_usable_modules(readable),
@@ -193,6 +196,135 @@ def get_assigned():
 			item.update({"doctype": row.reference_type, "name": row.reference_name, "title": doc["title"]})
 		items.append(item)
 	return {"items": items[:8], "total": len(items)}
+
+
+# ── Cues ──
+# Work that ERPNext's own statuses say is waiting, for users no workflow involves (most of
+# them): overdue invoices for accounts, late deliveries for stock, expiring quotations for
+# sales... Each is a permission-checked count (frappe.get_list) that opens the filtered list.
+CUE_SCAN = 500  # documents counted per cue ("500+" beyond)
+CUE_LIMIT = 6
+DRAFT_DOCTYPES = (
+	"Quotation", "Sales Order", "Delivery Note", "Sales Invoice", "Payment Entry", "Journal Entry",
+	"Material Request", "Purchase Order", "Purchase Receipt", "Purchase Invoice", "Stock Entry",
+)
+# ERPNext role prefix ("Stock" in "Stock User"/"Stock Manager") → module whose cues matter to it.
+ROLE_MODULES = {
+	"Accounts": "Accounts", "Sales": "Selling", "Purchase": "Buying", "Stock": "Stock",
+	"Manufacturing": "Manufacturing", "Projects": "Projects", "Quality": "Quality Management",
+	"Support": "Support", "Maintenance": "Support",
+}
+TONE_ORDER = {"danger": 0, "warning": 1, "info": 2, "neutral": 3}
+
+
+def _cue_definitions():
+	today = frappe.utils.today()
+	week = frappe.utils.add_days(today, 7)
+	fortnight = frappe.utils.add_days(today, 14)
+	return [
+		{"key": "overdue_receivables", "doctype": "Sales Invoice", "label": _("Overdue customer invoices"),
+			"modules": ["Accounts"], "tone": "danger", "icon": "receipt-text", "amount": "outstanding_amount",
+			"filters": [["docstatus", "=", 1], ["outstanding_amount", ">", 0], ["due_date", "<", today]]},
+		{"key": "payables_due", "doctype": "Purchase Invoice", "label": _("Supplier bills due this week"),
+			"modules": ["Accounts"], "tone": "warning", "icon": "wallet", "amount": "outstanding_amount",
+			"filters": [["docstatus", "=", 1], ["outstanding_amount", ">", 0], ["due_date", "<=", week]]},
+		{"key": "late_deliveries", "doctype": "Sales Order", "label": _("Orders late to deliver"),
+			"modules": ["Selling", "Stock"], "tone": "danger", "icon": "truck", "amount": "base_grand_total",
+			"filters": [["docstatus", "=", 1], ["status", "in", ["To Deliver and Bill", "To Deliver"]], ["delivery_date", "<", today]]},
+		{"key": "to_invoice", "doctype": "Delivery Note", "label": _("Deliveries to invoice"),
+			"modules": ["Accounts", "Selling"], "tone": "warning", "icon": "file-plus", "amount": "base_grand_total",
+			"filters": [["docstatus", "=", 1], ["status", "=", "To Bill"]]},
+		{"key": "quotes_expiring", "doctype": "Quotation", "label": _("Quotations expiring this week"),
+			"modules": ["Selling"], "tone": "warning", "icon": "hourglass", "amount": "base_grand_total",
+			"filters": [["docstatus", "=", 1], ["status", "=", "Open"], ["valid_till", "between", [today, week]]]},
+		{"key": "opportunities", "doctype": "Opportunity", "label": _("Opportunities closing in 2 weeks"),
+			"modules": ["Selling", "CRM"], "tone": "info", "icon": "target", "amount": "opportunity_amount",
+			"filters": [["status", "in", ["Open", "Replied"]], ["expected_closing", "between", [today, fortnight]]]},
+		{"key": "requests_to_order", "doctype": "Material Request", "label": _("Material requests to order"),
+			"modules": ["Buying", "Stock"], "tone": "warning", "icon": "clipboard-list",
+			"filters": [["docstatus", "=", 1], ["material_request_type", "=", "Purchase"], ["status", "in", ["Pending", "Partially Ordered"]]]},
+		{"key": "late_receipts", "doctype": "Purchase Order", "label": _("Purchase orders late to arrive"),
+			"modules": ["Buying", "Stock"], "tone": "danger", "icon": "package-x", "amount": "base_grand_total",
+			"filters": [["docstatus", "=", 1], ["status", "in", ["To Receive and Bill", "To Receive"]], ["schedule_date", "<", today]]},
+		{"key": "work_orders", "doctype": "Work Order", "label": _("Work orders to finish"),
+			"modules": ["Manufacturing"], "tone": "info", "icon": "factory",
+			"filters": [["docstatus", "=", 1], ["status", "in", ["Not Started", "In Process"]]]},
+		{"key": "overdue_tasks", "doctype": "Task", "label": _("Overdue project tasks"),
+			"modules": ["Projects"], "tone": "danger", "icon": "calendar-x",
+			"filters": [["status", "not in", ["Completed", "Cancelled", "Template"]], ["exp_end_date", "<", today]]},
+		{"key": "open_issues", "doctype": "Issue", "label": _("Open support tickets"),
+			"modules": ["Support"], "tone": "warning", "icon": "life-buoy",
+			"filters": [["status", "=", "Open"]]},
+	]
+
+
+def _user_modules(usage_modules):
+	"""Modules this user works in: named by their ERPNext roles, plus any they use a lot.
+	None means "all" (System Manager / Administrator, or no business role at all)."""
+	roles = set(frappe.get_roles())
+	if "System Manager" in roles:
+		return None
+	modules = {
+		module for prefix, module in ROLE_MODULES.items()
+		if any(r.startswith(f"{prefix} ") or r == f"{prefix} Team" for r in roles)
+	}
+	modules |= {m for m, score in (usage_modules or {}).items() if score >= 6}
+	return modules or None
+
+
+def get_cues(usage_modules=None):
+	"""Counts of work waiting in the user's modules, most urgent first.
+	Each: key, doctype, label, tone, icon, count (capped), more (bool), amount, filters."""
+	mine = _user_modules(usage_modules)
+	cues = []
+	for cue in _cue_definitions():
+		if mine is not None and not mine.intersection(cue["modules"]):
+			continue
+		if not frappe.db.exists("DocType", cue["doctype"]) or not frappe.has_permission(cue["doctype"], "read"):
+			continue
+		fields = ["name"] + ([cue["amount"]] if cue.get("amount") else [])
+		try:
+			rows = frappe.get_list(cue["doctype"], filters=cue["filters"], fields=fields, limit=CUE_SCAN, order_by="creation desc")
+		except frappe.PermissionError:
+			continue
+		if not rows:
+			continue
+		cue = dict(cue, count=len(rows), more=len(rows) >= CUE_SCAN)
+		if cue.get("amount"):
+			cue["amount"] = sum(frappe.utils.flt(r.get(cue["amount"])) for r in rows)
+		cues.append(cue)
+	cues.sort(key=lambda c: TONE_ORDER[c["tone"]])
+	cues = cues[:CUE_LIMIT]
+	cues += _draft_cues()
+	return {"items": cues, "currency": frappe.defaults.get_global_default("currency")}
+
+
+def _draft_cues():
+	"""The user's own unsubmitted documents, one cue per DocType (at most two)."""
+	out = []
+	for doctype in DRAFT_DOCTYPES:
+		# Under a workflow a "draft" may be waiting on someone else; the approval cards cover it.
+		if not frappe.has_permission(doctype, "read") or frappe.db.exists("Workflow", {"document_type": doctype, "is_active": 1}):
+			continue
+		filters = [["docstatus", "=", 0], ["owner", "=", frappe.session.user]]
+		count = len(frappe.get_list(doctype, filters=filters, pluck="name", limit=CUE_SCAN))
+		if count:
+			out.append({"key": f"drafts_{frappe.scrub(doctype)}", "doctype": doctype, "tone": "neutral", "icon": "file-pen",
+				"label": _("Your draft {0}").format(_(doctype)), "count": count, "more": False, "filters": filters})
+	out.sort(key=lambda c: -c["count"])
+	return out[:2]
+
+
+def get_upcoming_events():
+	"""The user's calendar for the next 7 days (Event permission: own, public or invited)."""
+	now = frappe.utils.now_datetime()
+	return frappe.get_list(
+		"Event",
+		filters=[["starts_on", "between", [now, frappe.utils.add_days(now, 7)]], ["status", "=", "Open"]],
+		fields=["name", "subject", "starts_on", "all_day", "color"],
+		order_by="starts_on asc",
+		limit=5,
+	)
 
 
 USAGE_DAYS = 90

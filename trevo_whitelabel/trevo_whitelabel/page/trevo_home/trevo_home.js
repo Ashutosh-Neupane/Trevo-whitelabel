@@ -166,7 +166,8 @@
 			const $aside = $layout.find(".trevo-home__aside");
 
 			this.set_headline(data);
-			this.render_attention($aside, data.approvals, data.assigned);
+			this.render_attention($aside, data.approvals, data.assigned, data.cues);
+			this.render_events($aside, data.events || []);
 			// The numbers lead; Create follows them.
 			// Create sits beside the greeting and follows the selected KPI tab (Stock → Stock
 			// documents); without KPIs it shows the general list.
@@ -182,22 +183,51 @@
 			if (!has_create && !has_kpis && !has_modules && !has_custom) {
 				this.render_no_access().prependTo($main);
 			}
+			this.watch_aside($aside);
+		}
+
+		// The sidebar stays in view while scrolling only when all of it fits the window.
+		watch_aside($aside) {
+			const fit = () => {
+				const el = $aside[0];
+				if (el?.isConnected) el.classList.toggle("is-sticky", el.offsetHeight < window.innerHeight - 96);
+			};
+			fit();
+			setTimeout(fit, 1500); // after the Recent and widget content settles
+			$(window).off("resize.trevo_aside").on("resize.trevo_aside", frappe.utils.debounce(fit, 150));
 		}
 
 		// ── Needs your attention ──
 		// Work waiting on this user, above everything else: documents in a workflow state where
 		// they can act (a finance head sees purchase orders waiting for approval) and open
 		// assignments. Hidden when there is nothing waiting.
-		render_attention($aside, approvals, assigned) {
+		// Always drawn, so every user has the same anchor: workflow approvals (when a workflow
+		// involves them), work ERPNext's statuses say is waiting in their modules (cues: for
+		// the many users no workflow involves), and assignments. With none, a short "all clear".
+		render_attention($aside, approvals, assigned, cues) {
 			approvals = approvals || { items: [], total: 0, mine: [], mine_total: 0 };
 			assigned = assigned || { items: [], total: 0 };
-			if (!approvals.total && !approvals.mine_total && !assigned.total) return;
+			cues = cues || { items: [] };
+			const has_work = approvals.total || approvals.mine_total || assigned.total || cues.items.length;
 
 			const $section = $(`<section class="trevo-attention" aria-label="${esc(__("Needs your attention"))}">
 				<h2 class="trevo-home__label">${esc(__("Needs your attention"))}</h2>
 				<div class="trevo-attention__grid"></div>
 			</section>`).appendTo($aside);
 			const $grid = $section.find(".trevo-attention__grid");
+
+			if (!has_work) {
+				$(`<div class="trevo-attention__card trevo-attention__clear">
+					<span class="trevo-attention__clear-icon">${icon("circle-check", "md")}</span>
+					<div>
+						<p class="trevo-attention__clear-title">${esc(__("Nothing needs you right now"))}</p>
+						<p class="trevo-attention__clear-text">${esc(
+							__("Approvals, overdue documents and tasks assigned to you will appear here.")
+						)}</p>
+					</div>
+				</div>`).appendTo($grid);
+				return;
+			}
 
 			if (approvals.total) {
 				const $card = this.attention_card($grid, "check-check", __("Waiting for your approval"), approvals.total);
@@ -210,11 +240,78 @@
 				approvals.mine.forEach((item) => this.approval_row(item, true).appendTo($card.find(".trevo-attention__list")));
 				this.more_note($card, approvals.mine_total - approvals.mine.length);
 			}
+			if (cues.items.length) {
+				const $card = $(`<div class="trevo-attention__card">
+					<div class="trevo-attention__head">
+						<span class="trevo-attention__icon">${icon("list-checks", "sm")}</span>
+						<span class="trevo-attention__title">${esc(__("In your modules"))}</span>
+					</div>
+					<div class="trevo-cues"></div>
+				</div>`).appendTo($grid);
+				cues.items.forEach((cue) => this.cue_row(cue, cues.currency).appendTo($card.find(".trevo-cues")));
+			}
 			if (assigned.total) {
 				const $card = this.attention_card($grid, "user-check", __("Assigned to you"), assigned.total);
 				assigned.items.forEach((item) => this.assigned_row(item).appendTo($card.find(".trevo-attention__list")));
 				this.more_note($card, assigned.total - assigned.items.length, "/desk/todo?status=Open");
 			}
+		}
+
+		// One cue: "Overdue customer invoices · ₨ 31.51 L ……… 44". Opens the list with the
+		// same filters the count used (applied by the list view from route_options).
+		cue_row(cue, currency) {
+			const count = cue.more ? `${cue.count}+` : String(cue.count);
+			const amount = cue.amount ? this.short_amount(cue.amount, currency) : "";
+			return $(`<button type="button" class="trevo-cue is-${esc(cue.tone)}">
+				<span class="trevo-cue__icon">${icon(cue.icon || "circle-dot", "sm")}</span>
+				<span class="trevo-cue__text">
+					<span class="trevo-cue__label">${esc(cue.label)}</span>
+					${amount ? `<span class="trevo-cue__amount">${esc(amount)}</span>` : ""}
+				</span>
+				<span class="trevo-cue__count">${esc(count)}</span>
+			</button>`).on("click", () => {
+				const options = {};
+				cue.filters.forEach(([field, op, value]) => {
+					options[field] = op === "=" ? value : [op === "between" ? "Between" : op, value];
+				});
+				frappe.route_options = options;
+				frappe.set_route("List", cue.doctype);
+			});
+		}
+
+		// As Number Cards show money: "₨ 31.51 L".
+		short_amount(value, currency) {
+			const country = frappe.sys_defaults?.country;
+			const [number, suffix] = frappe.utils.shorten_number(value, country, 5).split(" ");
+			return format_currency(parseFloat(number), currency) + (suffix ? ` ${suffix}` : "");
+		}
+
+		// ── Coming up ──
+		// The user's calendar for the next week, so a quiet day still shows what is next.
+		render_events($aside, events) {
+			if (!events.length) return;
+			const $section = $(`<section class="trevo-events">
+				<h2 class="trevo-home__label">${esc(__("Coming up"))}</h2>
+				<div class="trevo-attention__card"><div class="trevo-events__list"></div></div>
+			</section>`).appendTo($aside);
+			const today = frappe.datetime.get_today();
+			events.forEach((ev) => {
+				const start = frappe.datetime.str_to_obj(ev.starts_on);
+				const day = frappe.datetime.obj_to_str(start);
+				const diff = frappe.datetime.get_day_diff(day, today);
+				const when = diff === 0 ? __("Today") : diff === 1 ? __("Tomorrow") : start.toLocaleDateString(undefined, { weekday: "long" });
+				const time = ev.all_day ? __("All day") : start.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+				$(`<a class="trevo-event" href="/desk/event/${esc(encodeURIComponent(ev.name))}">
+					<span class="trevo-event__date">
+						<span class="trevo-event__day">${esc(start.getDate())}</span>
+						<span class="trevo-event__month">${esc(start.toLocaleDateString(undefined, { month: "short" }))}</span>
+					</span>
+					<span class="trevo-event__text">
+						<span class="trevo-event__subject">${esc(ev.subject)}</span>
+						<span class="trevo-event__when">${esc(`${when} · ${time}`)}</span>
+					</span>
+				</a>`).appendTo($section.find(".trevo-events__list"));
+			});
 		}
 
 		attention_card($grid, icon_name, title, total) {
@@ -434,6 +531,9 @@
 			if (overdue) parts.push(overdue === 1 ? __("1 overdue task") : __("{0} overdue tasks", [overdue]));
 			else if (data.assigned?.total) parts.push(__("{0} assigned to you", [data.assigned.total]));
 			if (mine) parts.push(__("{0} of your documents to move on", [mine]));
+			// Then the most urgent work in the user's modules ("Overdue customer invoices: 44").
+			const cues = (data.cues?.items || []).filter((c) => c.tone === "danger" || c.tone === "warning");
+			cues.slice(0, Math.max(0, 2 - parts.length)).forEach((c) => parts.push(__("{0}: {1}", [c.label, c.more ? `${c.count}+` : c.count])));
 			this.$home
 				.find(".trevo-greeting__lead")
 				.text(parts.length ? parts.join(" · ") : __("You're all caught up."))

@@ -759,3 +759,56 @@ part. Deep analysis stays in each module's Dashboard and, when installed, Frappe
 - 1920×1080 and 2560×1440: centred, no horizontal scroll.
 - Persona sweep: no new page errors (only the known frappe-charts `removeChild`).
 - Not re-checked this round: dark theme and phone width of the new Create menu sections.
+
+## 2026-11-19 (c): Work for every role, not only workflows
+
+**Problem.** "Needs your attention" knew only workflow approvals and ToDos. Most ERPNext users
+are in no workflow. For them the sidebar vanished and the headline said "You're all caught up"
+while 44 invoices were overdue.
+
+**Cues** (`desk/home.py: get_cues`). These are counts of work that ERPNext's own statuses mark
+as waiting. Each count is taken through `frappe.get_list`, so permissions and User Permissions
+apply. Clicking one opens the list with the same filters, through `route_options`.
+
+| Cue | DocType | Shown to (role modules) |
+|---|---|---|
+| Overdue customer invoices (+ outstanding) | Sales Invoice | Accounts |
+| Supplier bills due this week | Purchase Invoice | Accounts |
+| Orders late to deliver | Sales Order | Selling, Stock |
+| Deliveries to invoice | Delivery Note | Accounts, Selling |
+| Quotations expiring this week | Quotation | Selling |
+| Opportunities closing in 2 weeks | Opportunity | Selling, CRM |
+| Material requests to order | Material Request | Buying, Stock |
+| Purchase orders late to arrive | Purchase Order | Buying, Stock |
+| Work orders to finish | Work Order | Manufacturing |
+| Overdue project tasks | Task | Projects |
+| Open support tickets | Issue | Support |
+| Your drafts (top 2 DocTypes; not under a workflow) | 11 transaction DocTypes | everyone |
+
+- **Who sees which cue.** Role modules come from the user's ERPNext roles ("Stock User" →
+  Stock), plus modules they use heavily. System Managers, and users with no business role,
+  see every cue they may read.
+- **Order and length.** Danger first, then warning and info. Up to 6, plus 2 draft cues.
+- **Headline.** It names the most urgent items: "Orders late to deliver: 22 · Material
+  requests to order: 3".
+- **Nothing waiting.** One quiet card: "Nothing needs you right now".
+- **Coming up.** The user's events for the next 7 days, under attention.
+- **Sticky sidebar.** It sticks only when it fits the window, so a long queue scrolls with the
+  page.
+
+**Verified (1440, dark, 390 phone).**
+- Accounts: overdue invoices 44 (₨ 31.51 L), bills due 15, deliveries to invoice 1. Clicking
+  overdue invoices opens the Sales Invoice list filtered to 44.
+- Stock: late deliveries 22, MRs to order 3, a stock count event.
+- Sales: late deliveries, expiring quotation, weekly review event.
+- Projects: 2 overdue tasks.
+- Finance: 4 PO approvals above its accounts cues.
+- New user without a business role: "Nothing needs you right now".
+- Persona sweep: no page errors.
+
+**Demo data.**
+- SaathiMart was uninstalled and its mount removed. Its customisations were deleted: 30 Custom
+  Fields and 40 Property Setters, including a Sales Invoice Item fetch of a non-existent
+  `Item.hs_code` that broke invoicing.
+- Twelve months of backdated data were seeded (scripts in `trevo_v16/demo_seed`, outside this
+  repo).
