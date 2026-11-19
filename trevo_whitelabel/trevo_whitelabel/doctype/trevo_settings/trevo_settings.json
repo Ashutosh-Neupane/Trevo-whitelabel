@@ -7,7 +7,8 @@
   "forms_section",
   "show_form_sidebar",
   "home_section",
-  "home_create"
+  "home_create",
+  "home_cues"
  ],
  "fields": [
   {
@@ -33,11 +34,18 @@
    "label": "Create buttons",
    "options": "Trevo Home Create",
    "description": "Document types offered under Create on the home page, in this order. Each user sees only those they may create; selecting a module tab under At a glance shows that module's rows. Leave empty to use each module's own documents (from its sidebar), ordered by what each user works with most."
+  },
+  {
+   "fieldname": "home_cues",
+   "fieldtype": "Table",
+   "label": "Attention cues",
+   "options": "Trevo Home Cue",
+   "description": "Extra lines for \"In your modules\" on the home page. Each points at a Number Card of type Document Type and is shown, with the card's count, to users whose roles cover the card's module and who may read its document type. The built-in cues (overdue invoices, late deliveries, ...) always apply."
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-11-19 14:00:00",
+ "modified": "2026-11-19 18:00:00",
  "modified_by": "Administrator",
  "module": "Trevo Whitelabel",
  "name": "Trevo Settings",

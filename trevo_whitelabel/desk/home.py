@@ -32,6 +32,19 @@ RECENT_SCAN = 80
 
 
 @frappe.whitelist()
+def get_attention():
+	"""Only what changes during the day (approvals, assignments, cues, calendar), for the home's
+	periodic refresh without redrawing KPIs and modules."""
+	usage = get_usage([])
+	return {
+		"approvals": get_approvals(),
+		"assigned": get_assigned(),
+		"cues": get_cues(usage.get("modules")),
+		"events": get_upcoming_events(),
+	}
+
+
+@frappe.whitelist()
 def get_home_data(opened=None):
 	readable = set(frappe.get_user().get_can_read())
 	opened_rows = frappe.parse_json(opened) or []
@@ -80,9 +93,20 @@ def _module_dashboard(module):
 	names = frappe.get_all("Dashboard", filters={"module": module}, pluck="name", order_by="name asc")
 	names.sort(key=lambda n: n != module)
 	for name in names:
-		if frappe.has_permission("Dashboard", doc=name):
+		if frappe.has_permission("Dashboard", doc=name) and _dashboard_usable(name):
 			return name
 	return None
+
+
+def _dashboard_usable(name):
+	"""Every chart and card on the Dashboard can be drawn for this user. Frappe's dashboard
+	page shows a chart the user may open but whose report they may not run, and raises a
+	permission error on load (e.g. Accounts > Budget Variance for a Purchase User)."""
+	charts = frappe.get_all("Dashboard Chart Link", filters={"parent": name, "parenttype": "Dashboard"}, pluck="chart")
+	cards = frappe.get_all("Number Card Link", filters={"parent": name, "parenttype": "Dashboard"}, pluck="card")
+	return all(_source_permitted("Dashboard Chart", c) for c in charts if c) and all(
+		_source_permitted("Number Card", c) for c in cards if c
+	)
 
 
 APPROVAL_SCAN = 30  # documents read per workflow
@@ -198,109 +222,230 @@ def get_assigned():
 	return {"items": items[:8], "total": len(items)}
 
 
-# ── Cues ──
-# Work that ERPNext's own statuses say is waiting, for users no workflow involves (most of
-# them): overdue invoices for accounts, late deliveries for stock, expiring quotations for
-# sales... Each is a permission-checked count (frappe.get_list) that opens the filtered list.
+# ── Cues ("In your modules") ──
+# Work that ERPNext's own document statuses say is waiting, so that users no workflow involves
+# (most of them) still see what needs doing: overdue invoices for accounts, late deliveries for
+# stock, leads to follow up for sales, rejected inspections for quality...
+#   - Which modules: the user's ERPNext roles ("Stock User" → Stock) plus modules they use a lot.
+#   - Whose documents: staff see their own where a document has an owner (a Sales User's own
+#     late orders and leads), managers and Accounts see the team's ("scope": "yours" / "team").
+#   - Counts go through frappe.get_list, so DocType permissions and User Permissions apply, and
+#     a click opens the list with the same filters.
+#   - Site-specific cues: Trevo Settings > Home > Attention cues points at any Number Card of
+#     type "Document Type"; its filters, module and label are reused.
 CUE_SCAN = 500  # documents counted per cue ("500+" beyond)
-CUE_LIMIT = 6
 DRAFT_DOCTYPES = (
 	"Quotation", "Sales Order", "Delivery Note", "Sales Invoice", "Payment Entry", "Journal Entry",
 	"Material Request", "Purchase Order", "Purchase Receipt", "Purchase Invoice", "Stock Entry",
 )
-# ERPNext role prefix ("Stock" in "Stock User"/"Stock Manager") → module whose cues matter to it.
+# ERPNext role prefix ("Stock" in "Stock User"/"Stock Manager") → modules whose cues matter to it.
 ROLE_MODULES = {
-	"Accounts": "Accounts", "Sales": "Selling", "Purchase": "Buying", "Stock": "Stock",
-	"Manufacturing": "Manufacturing", "Projects": "Projects", "Quality": "Quality Management",
-	"Support": "Support", "Maintenance": "Support",
+	"Accounts": ["Accounts"], "Sales": ["Selling", "CRM"], "Purchase": ["Buying"], "Stock": ["Stock"],
+	"Manufacturing": ["Manufacturing"], "Projects": ["Projects"], "Quality": ["Quality Management"],
+	"Support": ["Support"], "Maintenance": ["Support", "Assets"], "Item": ["Stock"],
+	"Auditor": ["Accounts"],  # a role named without a "User"/"Manager" suffix
+}
+# Holders of these roles see the whole team's documents in that module; others see their own.
+MANAGER_ROLES = {
+	"Selling": {"Sales Manager", "Sales Master Manager"}, "CRM": {"Sales Manager", "Sales Master Manager"},
+	"Buying": {"Purchase Manager", "Purchase Master Manager"}, "Projects": {"Projects Manager"},
+	"Support": {"Support Team"},
 }
 TONE_ORDER = {"danger": 0, "warning": 1, "info": 2, "neutral": 3}
 
 
 def _cue_definitions():
 	today = frappe.utils.today()
+	now = frappe.utils.now()
 	week = frappe.utils.add_days(today, 7)
 	fortnight = frappe.utils.add_days(today, 14)
+	month_ago = frappe.utils.add_days(today, -30)
+	open_tasks = ["status", "not in", ["Completed", "Cancelled", "Template"]]
+	C = lambda key, module, doctype, label, tone, icon, filters, **kw: dict(  # noqa: E731
+		key=key, modules=[module] + kw.pop("also", []), doctype=doctype, label=label, tone=tone, icon=icon, filters=filters, **kw)
 	return [
-		{"key": "overdue_receivables", "doctype": "Sales Invoice", "label": _("Overdue customer invoices"),
-			"modules": ["Accounts"], "tone": "danger", "icon": "receipt-text", "amount": "outstanding_amount",
-			"filters": [["docstatus", "=", 1], ["outstanding_amount", ">", 0], ["due_date", "<", today]]},
-		{"key": "payables_due", "doctype": "Purchase Invoice", "label": _("Supplier bills due this week"),
-			"modules": ["Accounts"], "tone": "warning", "icon": "wallet", "amount": "outstanding_amount",
-			"filters": [["docstatus", "=", 1], ["outstanding_amount", ">", 0], ["due_date", "<=", week]]},
-		{"key": "late_deliveries", "doctype": "Sales Order", "label": _("Orders late to deliver"),
-			"modules": ["Selling", "Stock"], "tone": "danger", "icon": "truck", "amount": "base_grand_total",
-			"filters": [["docstatus", "=", 1], ["status", "in", ["To Deliver and Bill", "To Deliver"]], ["delivery_date", "<", today]]},
-		{"key": "to_invoice", "doctype": "Delivery Note", "label": _("Deliveries to invoice"),
-			"modules": ["Accounts", "Selling"], "tone": "warning", "icon": "file-plus", "amount": "base_grand_total",
-			"filters": [["docstatus", "=", 1], ["status", "=", "To Bill"]]},
-		{"key": "quotes_expiring", "doctype": "Quotation", "label": _("Quotations expiring this week"),
-			"modules": ["Selling"], "tone": "warning", "icon": "hourglass", "amount": "base_grand_total",
-			"filters": [["docstatus", "=", 1], ["status", "=", "Open"], ["valid_till", "between", [today, week]]]},
-		{"key": "opportunities", "doctype": "Opportunity", "label": _("Opportunities closing in 2 weeks"),
-			"modules": ["Selling", "CRM"], "tone": "info", "icon": "target", "amount": "opportunity_amount",
-			"filters": [["status", "in", ["Open", "Replied"]], ["expected_closing", "between", [today, fortnight]]]},
-		{"key": "requests_to_order", "doctype": "Material Request", "label": _("Material requests to order"),
-			"modules": ["Buying", "Stock"], "tone": "warning", "icon": "clipboard-list",
-			"filters": [["docstatus", "=", 1], ["material_request_type", "=", "Purchase"], ["status", "in", ["Pending", "Partially Ordered"]]]},
-		{"key": "late_receipts", "doctype": "Purchase Order", "label": _("Purchase orders late to arrive"),
-			"modules": ["Buying", "Stock"], "tone": "danger", "icon": "package-x", "amount": "base_grand_total",
-			"filters": [["docstatus", "=", 1], ["status", "in", ["To Receive and Bill", "To Receive"]], ["schedule_date", "<", today]]},
-		{"key": "work_orders", "doctype": "Work Order", "label": _("Work orders to finish"),
-			"modules": ["Manufacturing"], "tone": "info", "icon": "factory",
-			"filters": [["docstatus", "=", 1], ["status", "in", ["Not Started", "In Process"]]]},
-		{"key": "overdue_tasks", "doctype": "Task", "label": _("Overdue project tasks"),
-			"modules": ["Projects"], "tone": "danger", "icon": "calendar-x",
-			"filters": [["status", "not in", ["Completed", "Cancelled", "Template"]], ["exp_end_date", "<", today]]},
-		{"key": "open_issues", "doctype": "Issue", "label": _("Open support tickets"),
-			"modules": ["Support"], "tone": "warning", "icon": "life-buoy",
-			"filters": [["status", "=", "Open"]]},
+		# Accounts: money owed to and by the company, and documents waiting to be billed.
+		C("overdue_receivables", "Accounts", "Sales Invoice", _("Overdue customer invoices"), "danger", "receipt-text",
+			[["docstatus", "=", 1], ["outstanding_amount", ">", 0], ["due_date", "<", today]], amount="outstanding_amount"),
+		C("payables_due", "Accounts", "Purchase Invoice", _("Supplier bills due this week"), "warning", "wallet",
+			[["docstatus", "=", 1], ["outstanding_amount", ">", 0], ["due_date", "<=", week]], amount="outstanding_amount"),
+		C("to_invoice", "Accounts", "Delivery Note", _("Deliveries to invoice"), "warning", "file-plus",
+			[["docstatus", "=", 1], ["status", "=", "To Bill"]], amount="base_grand_total"),
+		C("receipts_to_bill", "Accounts", "Purchase Receipt", _("Receipts awaiting the supplier bill"), "info", "file-input",
+			[["docstatus", "=", 1], ["status", "=", "To Bill"]], amount="base_grand_total"),
+		C("bank_unreconciled", "Accounts", "Bank Transaction", _("Bank transactions to reconcile"), "info", "landmark",
+			[["docstatus", "=", 1], ["status", "in", ["Pending", "Unreconciled"]]]),
+		# Selling: the salesperson's own pipeline unless they manage the team.
+		C("late_deliveries", "Selling", "Sales Order", _("Orders late to deliver"), "danger", "truck",
+			[["docstatus", "=", 1], ["status", "in", ["To Deliver and Bill", "To Deliver"]], ["delivery_date", "<", today]],
+			amount="base_grand_total", own="owner", also=["Stock"]),
+		C("quotes_expiring", "Selling", "Quotation", _("Quotations expiring this week"), "warning", "hourglass",
+			[["docstatus", "=", 1], ["status", "=", "Open"], ["valid_till", "between", [today, week]]], amount="base_grand_total", own="owner"),
+		C("quotes_open", "Selling", "Quotation", _("Open quotations to follow up"), "info", "message-square-quote",
+			[["docstatus", "=", 1], ["status", "=", "Open"]], amount="base_grand_total", own="owner"),
+		# CRM: leads nobody has answered, deals about to close.
+		C("leads_new", "CRM", "Lead", _("Leads to contact"), "warning", "user-plus",
+			[["status", "in", ["Lead", "Open"]]], own="lead_owner"),
+		C("opportunities", "CRM", "Opportunity", _("Opportunities closing in 2 weeks"), "info", "target",
+			[["status", "in", ["Open", "Replied"]], ["expected_closing", "between", [today, fortnight]]],
+			amount="opportunity_amount", own="opportunity_owner"),
+		# Buying
+		C("requests_to_order", "Buying", "Material Request", _("Material requests to order"), "warning", "clipboard-list",
+			[["docstatus", "=", 1], ["material_request_type", "=", "Purchase"], ["status", "in", ["Pending", "Partially Ordered"]]]),
+		C("late_receipts", "Buying", "Purchase Order", _("Purchase orders late to arrive"), "danger", "package-x",
+			[["docstatus", "=", 1], ["status", "in", ["To Receive and Bill", "To Receive"]], ["schedule_date", "<", today]],
+			amount="base_grand_total", own="owner", also=["Stock"]),
+		C("supplier_quotes", "Buying", "Supplier Quotation", _("Supplier quotations to compare"), "info", "scale",
+			[["docstatus", "=", 1], ["status", "=", "Submitted"]], amount="base_grand_total", own="owner"),
+		# Stock
+		C("transfers_pending", "Stock", "Material Request", _("Material transfers to make"), "warning", "arrow-left-right",
+			[["docstatus", "=", 1], ["material_request_type", "=", "Material Transfer"], ["status", "in", ["Pending", "Partially Received"]]]),
+		C("to_deliver_week", "Stock", "Sales Order", _("Orders due to ship this week"), "info", "package",
+			[["docstatus", "=", 1], ["status", "in", ["To Deliver and Bill", "To Deliver"]], ["delivery_date", "between", [today, week]]]),
+		# Manufacturing
+		C("wo_late", "Manufacturing", "Work Order", _("Work orders past planned end"), "danger", "factory",
+			[["docstatus", "=", 1], ["status", "in", ["Not Started", "In Process"]], ["planned_end_date", "<", now]]),
+		C("wo_to_start", "Manufacturing", "Work Order", _("Work orders to start"), "info", "play",
+			[["docstatus", "=", 1], ["status", "=", "Not Started"]]),
+		C("job_cards", "Manufacturing", "Job Card", _("Open job cards"), "info", "wrench",
+			[["docstatus", "=", 0], ["status", "in", ["Open", "Work In Progress", "On Hold"]]]),
+		# Projects: a team member sees the tasks of their own projects; Projects Managers all.
+		C("overdue_tasks", "Projects", "Task", _("Overdue tasks"), "danger", "calendar-x",
+			[open_tasks, ["exp_end_date", "<", today]], own="project_member"),
+		C("tasks_week", "Projects", "Task", _("Tasks due this week"), "info", "calendar-clock",
+			[open_tasks, ["exp_end_date", "between", [today, week]]], own="project_member"),
+		# Quality
+		C("nc_open", "Quality Management", "Non Conformance", _("Open non-conformances"), "danger", "shield-alert",
+			[["status", "=", "Open"]]),
+		C("qi_rejected", "Quality Management", "Quality Inspection", _("Inspections rejected (30 days)"), "warning", "circle-x",
+			[["docstatus", "=", 1], ["status", "=", "Rejected"], ["report_date", ">=", month_ago]], also=["Stock", "Buying"]),
+		C("qa_open", "Quality Management", "Quality Action", _("Corrective actions open"), "warning", "list-todo",
+			[["status", "=", "Open"]]),
+		C("qr_open", "Quality Management", "Quality Review", _("Quality reviews to complete"), "info", "clipboard-check",
+			[["status", "=", "Open"]]),
+		# Support
+		C("issues_high", "Support", "Issue", _("High-priority tickets open"), "danger", "siren",
+			[["status", "=", "Open"], ["priority", "=", "High"]]),
+		C("issues_open", "Support", "Issue", _("Open support tickets"), "warning", "life-buoy",
+			[["status", "=", "Open"]]),
+		C("issues_hold", "Support", "Issue", _("Tickets on hold"), "info", "pause",
+			[["status", "=", "On Hold"]]),
+		C("warranty_open", "Support", "Warranty Claim", _("Warranty claims open"), "warning", "shield",
+			[["status", "in", ["Open", "Work In Progress"]]]),
+		# Assets
+		C("asset_maintenance", "Assets", "Asset Maintenance Log", _("Asset maintenance due"), "warning", "wrench",
+			[["docstatus", "=", 0], ["maintenance_status", "in", ["Planned", "Overdue"]], ["due_date", "<=", week]]),
+		C("asset_repairs", "Assets", "Asset Repair", _("Asset repairs pending"), "info", "hammer",
+			[["repair_status", "=", "Pending"]]),
 	]
 
 
 def _user_modules(usage_modules):
-	"""Modules this user works in: named by their ERPNext roles, plus any they use a lot.
-	None means "all" (System Manager / Administrator, or no business role at all)."""
+	"""Modules this user works in: named by their ERPNext roles, plus any they use a lot, less
+	the modules their Module Profile blocks. None means "all" (System Manager / Administrator).
+
+	A user with no business role (a new employee with only desk access) gets only the modules
+	they use, often none, rather than every module some lookup list happens to be readable in."""
 	roles = set(frappe.get_roles())
 	if "System Manager" in roles:
 		return None
 	modules = {
-		module for prefix, module in ROLE_MODULES.items()
-		if any(r.startswith(f"{prefix} ") or r == f"{prefix} Team" for r in roles)
+		module for prefix, mods in ROLE_MODULES.items()
+		if any(r.startswith(f"{prefix} ") or r == f"{prefix} Team" or r == prefix for r in roles)
+		for module in mods
 	}
 	modules |= {m for m, score in (usage_modules or {}).items() if score >= 6}
-	return modules or None
+	return modules - _blocked_modules()
+
+
+def _blocked_modules():
+	"""Modules the user's Module Profile (or User > Block Modules) hides from them."""
+	return set(frappe.get_doc("User", frappe.session.user).get_blocked_modules() or [])
+
+
+def _sees_team(module, roles):
+	return "System Manager" in roles or not MANAGER_ROLES.get(module) or bool(MANAGER_ROLES[module] & roles)
 
 
 def get_cues(usage_modules=None):
-	"""Counts of work waiting in the user's modules, most urgent first.
-	Each: key, doctype, label, tone, icon, count (capped), more (bool), amount, filters."""
+	"""Counts of work waiting in the user's modules.
+	Each item: key, module (group), doctype, label, tone, icon, count, more, amount, filters,
+	scope ("yours" | "team")."""
 	mine = _user_modules(usage_modules)
+	blocked = _blocked_modules() if mine is None else set()
+	roles = set(frappe.get_roles())
+	user = frappe.session.user
 	cues = []
-	for cue in _cue_definitions():
-		if mine is not None and not mine.intersection(cue["modules"]):
-			continue
+	for cue in _cue_definitions() + _settings_cues():
+		if mine is None:
+			module = next((m for m in cue["modules"] if m not in blocked), None)
+			if not module:
+				continue
+		else:
+			module = next((m for m in cue["modules"] if m in mine), None)
+			if not module:
+				continue
 		if not frappe.db.exists("DocType", cue["doctype"]) or not frappe.has_permission(cue["doctype"], "read"):
 			continue
-		fields = ["name"] + ([cue["amount"]] if cue.get("amount") else [])
+		filters = list(cue["filters"])
+		scope = "team"
+		if cue.get("own") and not _sees_team(module, roles):
+			scope = "yours"
+			own = cue["own"]
+			if own == "project_member":
+				# Tasks of the projects the user is a member of (Project > Users).
+				projects = frappe.get_all("Project User", filters={"user": user, "parenttype": "Project"}, pluck="parent")
+				filters.append(["project", "in", projects or [""]])
+			elif own == "_assign":
+				filters.append([own, "like", f"%{user}%"])
+			else:
+				filters.append([own, "=", user])
+		amount_field = cue.get("amount")
 		try:
-			rows = frappe.get_list(cue["doctype"], filters=cue["filters"], fields=fields, limit=CUE_SCAN, order_by="creation desc")
-		except frappe.PermissionError:
+			rows = frappe.get_list(cue["doctype"], filters=filters,
+				fields=["name"] + ([amount_field] if amount_field else []), limit=CUE_SCAN, order_by="creation desc")
+		except (frappe.PermissionError, frappe.db.ProgrammingError, frappe.db.OperationalError):
 			continue
 		if not rows:
 			continue
-		cue = dict(cue, count=len(rows), more=len(rows) >= CUE_SCAN)
-		if cue.get("amount"):
-			cue["amount"] = sum(frappe.utils.flt(r.get(cue["amount"])) for r in rows)
-		cues.append(cue)
-	cues.sort(key=lambda c: TONE_ORDER[c["tone"]])
-	cues = cues[:CUE_LIMIT]
-	cues += _draft_cues()
-	return {"items": cues, "currency": frappe.defaults.get_global_default("currency")}
+		cues.append({
+			"key": cue["key"], "module": module, "doctype": cue["doctype"], "label": cue["label"], "tone": cue["tone"],
+			"icon": cue["icon"], "count": len(rows), "more": len(rows) >= CUE_SCAN, "filters": filters, "scope": scope,
+			"amount": sum(frappe.utils.flt(r.get(amount_field)) for r in rows) if amount_field else None,
+		})
+	# One "Open quotations" line is enough when "expiring this week" is already there, etc.
+	keys = {c["key"] for c in cues}
+	redundant = {"quotes_open": "quotes_expiring", "issues_open": "issues_high", "wo_to_start": "wo_late"}
+	cues = [c for c in cues if not (c["key"] in redundant and redundant[c["key"]] in keys and c["count"] <= 3)]
+	cues.sort(key=lambda c: TONE_ORDER.get(c["tone"], 3))
+	return {"items": cues + _draft_cues(), "currency": frappe.defaults.get_global_default("currency"),
+		"modules": sorted(mine) if mine is not None else None}
+
+
+def _settings_cues():
+	"""Cues an administrator added in Trevo Settings > Home > Attention cues, each pointing at a
+	Number Card of type "Document Type" (its filters, label and module are reused)."""
+	if not frappe.db.exists("DocType", "Trevo Home Cue"):
+		return []
+	rows = frappe.get_all("Trevo Home Cue", filters={"parent": "Trevo Settings", "parenttype": "Trevo Settings"},
+		fields=["number_card", "label", "tone", "icon"], order_by="idx asc")
+	out = []
+	for row in rows:
+		card = frappe.db.get_value("Number Card", row.number_card,
+			["type", "document_type", "filters_json", "label", "module", "function", "aggregate_function_based_on"], as_dict=True)
+		if not card or card.type != "Document Type" or not card.document_type:
+			continue
+		filters = [f[1:4] for f in (frappe.parse_json(card.filters_json or "[]") or []) if len(f) >= 4]
+		out.append({
+			"key": f"card_{frappe.scrub(row.number_card)}", "modules": [card.module or "Other"], "doctype": card.document_type,
+			"label": row.label or card.label, "tone": row.tone or "info", "icon": row.icon or "gauge", "filters": filters,
+			"amount": card.aggregate_function_based_on if card.function == "Sum" else None,
+		})
+	return out
 
 
 def _draft_cues():
-	"""The user's own unsubmitted documents, one cue per DocType (at most two)."""
+	"""The user's own unsubmitted documents, one cue per DocType (at most three)."""
 	out = []
 	for doctype in DRAFT_DOCTYPES:
 		# Under a workflow a "draft" may be waiting on someone else; the approval cards cover it.
@@ -309,10 +454,10 @@ def _draft_cues():
 		filters = [["docstatus", "=", 0], ["owner", "=", frappe.session.user]]
 		count = len(frappe.get_list(doctype, filters=filters, pluck="name", limit=CUE_SCAN))
 		if count:
-			out.append({"key": f"drafts_{frappe.scrub(doctype)}", "doctype": doctype, "tone": "neutral", "icon": "file-pen",
-				"label": _("Your draft {0}").format(_(doctype)), "count": count, "more": False, "filters": filters})
+			out.append({"key": f"drafts_{frappe.scrub(doctype)}", "module": "_drafts", "doctype": doctype, "tone": "neutral",
+				"icon": "file-pen", "label": _(doctype), "count": count, "more": False, "filters": filters, "scope": "yours"})
 	out.sort(key=lambda c: -c["count"])
-	return out[:2]
+	return out[:3]
 
 
 def get_upcoming_events():
@@ -367,11 +512,15 @@ def get_usage(opened):
 
 
 def get_doctype_modules():
-	"""Modules that own standard DocTypes. v16 also has grouping modules (Build, Users, Data,
-	System) that only link to DocTypes elsewhere; the home judges those by their links."""
-	return frappe.get_all(
-		"DocType", filters={"istable": 0, "custom": 0}, pluck="module", distinct=True
-	)
+	"""Modules whose tile the server decides: those that own standard DocTypes, and every module
+	the user's Module Profile blocks. The home shows such a tile only when it is in `modules`
+	(get_usable_modules, which leaves blocked modules out).
+
+	v16 also has grouping modules (Build, Users, Data, System) that only link to DocTypes
+	elsewhere; the home judges those by their links, so a blocked one must be listed here or
+	a General Manager blocked from "Data" would still get its tile."""
+	owners = frappe.get_all("DocType", filters={"istable": 0, "custom": 0}, pluck="module", distinct=True)
+	return sorted(set(owners) | _blocked_modules())
 
 
 def get_usable_modules(readable):
@@ -467,6 +616,8 @@ def get_kpi_groups():
 	for row in usable:
 		if row.card in seen or not frappe.has_permission("Number Card", doc=row.card):
 			continue
+		if not _source_permitted("Number Card", row.card) or _card_frozen(row.card):
+			continue
 		seen.add(row.card)
 		# A card shown on several workspaces ("Annual Sales" on Home and Selling) is filed
 		# under its own module when the user can see that module.
@@ -526,10 +677,60 @@ def _module_charts(permitted_workspace):
 			permitted_workspace[row.workspace] = _workspace_permitted(row.workspace)
 		if not permitted_workspace[row.workspace]:
 			continue
-		if not frappe.has_permission("Dashboard Chart", doc=row.chart):
+		if not frappe.has_permission("Dashboard Chart", doc=row.chart) or not _source_permitted("Dashboard Chart", row.chart):
 			continue
 		charts[row.module] = {"name": row.chart, "label": _(row.label or row.chart)}
 	return charts
+
+
+def _source_permitted(widget_doctype, name):
+	"""Whether the user can run what a card or chart is drawn from, not only open the widget.
+
+	Frappe's Number Card / Dashboard Chart permission allows a widget whose report the user
+	may not run: "Budget Variance" (Accounts) is drawn from the Budget Variance Report, which
+	reads Cost Center, so a Purchase User got "You don't have permission to get a report on:
+	Cost Center". The home shows a widget only when, as the widget would ask:
+	  - report source: the user may open the report (its roles) and run reports on its
+	    DocType (query_report checks the "report" right on ref_doctype)
+	  - DocType source (counts, sums, group-by): the user may read that DocType"""
+	if widget_doctype == "Number Card":
+		source = frappe.db.get_value("Number Card", name, ["type", "report_name", "document_type"], as_dict=True)
+		is_report = source and source.type == "Report"
+	else:
+		source = frappe.db.get_value("Dashboard Chart", name, ["chart_type", "report_name", "document_type"], as_dict=True)
+		is_report = source and source.chart_type == "Report"
+	if not source:
+		return False
+	if is_report:
+		if not source.report_name or not frappe.db.exists("Report", source.report_name):
+			return False
+		report = frappe.get_doc("Report", source.report_name)
+		if not report.is_permitted():
+			return False
+		return not report.ref_doctype or bool(frappe.has_permission(report.ref_doctype, "report"))
+	if source.document_type:
+		return bool(frappe.has_permission(source.document_type, "read"))
+	return True  # custom source: Frappe's widget permission is all there is to check
+
+
+FROZEN_AFTER_DAYS = 365
+
+
+def _card_frozen(name):
+	"""A card whose filters pin it to a fixed date window that ended long ago.
+
+	ERPNext ships "Monthly Total Work Order", "Monthly Completed Work Order" and "Monthly Quality
+	Inspection" with `creation between 2020-06-08 and 2020-07-08`, so they always read 0. The
+	cards are left as ERPNext made them; the home just doesn't offer them. A card with a relative
+	window (Timespan, dynamic filters) has no literal dates and is never frozen."""
+	import re
+
+	filters = frappe.db.get_value("Number Card", name, "filters_json") or ""
+	dates = re.findall(r"\d{4}-\d{2}-\d{2}", filters)
+	if not dates:
+		return False
+	cutoff = frappe.utils.add_days(frappe.utils.today(), -FROZEN_AFTER_DAYS)
+	return max(dates) < cutoff
 
 
 def _workspace_permitted(name):

@@ -10,6 +10,8 @@
 // 4. Scroll state classes so sticky headers can show elevation once content passes under them.
 // 5. Browser-tab titles end in "· Trevo".
 // 7. Install identity: manifest, touch icon and theme-color.
+// 8. "Not found" / "not permitted" pages keep the sidebar and offer Back and Home; refused
+//    desk routes and reports show that page instead of a stale or blank screen.
 
 (function () {
 	const KEY = (doctype) => `trevo:form-side:${doctype}`;
@@ -193,6 +195,112 @@
 	new MutationObserver(sync_theme_color).observe(document.documentElement, {
 		attributes: true,
 		attributeFilter: ["data-theme"],
+	});
+
+	// 8. "Not found" and "not permitted" pages.
+	//    - Frappe's message page is bare markup, not a frappe.ui.Page, so the sidebar (which only
+	//      shows for a page that allows it) disappears and the user is left with one "Home" link.
+	//      Build the same message inside a real page frame, with Back and Home.
+	//    - Two failures never reach that page at all: an unknown desk route (desk_page.getpage
+	//      404) leaves a blank screen with no sidebar behind a "Not found" dialog; a report the
+	//      role may not open (query_report.get_script 403) leaves an empty report titled
+	//      "undefined". Show the message page for those, with the server's reason as detail,
+	//      instead of the dialog.
+	//    Reads only; permissions are untouched.
+	const frappe_not_found = frappe.show_not_found;
+	const frappe_not_permitted = frappe.show_not_permitted;
+
+	function message_page(kind, page_name, detail) {
+		const denied = kind === "denied";
+		if (!frappe.ui.make_app_page || !frappe.container) {
+			return (denied ? frappe_not_permitted : frappe_not_found)(page_name);
+		}
+		page_name = page_name || frappe.get_route_str();
+		const wrapper = frappe.pages[page_name] || frappe.container.add_page(page_name);
+		$(wrapper).empty();
+		delete wrapper.page;
+
+		const title = denied ? __("You don't have access to this page") : __("Page not found");
+		const page = frappe.ui.make_app_page({ parent: wrapper, title: title, single_column: true });
+		const $card = $(`<div class="trevo-message" role="status">
+				<span class="trevo-message__icon" aria-hidden="true">${frappe.utils.icon(denied ? "lock" : "search", "md")}</span>
+				<h2 class="trevo-message__title"></h2>
+				<p class="trevo-message__text"></p>
+				<div class="trevo-message__actions"></div>
+			</div>`).appendTo(page.main);
+		$card.find(".trevo-message__title").text(title);
+		$card
+			.find(".trevo-message__text")
+			.text(
+				denied
+					? __("Your role doesn't include it. Ask your administrator if you need it.")
+					: __("The link may be old, or the page was renamed or removed.")
+			);
+		if (detail) $('<p class="trevo-message__detail"></p>').text(detail).insertAfter($card.find(".trevo-message__text"));
+
+		const $actions = $card.find(".trevo-message__actions");
+		if (window.history.length > 1) {
+			$(`<button type="button" class="btn btn-default btn-sm">${__("Go back")}</button>`)
+				.on("click", () => window.history.back())
+				.appendTo($actions);
+		}
+		$(`<a class="btn btn-primary btn-sm" href="/desk">${__("Home")}</a>`).appendTo($actions);
+
+		frappe.container.change_to(page_name);
+		frappe.utils.set_title(title);
+	}
+	if (frappe_not_found && frappe_not_permitted) {
+		frappe.show_not_found = (page_name) => message_page("missing", page_name);
+		frappe.show_not_permitted = (page_name) => message_page("denied", page_name);
+	}
+
+	function server_message(xhr) {
+		const r = xhr.responseJSON || {};
+		if (r._error_message) return $("<div>").html(r._error_message).text().trim();
+		try {
+			const messages = JSON.parse(r._server_messages || "[]");
+			const first = messages.length ? JSON.parse(messages[0]) : {};
+			return $("<div>").html(first.message || "").text().trim();
+		} catch (e) {
+			return "";
+		}
+	}
+	// Which failures leave nothing on screen. A refused desk page (getpage 403) is left to Frappe:
+	// its dialog sends the user back to the previous page when closed.
+	const ROUTE_LOADERS = {
+		"frappe.desk.desk_page.getpage": [404],
+		"frappe.desk.query_report.get_script": [403, 404],
+	};
+	const loader_of = (settings) => Object.keys(ROUTE_LOADERS).find((m) => (settings.url || "").includes(m));
+	const is_route_loader = (settings) => Boolean(loader_of(settings));
+
+	// Close Frappe's error dialog for the same failure; the page now says it. A dialog that
+	// re-routes on close (custom_onhide) is Frappe's own flow and stays.
+	function dismiss_error_dialog() {
+		const d = frappe.msg_dialog;
+		if (!d || !d.$wrapper || d.custom_onhide) return;
+		const modal = d.$wrapper.data("bs.modal");
+		// Still fading in (display turns true only once shown): hide when it lands.
+		if (modal && modal._isTransitioning) d.$wrapper.one("shown.bs.modal", () => d.hide());
+		else if (d.display) d.hide();
+	}
+	// frappe.get_route() is null until the router has run (boot requests), so never join it raw.
+	const route_now = () => (frappe.get_route && frappe.get_route() ? frappe.get_route_str() : null);
+	const request_route = new WeakMap();
+	$(document).ajaxSend((_e, xhr, settings) => {
+		if (is_route_loader(settings)) request_route.set(xhr, route_now());
+	});
+	$(document).ajaxComplete((_e, xhr, settings) => {
+		const loader = loader_of(settings);
+		if (!loader || !ROUTE_LOADERS[loader].includes(xhr.status)) return;
+		const route = request_route.get(xhr);
+		if (!route || route !== route_now()) return; // user moved on
+		// After Frappe's own handlers, which show the server message in a dialog.
+		setTimeout(() => {
+			if (route !== route_now()) return;
+			dismiss_error_dialog();
+			message_page(xhr.status === 404 ? "missing" : "denied", route, server_message(xhr));
+		}, 0);
 	});
 
 	// 3. Chart colours. Frappe builds its default chart palette from --blue-600, --blue-400, ...

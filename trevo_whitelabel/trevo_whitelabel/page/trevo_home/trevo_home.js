@@ -102,6 +102,10 @@
 		Support: "Support",
 	};
 	const KPI_MODULE_KEY = () => `trevo:home-kpi-module:${frappe.session.user}`;
+	const ATTENTION_REFRESH_MS = 5 * 60 * 1000;
+	// From this width the apps move into a left column (keep in step with the SCSS).
+	const WIDE_LAYOUT = "80rem";
+	const CUE_GROUPS_SHOWN = 3; // module groups open at first; the rest behind "Show more"
 	// Read-only: the home shows cards, it does not edit workspaces.
 	const KPI_WIDGET_OPTIONS = {
 		allow_sorting: false,
@@ -127,6 +131,34 @@
 			this.$topbar = this.$root.find(".trevo-topbar");
 			this.$home = this.$root.find(".trevo-home");
 			this.make_topbar();
+			this.keep_fresh();
+		}
+
+		// Work waiting changes during the day (someone submits a PO for approval, an invoice
+		// falls overdue). Re-read it every few minutes while the home is open and visible, and
+		// when the user comes back to the tab, without redrawing the KPIs and modules.
+		keep_fresh() {
+			const stale = () =>
+				frappe.get_route_str() === "trevo-home" &&
+				document.visibilityState === "visible" &&
+				this.$aside?.[0]?.isConnected &&
+				Date.now() - (this.attention_at || 0) > ATTENTION_REFRESH_MS / 5;
+			document.addEventListener("visibilitychange", () => stale() && this.refresh_attention());
+			setInterval(() => stale() && Date.now() - this.attention_at >= ATTENTION_REFRESH_MS && this.refresh_attention(), 30 * 1000);
+		}
+
+		refresh_attention() {
+			this.attention_at = Date.now();
+			frappe.xcall("trevo_whitelabel.desk.home.get_attention").then((data) => {
+				if (!data || !this.$aside?.[0]?.isConnected) return;
+				Object.assign(this.data, data);
+				this.$aside.find(".trevo-attention, .trevo-events").remove();
+				// Same order as the first draw: attention, then coming up, then Recent.
+				const $events = this.render_events(this.$aside, data.events || []);
+				if ($events) $events.prependTo(this.$aside);
+				this.render_attention(this.$aside, data.approvals, data.assigned, data.cues).prependTo(this.$aside);
+				this.set_headline(this.data);
+			});
 		}
 
 		refresh() {
@@ -158,12 +190,24 @@
 			this.custom = custom;
 			this.create_config = data.create_config || [];
 			this.usage = data.usage || { doctypes: {}, modules: {} };
+			this._rank = null;
+			// Three regions. On a desktop each scrolls on its own inside the window (the greeting
+			// stays on top), so the end of every column can be reached:
+			//   left   apps and modules (navigation)  — wide screens only, see place_apps()
+			//   centre the numbers (At a glance)
+			//   right  work waiting, coming up, recent
 			const $layout = $(`<div class="trevo-home__layout">
+				<nav class="trevo-home__nav" aria-label="${esc(__("Apps"))}"></nav>
 				<div class="trevo-home__main"></div>
 				<aside class="trevo-home__aside"></aside>
 			</div>`).appendTo(this.$home);
 			const $main = $layout.find(".trevo-home__main");
 			const $aside = $layout.find(".trevo-home__aside");
+			const $apps = $(`<div class="trevo-home__apps"></div>`);
+			// Kept for the periodic refresh of the work queue (refresh_attention).
+			this.data = data;
+			this.$aside = $aside;
+			this.attention_at = Date.now();
 
 			this.set_headline(data);
 			this.render_attention($aside, data.approvals, data.assigned, data.cues);
@@ -174,27 +218,35 @@
 			const has_create = this.render_create(null);
 			const $kpis = $(`<section class="trevo-home__kpis"></section>`).appendTo($main);
 			const has_kpis = this.render_kpis($kpis, data.kpis || []);
-			const has_modules = this.render_modules($main, this.module_filter(data));
-			const has_custom = this.render_custom($main, custom);
+			const has_modules = this.render_modules($apps, this.module_filter(data));
+			const has_custom = this.render_custom($apps, custom);
 			// The framework's System group stays last, after the site's own modules.
-			$main.find(".trevo-home__group--secondary").appendTo($main);
+			$apps.find(".trevo-home__group--secondary").appendTo($apps);
 			this.render_recent(this.make_recent_section($aside), data.recent || []);
+			this.place_apps($layout, $apps);
 
 			if (!has_create && !has_kpis && !has_modules && !has_custom) {
 				this.render_no_access().prependTo($main);
 			}
-			this.watch_aside($aside);
 		}
 
-		// The sidebar stays in view while scrolling only when all of it fits the window.
-		watch_aside($aside) {
-			const fit = () => {
-				const el = $aside[0];
-				if (el?.isConnected) el.classList.toggle("is-sticky", el.offsetHeight < window.innerHeight - 96);
+		// Apps and modules go in the left column on wide screens and below the numbers
+		// otherwise; moved (not redrawn) when the window crosses the breakpoint.
+		place_apps($layout, $apps) {
+			const wide = window.matchMedia(`(min-width: ${WIDE_LAYOUT})`);
+			const place = () => {
+				if (!$layout[0].isConnected) return wide.removeEventListener("change", place);
+				const three = wide.matches && $apps.children().length > 0;
+				$apps.appendTo(three ? $layout.find(".trevo-home__nav") : $layout.find(".trevo-home__main"));
+				// Three columns: Recent sits under the numbers in the centre, so the right column
+				// is only what needs action; two columns: it closes the right column.
+				$layout.find(".trevo-home__recent").appendTo(three ? $layout.find(".trevo-home__main") : $layout.find(".trevo-home__aside"));
+				$layout.toggleClass("has-nav", three);
 			};
-			fit();
-			setTimeout(fit, 1500); // after the Recent and widget content settles
-			$(window).off("resize.trevo_aside").on("resize.trevo_aside", frappe.utils.debounce(fit, 150));
+			this.apps_media && this.apps_media.mq.removeEventListener("change", this.apps_media.fn);
+			this.apps_media = { mq: wide, fn: place };
+			wide.addEventListener("change", place);
+			place();
 		}
 
 		// ── Needs your attention ──
@@ -226,7 +278,7 @@
 						)}</p>
 					</div>
 				</div>`).appendTo($grid);
-				return;
+				return $section;
 			}
 
 			if (approvals.total) {
@@ -240,33 +292,119 @@
 				approvals.mine.forEach((item) => this.approval_row(item, true).appendTo($card.find(".trevo-attention__list")));
 				this.more_note($card, approvals.mine_total - approvals.mine.length);
 			}
-			if (cues.items.length) {
-				const $card = $(`<div class="trevo-attention__card">
-					<div class="trevo-attention__head">
-						<span class="trevo-attention__icon">${icon("list-checks", "sm")}</span>
-						<span class="trevo-attention__title">${esc(__("In your modules"))}</span>
-					</div>
-					<div class="trevo-cues"></div>
-				</div>`).appendTo($grid);
-				cues.items.forEach((cue) => this.cue_row(cue, cues.currency).appendTo($card.find(".trevo-cues")));
-			}
+			if (cues.items.length) this.render_cues($grid, cues);
 			if (assigned.total) {
 				const $card = this.attention_card($grid, "user-check", __("Assigned to you"), assigned.total);
 				assigned.items.forEach((item) => this.assigned_row(item).appendTo($card.find(".trevo-attention__list")));
 				this.more_note($card, assigned.total - assigned.items.length, "/desk/todo?status=Open");
 			}
+			return $section;
+		}
+
+		// ── In your modules ──
+		// Work waiting in the modules the user's roles cover, one group per module (Accounts,
+		// Selling, Stock, ...), found from ERPNext document statuses rather than a workflow
+		// (desk/home.py: get_cues). Groups follow the same order as the KPI tabs, and selecting
+		// a tab brings that module's group to the top. A short explanation sits in the card.
+		render_cues($grid, cues) {
+			const groups = {};
+			cues.items.forEach((cue) => (groups[cue.module] = groups[cue.module] || []).push(cue));
+			const order = Object.keys(groups)
+				.filter((m) => m !== "_drafts")
+				.sort((a, b) => this.module_rank(a) - this.module_rank(b));
+			if (groups._drafts) order.push("_drafts");
+
+			const areas = cues.modules
+				? cues.modules.map((m) => this.module_label(m)).join(", ")
+				: __("every module you can open");
+			const $card = $(`<div class="trevo-attention__card trevo-cues-card">
+				<div class="trevo-attention__head">
+					<span class="trevo-attention__icon">${icon("list-checks", "sm")}</span>
+					<span class="trevo-attention__title">${esc(__("In your modules"))}</span>
+					<button type="button" class="btn-reset trevo-cues__help-btn" aria-expanded="false"
+						aria-label="${esc(__("How this works"))}" title="${esc(__("How this works"))}">${icon("info", "sm")}</button>
+				</div>
+				<p class="trevo-cues__summary">${esc(__("Documents that need action in {0}, from their ERPNext status.", [areas]))}</p>
+				<div class="trevo-cues__help hidden">
+					<p>${esc(__("Each line counts documents whose status says something is waiting: overdue, late, due this week, or delivered but not yet invoiced. It doesn't depend on approval workflows, so every role sees its own work."))}</p>
+					<ul>
+						<li>${esc(__("Modules come from your roles (a Stock User sees Stock) and from what you use most."))}</li>
+						<li>${__("{0} lines count only documents you created or are assigned to; the others count your team's.", [`<span class="trevo-cue__scope">${esc(__("Yours"))}</span>`])}</li>
+						<li>${esc(__("Counts follow your permissions. Click a line to open exactly those documents."))}</li>
+						<li>${esc(__("Picking a module under At a glance moves its group to the top."))}</li>
+						<li>${esc(__("Administrators can add lines from any Number Card in Trevo Settings > Home."))}</li>
+					</ul>
+				</div>
+				<div class="trevo-cues"></div>
+			</div>`).appendTo($grid);
+			$card.find(".trevo-cues__help-btn").on("click", (e) => {
+				const open = $card.find(".trevo-cues__help").toggleClass("hidden").is(":visible");
+				e.currentTarget.setAttribute("aria-expanded", String(open));
+			});
+
+			const $list = $card.find(".trevo-cues");
+			order.forEach((module) => {
+				const label = module === "_drafts" ? __("Your drafts") : this.module_label(module);
+				const $group = $(`<div class="trevo-cues__group" data-module="${esc(module)}">
+					<div class="trevo-cues__group-head">${esc(label)}</div>
+				</div>`).appendTo($list);
+				groups[module].forEach((cue) => this.cue_row(cue, cues.currency, module === "_drafts").appendTo($group));
+			});
+			this.$cues = $list;
+			const extra = order.length - CUE_GROUPS_SHOWN;
+			if (extra > 0) {
+				$(`<button type="button" class="btn-reset trevo-cues__more"></button>`)
+					.on("click", () => {
+						this.cues_expanded = !this.cues_expanded;
+						this.collapse_cue_groups();
+					})
+					.appendTo($card);
+			}
+			this.collapse_cue_groups();
+			if (this.kpi_selected) this.focus_cue_group(this.kpi_selected, false);
+		}
+
+		collapse_cue_groups() {
+			if (!this.$cues) return;
+			const $groups = this.$cues.children(".trevo-cues__group");
+			// Block body: a jQuery .each callback that returns false stops the loop.
+			$groups.each((i, el) => {
+				el.classList.toggle("hidden", !this.cues_expanded && i >= CUE_GROUPS_SHOWN);
+			});
+			const hidden = Math.max(0, $groups.length - CUE_GROUPS_SHOWN);
+			this.$cues
+				.siblings(".trevo-cues__more")
+				.text(this.cues_expanded ? __("Show fewer modules") : __("Show {0} more modules", [hidden]));
+		}
+
+		// Selecting a KPI tab: that module's group first and marked, so the numbers and the
+		// work waiting in the module read together.
+		focus_cue_group(module, flash = true) {
+			if (!this.$cues) return;
+			this.$cues.children(".trevo-cues__group").removeClass("is-active");
+			const $group = this.$cues.children(`.trevo-cues__group[data-module="${CSS.escape(module)}"]`);
+			if (!$group.length) return this.collapse_cue_groups();
+			$group.prependTo(this.$cues).addClass("is-active");
+			this.collapse_cue_groups();
+			if (flash) {
+				$group.removeClass("is-flash");
+				void $group[0].offsetWidth;
+				$group.addClass("is-flash");
+			}
 		}
 
 		// One cue: "Overdue customer invoices · ₨ 31.51 L ……… 44". Opens the list with the
 		// same filters the count used (applied by the list view from route_options).
-		cue_row(cue, currency) {
+		cue_row(cue, currency, is_draft) {
 			const count = cue.more ? `${cue.count}+` : String(cue.count);
 			const amount = cue.amount ? this.short_amount(cue.amount, currency) : "";
+			const scope = !is_draft && cue.scope === "yours" ? `<span class="trevo-cue__scope">${esc(__("Yours"))}</span>` : "";
+			const meta = [amount ? esc(amount) : "", scope].filter(Boolean).join(" ");
 			return $(`<button type="button" class="trevo-cue is-${esc(cue.tone)}">
 				<span class="trevo-cue__icon">${icon(cue.icon || "circle-dot", "sm")}</span>
 				<span class="trevo-cue__text">
 					<span class="trevo-cue__label">${esc(cue.label)}</span>
-					${amount ? `<span class="trevo-cue__amount">${esc(amount)}</span>` : ""}
+					${meta ? `<span class="trevo-cue__amount">${meta}</span>` : ""}
 				</span>
 				<span class="trevo-cue__count">${esc(count)}</span>
 			</button>`).on("click", () => {
@@ -289,7 +427,7 @@
 		// ── Coming up ──
 		// The user's calendar for the next week, so a quiet day still shows what is next.
 		render_events($aside, events) {
-			if (!events.length) return;
+			if (!events.length) return null;
 			const $section = $(`<section class="trevo-events">
 				<h2 class="trevo-home__label">${esc(__("Coming up"))}</h2>
 				<div class="trevo-attention__card"><div class="trevo-events__list"></div></div>
@@ -312,6 +450,7 @@
 					</span>
 				</a>`).appendTo($section.find(".trevo-events__list"));
 			});
+			return $section;
 		}
 
 		attention_card($grid, icon_name, title, total) {
@@ -654,20 +793,25 @@
 			return __(sidebar?.label || module);
 		}
 
+		// Module order shared by the KPI tabs and the cue groups: most used first (the user's
+		// own edits and visits), then the modules their roles name, then dock order.
+		module_rank(module) {
+			if (!this._rank) {
+				const order = this.dock_modules();
+				const own = this.role_modules();
+				const use = this.usage?.modules || {};
+				this._rank = (m) =>
+					-(use[m] || 0) * 10000 + (own.has(m) ? 0 : 1000) + (order.includes(m) ? order.indexOf(m) : order.length);
+			}
+			return this._rank(module);
+		}
+
 		render_kpis($section, groups) {
 			if (!groups.length || !frappe.widget?.make_widget) {
 				$section.remove();
 				return false;
 			}
-			// The user's own modules first (a Stock User opens on Stock), then dock order.
-			const order = this.dock_modules();
-			const own = this.role_modules();
-			// Most-used module first (from the user's own edits and visits), then their role's
-			// modules, then dock order.
-			const use = this.usage?.modules || {};
-			const rank = (m) =>
-				-(use[m] || 0) * 10000 + (own.has(m) ? 0 : 1000) + (order.includes(m) ? order.indexOf(m) : order.length);
-			groups = groups.slice().sort((a, b) => rank(a.module) - rank(b.module));
+			groups = groups.slice().sort((a, b) => this.module_rank(a.module) - this.module_rank(b.module));
 
 			// One module: a tab bar with a single tab is noise, so name the module in the heading.
 			const single = groups.length === 1;
@@ -684,7 +828,18 @@
 			const $tabs = $section.find(".trevo-tabs");
 			const $panels = $section.find(".trevo-home__kpi-panels");
 			const panels = {};
+			// A soft edge on the side of the tab strip that has more tabs out of view.
+			const update_fade = () => {
+				const el = $tabs.get(0);
+				if (!el) return;
+				const max = el.scrollWidth - el.clientWidth;
+				el.classList.toggle("fade-start", el.scrollLeft > 2);
+				el.classList.toggle("fade-end", max > 2 && el.scrollLeft < max - 2);
+			};
+			$tabs.on("scroll", frappe.utils.throttle(update_fade, 50));
+			$(window).off("resize.trevo-tabs").on("resize.trevo-tabs", frappe.utils.debounce(update_fade, 150));
 
+			let first = true;
 			const select = (module) => {
 				$tabs.find(".trevo-tab").each(function () {
 					const on = this.dataset.module === module;
@@ -700,7 +855,21 @@
 				}
 				panels[module].removeClass("hidden");
 				store.set(KPI_MODULE_KEY(), module);
+				this.kpi_selected = module;
+				// Keep the chosen tab in view when the strip scrolls sideways (horizontal only,
+				// so the page or pane never jumps).
+				const strip = $tabs.get(0);
+				const tab = $tabs.find(".trevo-tab.active").get(0);
+				if (strip && tab && strip.scrollWidth > strip.clientWidth) {
+					const left = tab.offsetLeft - strip.offsetLeft;
+					if (left < strip.scrollLeft || left + tab.offsetWidth > strip.scrollLeft + strip.clientWidth) {
+						strip.scrollLeft = left - (strip.clientWidth - tab.offsetWidth) / 2;
+					}
+				}
+				update_fade();
 				this.render_create(module);
+				this.focus_cue_group(module, !first);
+				first = false;
 			};
 
 			groups.forEach((group) => {
@@ -758,25 +927,117 @@
 				});
 			}
 
-			// The home is the at-a-glance layer; deeper analysis lives in the module's workspace,
-			// its full Dashboard (every card and chart) and, when installed, Frappe Insights.
-			const links = [];
-			if (group.workspace) {
-				links.push([`/desk/${frappe.router.slug(group.workspace)}`, __("Open {0}", [__(group.workspace)])]);
+			if (!group.cards.length && !group.chart) {
+				$grid.replaceWith(`<p class="trevo-home__kpi-empty">${esc(
+					__("{0} has no numbers for you yet. Its lists and reports are below.", [label])
+				)}</p>`);
 			}
-			if (group.dashboard) {
-				links.push([`/desk/dashboard-view/${encodeURIComponent(group.dashboard)}`, __("Full dashboard")]);
-			}
-			if (group.insights) links.push(["/insights", __("Analyse in Insights")]);
+
+			// Quick links: the way on from the numbers, so the panel never ends in a dead end.
+			const links = this.quick_links(group);
 			if (links.length) {
-				const $links = $(`<div class="trevo-home__kpi-links"></div>`).appendTo($panel);
-				links.forEach(([href, text]) => {
-					$(`<a class="trevo-home__kpi-more" href="${esc(href)}">
-						<span>${esc(text)}</span>${icon("arrow-right", "xs")}
+				const $links = $(`<nav class="trevo-quicklinks" aria-label="${esc(__("{0} shortcuts", [label]))}"></nav>`).appendTo($panel);
+				links.forEach((l) => {
+					const chip = l.count
+						? `<span class="trevo-quicklink__count is-${esc(l.tone || "info")}" title="${esc(l.count_title)}">${esc(String(l.count))}</span>`
+						: "";
+					$(`<a class="trevo-quicklink${l.primary ? " is-primary" : ""}" href="${esc(l.href)}">
+						<span class="trevo-quicklink__icon">${icon(l.icon || "file-text", "sm")}</span>
+						<span class="trevo-quicklink__text">
+							<span class="trevo-quicklink__label">${esc(l.label)}</span>
+							<span class="trevo-quicklink__sub">${esc(l.sub)}</span>
+						</span>
+						${chip}
 					</a>`).appendTo($links);
 				});
 			}
 			return $panel;
+		}
+
+		// The module's entry points (workspace, full dashboard, Insights), then the lists and
+		// reports of its sidebar this user may open, most used first. A list that has waiting
+		// work in the cues carries its count.
+		quick_links(group, limit = 8) {
+			const out = [];
+			if (group.workspace) {
+				out.push({
+					href: `/desk/${frappe.router.slug(group.workspace)}`,
+					// Setup's workspace is called "Home"; "Open Home" on the home page reads oddly.
+					label: __("Open {0}", [group.workspace === "Home" ? this.module_label(group.module) : __(group.workspace)]),
+					sub: __("Workspace"),
+					icon: "layout-grid",
+					primary: true,
+				});
+			}
+			if (group.dashboard) {
+				out.push({
+					href: `/desk/dashboard-view/${encodeURIComponent(group.dashboard)}`,
+					label: __("Full dashboard"),
+					sub: __("Every card and chart"),
+					icon: "chart-column",
+					primary: true,
+				});
+			}
+			if (group.insights) {
+				out.push({ href: "/insights", label: __("Insights"), sub: __("Analyse"), icon: "chart-pie", primary: true });
+			}
+
+			const can_read = new Set(frappe.boot.user.can_read || []);
+			const reports = frappe.boot.user.all_reports || {};
+			const used = this.usage?.doctypes || {};
+			const cues = this.data?.cues?.items || [];
+			const seen = new Set();
+			const items = Object.values(frappe.boot.module_sidebars || {})
+				.filter((bar) => bar.module === group.module)
+				.flatMap((bar) => bar.items || [])
+				.filter((it) => it.type === "Link" && ["DocType", "Report"].includes(it.link_type) && it.link_to);
+
+			const rows = [];
+			items.forEach((it, i) => {
+				const key = `${it.link_type}|${it.link_to}`;
+				if (seen.has(key)) return;
+				seen.add(key);
+				let href, sub, weight;
+				if (it.link_type === "DocType") {
+					if (!can_read.has(it.link_to)) return;
+					let opts = it.route_options;
+					try {
+						opts = typeof opts === "string" ? JSON.parse(opts) : opts;
+					} catch (e) {
+						opts = null;
+					}
+					href = frappe.utils.generate_route({ type: "doctype", name: it.link_to, route_options: opts || undefined });
+					sub = __("List");
+					weight = used[it.link_to] || 0;
+				} else {
+					const r = reports[it.link_to];
+					// The report must be in the user's report list and its source DocType readable
+					// for reports, else Frappe answers with "You don't have permission to get a report on".
+					if (!r || (r.ref_doctype && !frappe.model.can_get_report(r.ref_doctype))) return;
+					href = frappe.utils.generate_route({
+						type: "report",
+						name: it.link_to,
+						is_query_report: r.report_type !== "Report Builder",
+						report_ref_doctype: r.ref_doctype,
+					});
+					sub = __("Report");
+					weight = (used[r.ref_doctype] || 0) / 2;
+				}
+				const cue = it.link_type === "DocType" && cues.find((c) => c.doctype === it.link_to && c.count);
+				rows.push({
+					href,
+					sub,
+					label: __(it.label || it.link_to),
+					icon: it.icon || (it.link_type === "Report" ? "file-chart-column" : "file-text"),
+					count: cue ? cue.count : 0,
+					tone: cue?.tone,
+					count_title: cue ? __(cue.label) : "",
+					// Lists with waiting work first, then most used, then sidebar order.
+					rank: (cue ? -1e6 : 0) - weight * 100 + i,
+				});
+			});
+			rows.sort((a, b) => a.rank - b.rank);
+			return out.concat(rows.slice(0, Math.max(limit - out.length, 4)));
 		}
 
 		// ── Modules ──

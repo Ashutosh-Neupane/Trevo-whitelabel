@@ -12,7 +12,7 @@ required_apps = ["erpnext"]
 # -----
 # One bundle for desk and website. It sets Frappe's own design tokens and styles a
 # handful of components; it never patches Frappe/ERPNext files or templates.
-app_include_css = ["trevo_theme.bundle.css"]
+app_include_css = ["trevo_theme.bundle.css", "trevo_pages.bundle.css"]
 web_include_css = ["trevo_theme.bundle.css"]
 # Small desk behaviours (form side-panel toggle, title image, chart palette, sticky-header
 # scroll state). Uses Frappe's public events and Page API only.
@@ -42,13 +42,16 @@ website_route_rules = [
 	{"from_route": "/login-classic", "to_route": "login"},
 ]
 
-# Install / migrate: database settings only (names, logo, and /desk opening the Trevo home page).
+# Install / migrate: database settings only (names, logo, /desk opening the Trevo home page, and
+# reports and charts offered only to roles that can run them: desk/permissions.py).
 after_install = [
 	"trevo_whitelabel.scripts.rebrand_to_trevo.run",
 	"trevo_whitelabel.desk.install.use_trevo_home",
+	"trevo_whitelabel.desk.permissions.apply",
 ]
 
 after_migrate = [
 	"trevo_whitelabel.scripts.rebrand_to_trevo.run",
 	"trevo_whitelabel.desk.install.use_trevo_home",
+	"trevo_whitelabel.desk.permissions.apply",
 ]

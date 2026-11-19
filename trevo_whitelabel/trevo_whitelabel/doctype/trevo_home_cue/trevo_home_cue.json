@@ -1,0 +1,64 @@
+{
+ "actions": [],
+ "creation": "2026-11-19 18:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "number_card",
+  "label",
+  "tone",
+  "icon",
+  "module"
+ ],
+ "fields": [
+  {
+   "fieldname": "number_card",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Number Card",
+   "options": "Number Card",
+   "reqd": 1,
+   "description": "A Number Card of type Document Type; its filters decide which documents are counted."
+  },
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Label",
+   "description": "Leave empty to use the card's label."
+  },
+  {
+   "default": "info",
+   "fieldname": "tone",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Urgency",
+   "options": "danger\nwarning\ninfo\nneutral"
+  },
+  {
+   "fieldname": "icon",
+   "fieldtype": "Icon",
+   "label": "Icon"
+  },
+  {
+   "fetch_from": "number_card.module",
+   "fieldname": "module",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Module",
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-11-19 18:00:00",
+ "modified_by": "Administrator",
+ "module": "Trevo Whitelabel",
+ "name": "Trevo Home Cue",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
