@@ -33,7 +33,67 @@ RECENT_SCAN = 80
 
 @frappe.whitelist()
 def get_home_data(opened=None):
-	return {"kpis": get_kpi_groups(), "recent": get_recent(frappe.parse_json(opened) or [])}
+	readable = set(frappe.get_user().get_can_read())
+	return {
+		"kpis": get_kpi_groups(),
+		"recent": get_recent(frappe.parse_json(opened) or []),
+		"modules": get_usable_modules(readable),
+		"doctype_modules": get_doctype_modules(),
+		"custom": get_custom_doctypes(readable),
+	}
+
+
+def get_doctype_modules():
+	"""Modules that own standard DocTypes. v16 also has grouping modules (Build, Users, Data,
+	System) that only link to DocTypes elsewhere; the home judges those by their links."""
+	return frappe.get_all(
+		"DocType", filters={"istable": 0, "custom": 0}, pluck="module", distinct=True
+	)
+
+
+def get_usable_modules(readable):
+	"""Modules where the user may read at least one standard (non-child) DocType.
+
+	Frappe's dock lists every module tile to every desk user; a module tile is only useful
+	when something in it opens. Custom DocTypes are left out here (a custom DocType filed under
+	Selling should not make the whole Selling module appear) and get their own group instead."""
+	if not readable:
+		return []
+	modules = frappe.get_all(
+		"DocType",
+		filters={"name": ["in", list(readable)], "istable": 0, "custom": 0},
+		pluck="module",
+		distinct=True,
+	)
+	blocked = set(frappe.get_doc("User", frappe.session.user).get_blocked_modules() or [])
+	return sorted(m for m in modules if m not in blocked)
+
+
+CUSTOM_LIMIT = 12
+
+
+def get_custom_doctypes(readable):
+	"""DocTypes made on this site (Customize > New DocType) that the user may read.
+
+	They have no workspace or module tile of their own, so without this a role made for one
+	custom DocType ("Field Agent" for "Site Visit") would find nothing on the home."""
+	if not readable:
+		return []
+	rows = frappe.get_all(
+		"DocType",
+		filters={"name": ["in", list(readable)], "istable": 0, "custom": 1, "issingle": 0},
+		fields=["name"],
+		order_by="modified desc",
+		limit=CUSTOM_LIMIT,
+	)
+	return [
+		{
+			"doctype": row.name,
+			"label": _(row.name),
+			"can_create": bool(frappe.has_permission(row.name, "create")),
+		}
+		for row in rows
+	]
 
 
 def get_kpi_groups():

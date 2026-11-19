@@ -30,8 +30,9 @@ override_whitelisted_methods = {
 }
 
 website_redirects = [
-	{"source": "/", "target": "/desk"},
-	{"source": "/index", "target": "/desk"},
+	# www/start.py sends desk users to /desk and customers/suppliers to their portal.
+	{"source": "/", "target": "/start"},
+	{"source": "/index", "target": "/start"},
 	# Trevo sign-in is the front door. Frappe's own login page stays reachable at
 	# /login-classic for two-factor, email-link and social login.
 	{"source": "/login", "target": "/signin", "forward_query_parameters": True, "redirect_http_status": 302},

@@ -35,8 +35,12 @@ lists, permissions or calculations behave.
 - **Home** (`page/trevo_home`, `desk/home.py`): `/desk` opens the Trevo home, with search,
   notifications and the user menu; Create buttons; KPI cards (Number Cards) for the modules the
   user may open, filtered by their permissions, with each module workspace's first chart and a
-  link to that workspace; each app's modules; and Recent (what the user
+  link to that workspace; each app's modules the user can actually open; DocTypes made on the
+  site ("Custom documents"); and Recent (what the user
   submitted, edited, opened and viewed). Frappe's apps screen stays at `/desk/desktop`.
+- **Landing (`www/start.py`):** `/`, `/index` and sign-in go through `/start`, which sends desk
+  users to `/desk` and customers or suppliers (Website Users) to their portal (`/portal`:
+  orders, invoices, quotations). Before this, a customer who signed in hit "Not Permitted".
 - **About dialog:** git branch names are hidden, and Trevo Next shows the Trevo mark
   (`branding.get_versions`, via `override_whitelisted_methods`).
 - **No product banners:** Frappe's "Switch to Frappe CRM / Helpdesk" sidebar banners are

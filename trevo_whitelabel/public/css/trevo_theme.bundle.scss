@@ -1819,11 +1819,137 @@ $trevo-home-width: 1120px;
 	color: var(--red-400);
 }
 
+// Recent before the user has done anything: centred note with a way in (search).
 .trevo-home__empty {
-	margin: 0;
-	padding: 12px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	padding: 24px 16px;
+	text-align: center;
 	font-size: var(--text-sm);
 	color: var(--trevo-muted);
+
+	p {
+		margin: 0;
+		max-width: 260px;
+	}
+
+	.trevo-chip {
+		margin-top: 12px;
+
+		kbd {
+			display: inline-flex;
+			align-items: center;
+			height: 18px;
+			margin-left: 4px;
+			padding: 0 5px;
+			line-height: 1;
+			border: 1px solid var(--trevo-border);
+			border-radius: 4px;
+			background: var(--trevo-table-head);
+			color: var(--trevo-muted);
+			font-family: inherit;
+			font-size: 11px;
+			box-shadow: none;
+		}
+	}
+}
+
+.trevo-home__empty-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	margin-bottom: 8px;
+	border-radius: 999px;
+	background: var(--trevo-tint);
+
+	.icon {
+		stroke: var(--trevo-ink);
+	}
+}
+
+.trevo-home__empty-title {
+	color: var(--trevo-foreground);
+	font-weight: 600;
+}
+
+// No business role yet: one calm explanation in place of empty sections.
+.trevo-home__notice {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 20px;
+	border: 1px solid var(--trevo-border);
+	border-radius: var(--trevo-radius-lg);
+	background: var(--trevo-table-head);
+
+	h2 {
+		margin: 0 0 2px;
+		font-size: var(--text-base);
+		font-weight: 600;
+		color: var(--trevo-foreground);
+	}
+
+	p {
+		margin: 0;
+		font-size: var(--text-sm);
+		color: var(--trevo-muted);
+	}
+}
+
+.trevo-home__notice-icon {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	border-radius: 999px;
+	background: var(--trevo-tint);
+
+	.icon {
+		stroke: var(--trevo-ink);
+	}
+}
+
+.trevo-home__notice-text {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+// Loading placeholder for the sections under the greeting.
+.trevo-home__skeleton {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: 12px;
+
+	span {
+		height: 88px;
+		border-radius: var(--trevo-radius-lg);
+		background: linear-gradient(90deg, var(--trevo-table-head) 0%, var(--trevo-divider) 50%, var(--trevo-table-head) 100%);
+		background-size: 200% 100%;
+		animation: trevo-shimmer 1.2s ease-in-out infinite;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.trevo-home__skeleton span {
+		animation: none;
+	}
+}
+
+// Only Recent (no module the user can open): let it use the full width.
+.trevo-home__columns--single {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 767px) {
+	.trevo-home__notice {
+		flex-wrap: wrap;
+	}
 }
 
 @media (max-width: 991px) {

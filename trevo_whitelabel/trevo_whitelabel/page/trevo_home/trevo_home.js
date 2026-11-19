@@ -51,7 +51,10 @@
 	};
 
 	// Common first actions in a business desk. Shown only when the user may create the
-	// DocType, so a role without Selling never sees "New Sales Order".
+	// DocType, so a role without Selling never sees "New Sales Order". Ordered by how central
+	// the document is; each role sees the first six it may create (Selling: orders and quotes;
+	// Stock: entries and receipts; Projects: tasks and timesheets; no business role: to-dos,
+	// events and notes).
 	const QUICK_CREATE = [
 		"Sales Invoice",
 		"Sales Order",
@@ -61,8 +64,39 @@
 		"Purchase Order",
 		"Payment Entry",
 		"Lead",
+		"Purchase Invoice",
+		"Supplier",
+		"Journal Entry",
+		"Stock Entry",
+		"Delivery Note",
+		"Purchase Receipt",
+		"Material Request",
+		"Work Order",
+		"BOM",
+		"Project",
+		"Task",
+		"Timesheet",
+		"Issue",
+		"Opportunity",
+		"Asset",
+		"Quality Inspection",
+		"ToDo",
+		"Event",
+		"Note",
 	];
 	const QUICK_CREATE_MAX = 6;
+	const CUSTOM_CREATE_MAX = 3;
+	// Role name prefix → module, for ERPNext's standard "<Area> User / Manager" roles.
+	const ROLE_MODULES = {
+		Accounts: "Accounts",
+		Sales: "Selling",
+		Purchase: "Buying",
+		Stock: "Stock",
+		Manufacturing: "Manufacturing",
+		Projects: "Projects",
+		Quality: "Quality Management",
+		Support: "Support",
+	};
 	const KPI_MODULE_KEY = () => `trevo:home-kpi-module:${frappe.session.user}`;
 	// Read-only: the home shows cards, it does not edit workspaces.
 	const KPI_WIDGET_OPTIONS = {
@@ -92,28 +126,67 @@
 		}
 
 		refresh() {
+			const token = (this.token = (this.token || 0) + 1);
 			this.$home.empty();
 			this.render_greeting();
-			this.render_create();
-			const $kpis = $(`<section class="trevo-home__kpis hidden"></section>`).appendTo(this.$home);
-			const $columns = $(`<div class="trevo-home__columns">
-				<div class="trevo-home__main"></div>
-				<aside class="trevo-home__aside"></aside>
+			// One request decides what this user can use; a skeleton holds the space meanwhile.
+			const $loading = $(`<div class="trevo-home__skeleton" aria-busy="true" aria-label="${esc(__("Loading"))}">
+				<span></span><span></span><span></span><span></span>
 			</div>`).appendTo(this.$home);
-			this.render_modules($columns.find(".trevo-home__main"));
-			const $recent = this.make_recent_section($columns.find(".trevo-home__aside"));
 
 			const opened = (window.trevo && trevo.get_opened && trevo.get_opened()) || [];
 			frappe
 				.xcall("trevo_whitelabel.desk.home.get_home_data", { opened: JSON.stringify(opened) })
+				.catch(() => ({}))
 				.then((data) => {
-					this.render_kpis($kpis, data.kpis || []);
-					this.render_recent($recent, data.recent || []);
-				})
-				.catch(() => {
-					$kpis.remove();
-					$recent.remove();
+					if (token !== this.token) return; // a newer refresh is drawing
+					$loading.remove();
+					this.render_body(data || {});
 				});
+		}
+
+		// Sections appear only when the user has something in them. A user with no business
+		// role gets an explanation instead of an empty page.
+		render_body(data) {
+			const custom = data.custom || [];
+			const has_create = this.render_create(custom);
+			const $kpis = $(`<section class="trevo-home__kpis"></section>`).appendTo(this.$home);
+			const has_kpis = this.render_kpis($kpis, data.kpis || []);
+
+			const $columns = $(`<div class="trevo-home__columns">
+				<div class="trevo-home__main"></div>
+				<aside class="trevo-home__aside"></aside>
+			</div>`).appendTo(this.$home);
+			const $main = $columns.find(".trevo-home__main");
+			const has_modules = this.render_modules($main, this.module_filter(data));
+			const has_custom = this.render_custom($main, custom);
+			if (!has_modules && !has_custom) {
+				$main.remove();
+				$columns.addClass("trevo-home__columns--single");
+			}
+			this.render_recent(this.make_recent_section($columns.find(".trevo-home__aside")), data.recent || []);
+
+			if (!has_create && !has_kpis && !has_modules && !has_custom) {
+				this.render_no_access().insertAfter(this.$home.find(".trevo-greeting"));
+			}
+		}
+
+		render_no_access() {
+			const $notice = $(`<section class="trevo-home__notice">
+				<span class="trevo-home__notice-icon">${icon("lock-keyhole", "md")}</span>
+				<div class="trevo-home__notice-text">
+					<h2>${esc(__("Your account is ready"))}</h2>
+					<p>${esc(
+						__(
+							"You don't have access to any modules yet. Ask your administrator to give you a role, then reload this page."
+						)
+					)}</p>
+				</div>
+				<a class="trevo-chip" href="/desk/user/${esc(encodeURIComponent(frappe.session.user))}">
+					${icon("user", "xs")}<span>${esc(__("My Profile"))}</span>
+				</a>
+			</section>`);
+			return $notice;
 		}
 
 		// ── Top bar ──
@@ -209,10 +282,17 @@
 			</header>`).appendTo(this.$home);
 		}
 
-		render_create() {
+		render_create(custom) {
 			const can = new Set(frappe.boot.user.can_create || []);
-			const doctypes = QUICK_CREATE.filter((dt) => can.has(dt)).slice(0, QUICK_CREATE_MAX);
-			if (!doctypes.length) return;
+			// The site's own DocTypes first (that is what a role made for them is for), then the
+			// first standard ones this user may create.
+			const doctypes = [
+				...custom.filter((c) => c.can_create).slice(0, CUSTOM_CREATE_MAX).map((c) => c.doctype),
+				...QUICK_CREATE.filter((dt) => can.has(dt)),
+			]
+				.filter((dt, i, all) => all.indexOf(dt) === i)
+				.slice(0, QUICK_CREATE_MAX);
+			if (!doctypes.length) return false;
 			const $section = $(`<section class="trevo-home__create" aria-label="${esc(__("Create"))}">
 				<h2 class="trevo-home__label">${esc(__("Create"))}</h2>
 				<div class="trevo-home__create-list"></div>
@@ -222,6 +302,7 @@
 					.on("click", () => frappe.new_doc(dt))
 					.appendTo($section.find(".trevo-home__create-list"));
 			});
+			return true;
 		}
 
 		// ── At a glance ──
@@ -237,6 +318,16 @@
 				.filter(Boolean);
 		}
 
+		// Modules named by the user's ERPNext roles ("Stock User", "Sales Manager", ...).
+		role_modules() {
+			const roles = frappe.user_roles || [];
+			return new Set(
+				Object.entries(ROLE_MODULES)
+					.filter(([prefix]) => roles.some((r) => r.startsWith(`${prefix} `)))
+					.map(([, module]) => module)
+			);
+		}
+
 		module_label(module) {
 			const sidebars = frappe.boot.module_sidebars || {};
 			const sidebar = sidebars[module] || Object.values(sidebars).find((s) => s.module === module);
@@ -246,16 +337,24 @@
 		render_kpis($section, groups) {
 			if (!groups.length || !frappe.widget?.make_widget) {
 				$section.remove();
-				return;
+				return false;
 			}
+			// The user's own modules first (a Stock User opens on Stock), then dock order.
 			const order = this.dock_modules();
-			const rank = (m) => (order.includes(m) ? order.indexOf(m) : order.length);
+			const own = this.role_modules();
+			const rank = (m) =>
+				(own.has(m) ? 0 : 1000) + (order.includes(m) ? order.indexOf(m) : order.length);
 			groups = groups.slice().sort((a, b) => rank(a.module) - rank(b.module));
 
+			// One module: a tab bar with a single tab is noise, so name the module in the heading.
+			const single = groups.length === 1;
+			const heading = single
+				? __("{0} at a glance", [this.module_label(groups[0].module)])
+				: __("At a glance");
 			$section.removeClass("hidden").html(`
 				<div class="trevo-home__kpi-head">
-					<h2 class="trevo-home__label">${esc(__("At a glance"))}</h2>
-					<div class="trevo-tabs" role="tablist" aria-label="${esc(__("Module"))}"></div>
+					<h2 class="trevo-home__label">${esc(heading)}</h2>
+					<div class="trevo-tabs${single ? " hidden" : ""}" role="tablist" aria-label="${esc(__("Module"))}"></div>
 				</div>
 				<div class="trevo-home__kpi-panels"></div>
 			`);
@@ -300,6 +399,7 @@
 
 			const saved = store.get(KPI_MODULE_KEY());
 			select(groups.some((g) => g.module === saved) ? saved : groups[0].module);
+			return true;
 		}
 
 		// One module: its Number Cards, then the first chart of its workspace, then a link to
@@ -345,19 +445,42 @@
 		// ── Modules ──
 		// One group per app on the apps screen, in Frappe's order (business apps first; the
 		// framework's "System" declares sequence 1000 so it trails, and is styled as secondary).
-		render_modules($main) {
+		// Whether a dock entry leads somewhere this user can work. The entry's sidebar names its
+		// real module (the "Quality" tile is the "Quality Management" module).
+		//  - a module that owns DocTypes: the user may read one of them (desk/home.py)
+		//  - a grouping module (Build, Users, Data, System): the user may read a DocType it links to
+		// Without server data (request failed) every entry is kept, as the rail keeps them.
+		module_filter(data) {
+			if (!Array.isArray(data.modules)) return () => true;
+			const usable = new Set(data.modules);
+			const owners = new Set(data.doctype_modules || []);
+			const can_read = new Set(frappe.boot.user.can_read || []);
+			const sidebars = frappe.boot.module_sidebars || {};
+			return (entry) => {
+				const bar = sidebars[entry.link_to] || sidebars[entry.label];
+				const module = bar?.module || entry.module;
+				if (!module) return true;
+				if (owners.has(module)) return usable.has(module);
+				return (bar?.items || []).some((i) => i.link_type === "DocType" && can_read.has(i.link_to));
+			};
+		}
+
+		render_modules($main, is_usable) {
 			const sidebar = frappe.app?.sidebar;
-			if (!sidebar?.collect_dock_entries || !sidebar.dock_entry_route) return;
+			if (!sidebar?.collect_dock_entries || !sidebar.dock_entry_route) return false;
 			const apps = (frappe.boot.app_data || [])
 				.filter((app) => app.on_apps_screen)
 				.sort((a, b) => (a.sequence_id ?? 100) - (b.sequence_id ?? 100));
+			let shown = false;
 
 			apps.forEach((app) => {
 				const entries = sidebar
 					.collect_dock_entries(app)
+					.filter(is_usable)
 					.map((entry) => ({ entry, route: sidebar.dock_entry_route(entry) }))
 					.filter((x) => x.route);
 				if (!entries.length) return;
+				shown = true;
 
 				const secondary = app.app_name === "frappe";
 				const $group = $(`<section class="trevo-home__group${secondary ? " trevo-home__group--secondary" : ""}">
@@ -383,6 +506,23 @@
 						.appendTo($group.find(".trevo-home__modules"));
 				});
 			});
+			return shown;
+		}
+
+		// DocTypes made on this site have no module tile; list the ones the user may read.
+		render_custom($main, custom) {
+			if (!custom.length) return false;
+			const $group = $(`<section class="trevo-home__group">
+				<h2 class="trevo-home__label"><span>${esc(__("Custom documents"))}</span></h2>
+				<div class="trevo-home__modules"></div>
+			</section>`).appendTo($main);
+			custom.forEach((c) => {
+				$(`<a class="trevo-module" href="/desk/${esc(frappe.router.slug(c.doctype))}">
+					<span class="trevo-module__icon">${icon("file-text", "md")}</span>
+					<span class="trevo-module__label">${esc(c.label)}</span>
+				</a>`).appendTo($group.find(".trevo-home__modules"));
+			});
+			return true;
 		}
 
 		// ── Recent ──
@@ -402,9 +542,20 @@
 		render_recent($section, items) {
 			const $list = $section.find(".trevo-home__recent-list").attr("aria-busy", "false");
 			if (!items.length) {
-				$list.append(
-					`<p class="trevo-home__empty">${esc(__("Documents you open or change will show up here."))}</p>`
-				);
+				// First days on the desk: say what will appear here and offer the way in.
+				const shortcut = frappe.utils.is_mac() ? "⌘K" : "Ctrl+K";
+				const $empty = $(`<div class="trevo-home__empty">
+					<span class="trevo-home__empty-icon">${icon("history", "md")}</span>
+					<p class="trevo-home__empty-title">${esc(__("Nothing here yet"))}</p>
+					<p>${esc(__("Documents you open or change will show up here."))}</p>
+				</div>`).appendTo($list);
+				if (frappe.boot.desk_settings?.search_bar) {
+					$(`<button type="button" class="trevo-chip">${icon("search", "xs")}<span>${esc(
+						__("Find a document")
+					)}</span><kbd>${esc(shortcut)}</kbd></button>`)
+						.on("click", () => frappe.search.open_awesomebar_from_global_search_shortcut?.())
+						.appendTo($empty);
+				}
 				return;
 			}
 			const icons = { Form: "file-text", List: "list", Report: "chart-bar" };

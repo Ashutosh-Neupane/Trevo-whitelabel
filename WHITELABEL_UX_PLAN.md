@@ -630,3 +630,54 @@ The row editor (`.form-in-grid`) already used the form field mixin, so it was un
   Inspection read) correctly show cards only.
 - Screenshots in light, dark and at 390px.
 - `verify.mjs`: no overflow, no page errors.
+
+## 2026-11-19: Home for every kind of user
+
+Seeded one user per case (password `Demo@12345`) and checked each at 1440px and 390px:
+
+| User | Roles | What they get |
+|---|---|---|
+| Administrator | all | 10 KPI tabs; Create starts with the custom Site Visit; 21 modules + Custom documents |
+| manager.demo | Sales/Purchase/Accounts/Stock Manager | 6 tabs, opens on Accounts, 8 modules |
+| sales.demo | Sales User | opens on Selling; Site Visit, Sales Order, Quotation... |
+| accounts.demo | Accounts User | opens on Accounts; Sales/Purchase Invoice, Payment, Journal Entry |
+| stock.demo | Stock User | opens on Stock; Stock Entry, Delivery Note, Purchase Receipt, Material Request |
+| projects.demo | Projects User | opens on Projects; Project, Task, Timesheet; 3 modules |
+| field.demo | Field Agent (custom role, custom DocType only) | Create: Site Visit; Custom documents: Site Visit; Quality |
+| new.demo | Desk User only (new hire) | ToDo/Event/Note; "Quality at a glance"; Recent empty state |
+| customer.demo | Customer (Website User, Palmer Productions portal user) | `/portal` with their orders and invoices |
+
+**Found and fixed:**
+- **Customer got "Not Permitted".** `/` and `/index` redirected everyone to `/desk`, and a portal
+  user's login home is `/index`. These now go to `/start` (`www/start.py`), which sends:
+  - guests to `/signin`,
+  - System Users to `/desk`,
+  - portal users to their role home, the Portal Settings default, or `/portal`.
+
+  Sign-in's default target is `/start` too. Portal access in ERPNext v16 comes from Customer >
+  Portal Users (not the Contact), so the demo customer is linked there.
+- **Create was empty for Stock and Projects users.** The candidate list now covers every
+  module, with ToDo/Event/Note last. Site DocTypes the user may create come first (up to 3).
+- **Module tiles ignored permissions.** A tile shows when its sidebar's module owns a standard
+  DocType the user may read. For grouping modules with no DocTypes of their own (Build, Users,
+  Data, System), it shows when the sidebar links to a DocType they may read. Custom DocTypes
+  don't count towards a module, so a custom DocType filed under Selling doesn't surface Selling.
+- **Custom DocTypes were invisible on the home.** There is now a "Custom documents" group.
+- **No-access user.** When there is no Create, KPI or module, the home explains it ("Your
+  account is ready... ask your administrator for a role") instead of rendering blank space.
+- **Recent empty state.** An icon, "Nothing here yet", and a "Find a document ⌘K" button.
+- **One KPI module.** The tab bar is hidden and the heading reads "<Module> at a glance".
+- **KPI tab order.** Modules named by the user's roles come first (Stock User opens on
+  Stock), then dock order. A remembered choice still wins.
+- **Loading.** The home renders after one request, with a skeleton meanwhile; a stale response
+  from an earlier refresh is ignored.
+
+**Known, not ours:** frappe-charts throws "removeChild ... not a child" from its ResizeObserver
+on donut charts ("Sales Order Analysis"). The same error occurs on Frappe's own Selling
+workspace; it doesn't break the page, and Frappe is left unpatched.
+
+**Verification:**
+- Persona sweep (`p1.mjs`): no page errors apart from the one above.
+- Field agent flow (`f1.mjs`): Create → new Site Visit form; tile → list; opened visit shows in
+  Recent.
+- `verify.mjs`: no overflow, no page errors.

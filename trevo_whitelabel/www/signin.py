@@ -41,4 +41,5 @@ def _safe_redirect(target):
 	"""Only allow paths on this site, so the page cannot be used as an open redirect."""
 	if target and target.startswith("/") and not target.startswith("//") and "\\" not in target:
 		return target
-	return "/desk"
+	# /start picks /desk or the portal by user type (www/start.py).
+	return "/start"
