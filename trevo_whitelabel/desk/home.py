@@ -82,14 +82,25 @@ def get_custom_doctypes(readable):
 	rows = frappe.get_all(
 		"DocType",
 		filters={"name": ["in", list(readable)], "istable": 0, "custom": 1, "issingle": 0},
-		fields=["name"],
+		fields=["name", "module"],
 		order_by="modified desc",
 		limit=CUSTOM_LIMIT,
+	)
+	# The home groups them under their module, with the module's app (Selling → Trevo Next).
+	apps = dict(
+		frappe.get_all(
+			"Module Def",
+			filters={"name": ["in", list({row.module for row in rows})]},
+			fields=["name", "app_name"],
+			as_list=True,
+		)
 	)
 	return [
 		{
 			"doctype": row.name,
 			"label": _(row.name),
+			"module": row.module,
+			"app": apps.get(row.module),
 			"can_create": bool(frappe.has_permission(row.name, "create")),
 		}
 		for row in rows

@@ -36,7 +36,7 @@ lists, permissions or calculations behave.
   notifications and the user menu; Create buttons; KPI cards (Number Cards) for the modules the
   user may open, filtered by their permissions, with each module workspace's first chart and a
   link to that workspace; each app's modules the user can actually open; DocTypes made on the
-  site ("Custom documents"); and Recent (what the user
+  site, grouped under their module ("Selling · Custom", "Field Service · Custom"); and Recent (what the user
   submitted, edited, opened and viewed). Frappe's apps screen stays at `/desk/desktop`.
 - **Landing (`www/start.py`):** `/`, `/index` and sign-in go through `/start`, which sends desk
   users to `/desk` and customers or suppliers (Website Users) to their portal (`/portal`:

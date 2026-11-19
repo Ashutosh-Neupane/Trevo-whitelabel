@@ -681,3 +681,12 @@ workspace; it doesn't break the page, and Frappe is left unpatched.
 - Field agent flow (`f1.mjs`): Create → new Site Visit form; tile → list; opened visit shows in
   Recent.
 - `verify.mjs`: no overflow, no page errors.
+
+**Follow-up: custom DocTypes grouped by module.** The single "Custom documents" group became
+one group per module the DocType was filed under. Each is headed like an app group, with the
+module's app logo, the module name and a "Custom" tag: "Selling · Custom" holds Site Visit, and
+"Field Service · Custom" holds Route Plan (a demo custom module). These groups sit after the
+business apps and before the framework's System group. Permissions still apply per DocType, so
+the Sales user sees only "Selling · Custom". For a full module tile in the rail, the apps screen
+and the KPI tabs, give the module a Workspace and sidebar and add it to the app's dock; the home
+then shows it with the business modules automatically.

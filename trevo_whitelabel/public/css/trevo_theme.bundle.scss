@@ -1398,6 +1398,17 @@ $trevo-home-width: 1120px;
 	}
 }
 
+// Marks a group of the site's own DocTypes ("Selling · Custom").
+.trevo-home__tag {
+	padding: 1px 8px;
+	border-radius: 999px;
+	background: var(--trevo-tint);
+	color: var(--trevo-ink);
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 18px;
+}
+
 // Create: one row of pill buttons.
 .trevo-home__create-list {
 	display: flex;

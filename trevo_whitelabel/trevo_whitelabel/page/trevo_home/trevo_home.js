@@ -160,6 +160,8 @@
 			const $main = $columns.find(".trevo-home__main");
 			const has_modules = this.render_modules($main, this.module_filter(data));
 			const has_custom = this.render_custom($main, custom);
+			// The framework's System group stays last, after the site's own modules.
+			$main.find(".trevo-home__group--secondary").appendTo($main);
 			if (!has_modules && !has_custom) {
 				$main.remove();
 				$columns.addClass("trevo-home__columns--single");
@@ -509,19 +511,35 @@
 			return shown;
 		}
 
-		// DocTypes made on this site have no module tile; list the ones the user may read.
+		// DocTypes made on this site have no module tile of their own (Frappe adds no sidebar or
+		// dock entry for them). Group the ones the user may read by the module they were filed
+		// under, headed like an app group: the app's logo, the module name, a "Custom" tag.
 		render_custom($main, custom) {
 			if (!custom.length) return false;
-			const $group = $(`<section class="trevo-home__group">
-				<h2 class="trevo-home__label"><span>${esc(__("Custom documents"))}</span></h2>
-				<div class="trevo-home__modules"></div>
-			</section>`).appendTo($main);
-			custom.forEach((c) => {
-				$(`<a class="trevo-module" href="/desk/${esc(frappe.router.slug(c.doctype))}">
-					<span class="trevo-module__icon">${icon("file-text", "md")}</span>
-					<span class="trevo-module__label">${esc(c.label)}</span>
-				</a>`).appendTo($group.find(".trevo-home__modules"));
-			});
+			const apps = Object.fromEntries((frappe.boot.app_data || []).map((a) => [a.app_name, a]));
+			const by_module = {};
+			custom.forEach((c) => (by_module[c.module || ""] ||= []).push(c));
+
+			Object.entries(by_module)
+				.sort(([a], [b]) => this.module_label(a).localeCompare(this.module_label(b)))
+				.forEach(([module, doctypes]) => {
+					const logo = apps[doctypes[0].app]?.app_logo_url;
+					const title = module ? this.module_label(module) : __("Other");
+					const $group = $(`<section class="trevo-home__group">
+						<h2 class="trevo-home__label">
+							${logo ? `<img src="${esc(logo)}" alt="">` : ""}
+							<span>${esc(title)}</span>
+							<span class="trevo-home__tag">${esc(__("Custom"))}</span>
+						</h2>
+						<div class="trevo-home__modules"></div>
+					</section>`).appendTo($main);
+					doctypes.forEach((c) => {
+						$(`<a class="trevo-module" href="/desk/${esc(frappe.router.slug(c.doctype))}">
+							<span class="trevo-module__icon">${icon("file-text", "md")}</span>
+							<span class="trevo-module__label">${esc(c.label)}</span>
+						</a>`).appendTo($group.find(".trevo-home__modules"));
+					});
+				});
 			return true;
 		}
 
