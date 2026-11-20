@@ -282,6 +282,9 @@ def get_assigned():
 #     a click opens the list with the same filters.
 #   - Site-specific cues: Trevo Settings > Home > Attention cues points at any Number Card of
 #     type "Document Type"; its filters, module and label are reused.
+#   - Other apps add their own through hooks: `trevo_home_cues` (functions returning cues in the
+#     shape of _cue_definitions, plus optional "keywords" for search) and `trevo_role_modules`
+#     (role name or prefix -> modules), so a new app's work shows without changes here.
 CUE_SCAN = 500  # documents counted per cue ("500+" beyond)
 DRAFT_DOCTYPES = (
 	"Quotation", "Sales Order", "Delivery Note", "Sales Invoice", "Payment Entry", "Journal Entry",
@@ -301,6 +304,36 @@ MANAGER_ROLES = {
 	"Support": {"Support Team"},
 }
 TONE_ORDER = {"danger": 0, "warning": 1, "info": 2, "neutral": 3}
+
+
+def _role_modules():
+	"""ROLE_MODULES plus what installed apps declare through the `trevo_role_modules` hook."""
+	out = {k: list(v) for k, v in ROLE_MODULES.items()}
+	for role, modules in (frappe.get_hooks("trevo_role_modules") or {}).items():
+		for m in modules if isinstance(modules, list | tuple) else [modules]:
+			for module in m if isinstance(m, list | tuple) else [m]:
+				out.setdefault(role, []).append(module)
+	return out
+
+
+def all_cue_definitions():
+	"""Built-in cues and those of installed apps, less any whose filter fields its DocType lacks
+	(an app's custom field that is not on this site): such a list could only fail to load."""
+	cues = _cue_definitions()
+	for path in frappe.get_hooks("trevo_home_cues") or []:
+		try:
+			cues += list(frappe.get_attr(path)() or [])
+		except Exception:
+			frappe.log_error(title=f"Trevo home cues: {path}")
+	return [c for c in cues if _filters_valid(c["doctype"], c["filters"])]
+
+
+def _filters_valid(doctype, filters):
+	if not frappe.db.exists("DocType", doctype):
+		return False
+	meta = frappe.get_meta(doctype)
+	std = frappe.model.default_fields + frappe.model.optional_fields
+	return all(f[0] in std or meta.has_field(f[0]) for f in filters)
 
 
 def _cue_definitions():
@@ -404,7 +437,7 @@ def _user_modules(usage_modules):
 	if "System Manager" in roles:
 		return None
 	modules = {
-		module for prefix, mods in ROLE_MODULES.items()
+		module for prefix, mods in _role_modules().items()
 		if any(r.startswith(f"{prefix} ") or r == f"{prefix} Team" or r == prefix for r in roles)
 		for module in mods
 	}
@@ -430,7 +463,7 @@ def get_cues(usage_modules=None):
 	roles = set(frappe.get_roles())
 	user = frappe.session.user
 	cues = []
-	for cue in _cue_definitions() + _settings_cues():
+	for cue in all_cue_definitions() + _settings_cues():
 		if mine is None:
 			module = next((m for m in cue["modules"] if m not in blocked), None)
 			if not module:
@@ -794,15 +827,23 @@ def _source_permitted(widget_doctype, name):
 	if not source:
 		return False
 	if is_report:
-		if not source.report_name or not frappe.db.exists("Report", source.report_name):
-			return False
-		report = frappe.get_doc("Report", source.report_name)
-		if not report.is_permitted():
-			return False
-		return not report.ref_doctype or bool(frappe.has_permission(report.ref_doctype, "report"))
-	if source.document_type:
-		return bool(frappe.has_permission(source.document_type, "read"))
+		return _report_runs(source.report_name)
+	if source.document_type and not frappe.has_permission(source.document_type, "read"):
+		return False
+	# A Custom card or chart (drawn by an app's method) may name the report its number comes
+	# from (Trevo Compliance's VAT cards: VAT Return Register); then only those who can run it.
+	if source.report_name:
+		return _report_runs(source.report_name)
 	return True  # custom source: Frappe's widget permission is all there is to check
+
+
+def _report_runs(name):
+	if not name or not frappe.db.exists("Report", name):
+		return False
+	report = frappe.get_doc("Report", name)
+	if not report.is_permitted():
+		return False
+	return not report.ref_doctype or bool(frappe.has_permission(report.ref_doctype, "report"))
 
 
 FROZEN_AFTER_DAYS = 365

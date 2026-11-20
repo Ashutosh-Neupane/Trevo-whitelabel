@@ -109,7 +109,7 @@
 	// Documents ERPNext makes itself from another document; nobody starts one from a Create button.
 	const MADE_BY_SYSTEM = new Set(["Serial and Batch Bundle", "Stock Ledger Entry", "GL Entry", "Repost Item Valuation", "Bin"]);
 	// KPI cards where more is worse (work waiting, late, owed): their change is coloured the other way.
-	const INVERSE_KPI = /overdue|late|pending|outstanding|unpaid|to deliver|to bill|to receive|open issues|open quality|backlog|expense|defect|reject/i;
+	const INVERSE_KPI = /overdue|late|pending|outstanding|unpaid|to deliver|to bill|to receive|open issues|open quality|backlog|expense|defect|reject|not sent|failed|cancelled/i;
 	// Read-only: the home shows cards, it does not edit workspaces.
 	const KPI_WIDGET_OPTIONS = {
 		allow_sorting: false,
@@ -811,11 +811,20 @@
 		// Modules named by the user's ERPNext roles ("Stock User", "Sales Manager", ...).
 		role_modules() {
 			const roles = frappe.user_roles || [];
+			// Plus the modules the server matched to the user's roles, which include those other
+			// apps declare (hook `trevo_role_modules`: Compliance Manager -> Trevo Compliance).
 			return new Set(
 				Object.entries(ROLE_MODULES)
 					.filter(([prefix]) => roles.some((r) => r.startsWith(`${prefix} `)))
 					.map(([, module]) => module)
+					.concat(this.data?.cues?.modules || [])
 			);
+		}
+
+		// An app's logo; an app that declares none (or whose image fails to load) is headed by
+		// its title alone. The heading's flex gap spaces the logo, so nothing is left behind.
+		app_mark(logo) {
+			return logo ? `<img src="${esc(logo)}" alt="" onerror="this.remove()">` : "";
 		}
 
 		module_label(module) {
@@ -1185,7 +1194,7 @@
 				const secondary = app.app_name === "frappe";
 				const $group = $(`<section class="trevo-home__group${secondary ? " trevo-home__group--secondary" : ""}">
 					<h2 class="trevo-home__label">
-						${app.app_logo_url ? `<img src="${esc(app.app_logo_url)}" alt="">` : ""}
+						${this.app_mark(app.app_logo_url)}
 						<span>${esc(__(app.app_title))}</span>
 					</h2>
 					<div class="trevo-home__modules"></div>
@@ -1225,7 +1234,7 @@
 					const title = module ? this.module_label(module) : __("Other");
 					const $group = $(`<section class="trevo-home__group">
 						<h2 class="trevo-home__label">
-							${logo ? `<img src="${esc(logo)}" alt="">` : ""}
+							${this.app_mark(logo)}
 							<span>${esc(title)}</span>
 							<span class="trevo-home__tag">${esc(__("Custom"))}</span>
 						</h2>

@@ -157,9 +157,11 @@ def _work_lists(txt):
 	mine = home._user_modules(None)
 	roles = set(frappe.get_roles())
 	out = []
-	for cue in home._cue_definitions():
+	for cue in home.all_cue_definitions():
 		label = str(cue["label"])
-		if not all(w in label.lower() for w in words):
+		# An app's cue may add search words ("cbms" for "Invoices not sent to IRD").
+		text = f"{label} {cue.get('keywords') or ''}".lower()
+		if not all(w in text for w in words):
 			continue
 		module = next((m for m in cue["modules"] if mine is None or m in mine), None)
 		if not module or not _can_read(cue["doctype"]):
@@ -204,7 +206,7 @@ def start_links(bootinfo):
 
 	have = {link.get("route") for link in links}
 	mine = home._user_modules(None)
-	candidates = [c["doctype"] for c in home._cue_definitions() if mine is None or any(m in mine for m in c["modules"])]
+	candidates = [c["doctype"] for c in home.all_cue_definitions() if mine is None or any(m in mine for m in c["modules"])]
 	candidates += list(home.DRAFT_DOCTYPES)
 	readable = set(frappe.get_user().get_can_read())
 	own = readable - home._base_only_readable(readable)
