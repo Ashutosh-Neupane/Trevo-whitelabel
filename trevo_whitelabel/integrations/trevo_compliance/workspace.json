@@ -1,0 +1,248 @@
+{
+ "icon": "shield-check",
+ "sequence_id": 1.5,
+ "shortcuts": [
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "Invoices Not Sent to IRD",
+   "link_to": "Sales Invoice",
+   "stats_filter": "[[\"Sales Invoice\", \"docstatus\", \"=\", \"1\", false], [\"Sales Invoice\", \"custom_cbms_status\", \"is\", \"not set\", false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "label": "VAT Return",
+   "link_to": "VAT Return Register",
+   "type": "Report"
+  },
+  {
+   "color": "Grey",
+   "label": "Sales Register IRD",
+   "link_to": "Sales Register IRD",
+   "type": "Report"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "CBMS Logs",
+   "link_to": "CBMS Logs",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "label": "CBMS Settings",
+   "link_to": "CBMS Setting",
+   "type": "DocType"
+  }
+ ],
+ "links": [
+  {
+   "label": "VAT Registers",
+   "link_count": 7,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "is_query_report": 1,
+   "label": "Sales Register",
+   "link_to": "Sales Register IRD",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "is_query_report": 1,
+   "label": "Sales Return Register",
+   "link_to": "Sales Return Register IRD",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "is_query_report": 1,
+   "label": "Purchase Register",
+   "link_to": "Purchase Register IRD",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "is_query_report": 1,
+   "label": "Purchase Return Register",
+   "link_to": "Purchase Return Register IRD",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "is_query_report": 1,
+   "label": "VAT Return (VAT-13)",
+   "link_to": "VAT Return Register",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "is_query_report": 1,
+   "label": "Sales Cancellation Register",
+   "link_to": "Sales Cancellation Register",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "is_query_report": 1,
+   "label": "Item-wise Sales Register",
+   "link_to": "Item-wise Sales Register IRD",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "label": "IRD Sync",
+   "link_count": 5,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "label": "Sales Invoice",
+   "link_to": "Sales Invoice",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "label": "CBMS Logs",
+   "link_to": "CBMS Logs",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "label": "CBMS Setting",
+   "link_to": "CBMS Setting",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "is_query_report": 1,
+   "label": "IRD Sales Data Sync Report",
+   "link_to": "IRD Sales Data Sync Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "is_query_report": 1,
+   "label": "IRD Materialized View",
+   "link_to": "IRD Materialized View Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "label": "Audit",
+   "link_count": 4,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "is_query_report": 1,
+   "label": "Audit Trial",
+   "link_to": "Audit Trial",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "is_query_report": 1,
+   "label": "Query Audit Log",
+   "link_to": "Query Audit Log",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "is_query_report": 1,
+   "label": "SQL Query Audit Log",
+   "link_to": "SQL Query Audit Log",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "label": "Query Audit Log Entries",
+   "link_to": "Query Audit Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "label": "Balance Confirmation",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "label": "Balance Confirmation",
+   "link_to": "Balance Confirmation",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "is_query_report": 1,
+   "label": "Balance Confirmation Report",
+   "link_to": "Balance Confirmation Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "label": "Other Registers",
+   "link_count": 4,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "is_query_report": 1,
+   "label": "Sales Register Nepal",
+   "link_to": "Sales Register Nepal",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "is_query_report": 1,
+   "label": "Purchase Register Nepal",
+   "link_to": "Purchase Register Nepal",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "is_query_report": 1,
+   "label": "Party-wise Sales Register",
+   "link_to": "Party-wise Sales Register",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "is_query_report": 1,
+   "label": "Party-wise Purchase Register",
+   "link_to": "Party-wise Purchase Register",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ]
+}

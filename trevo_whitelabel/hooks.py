@@ -16,7 +16,7 @@ app_include_css = ["trevo_theme.bundle.css", "trevo_pages.bundle.css"]
 web_include_css = ["trevo_theme.bundle.css"]
 # Small desk behaviours (form side-panel toggle, title image, chart palette, sticky-header
 # scroll state). Uses Frappe's public events and Page API only.
-app_include_js = ["trevo_desk.bundle.js"]
+app_include_js = ["trevo_desk.bundle.js", "trevo_chart_sources.bundle.js"]
 
 app_logo_url = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg"
 splash_image = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg"
@@ -55,11 +55,27 @@ website_route_rules = [
 after_install = [
 	"trevo_whitelabel.scripts.rebrand_to_trevo.run",
 	"trevo_whitelabel.desk.install.use_trevo_home",
+	"trevo_whitelabel.integrations.sync",
 	"trevo_whitelabel.desk.permissions.apply",
 ]
 
 after_migrate = [
 	"trevo_whitelabel.scripts.rebrand_to_trevo.run",
 	"trevo_whitelabel.desk.install.use_trevo_home",
+	# Dashboards and roles Trevo carries for other installed apps (integrations/), before the
+	# report roles are settled, since they offer those apps' reports to more roles.
+	"trevo_whitelabel.integrations.sync",
 	"trevo_whitelabel.desk.permissions.apply",
 ]
+# An app with a Trevo integration installed or removed later: its dashboard follows.
+after_app_install = "trevo_whitelabel.integrations.after_app_install"
+before_app_uninstall = "trevo_whitelabel.integrations.before_app_uninstall"
+
+# "Needs your attention" work lists and role -> module mapping for apps Trevo integrates. A
+# cue whose DocType or fields aren't on the site (its app not installed) is dropped by the home.
+trevo_home_cues = ["trevo_whitelabel.integrations.trevo_compliance.cues.get_cues"]
+trevo_role_modules = {
+	"Compliance": ["Trevo Compliance"],
+	"Auditor": ["Trevo Compliance"],
+	"Accounts Manager": ["Trevo Compliance"],
+}

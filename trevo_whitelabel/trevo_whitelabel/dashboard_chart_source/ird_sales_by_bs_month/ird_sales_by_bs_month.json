@@ -1,0 +1,13 @@
+{
+ "creation": "2026-11-20 12:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Dashboard Chart Source",
+ "idx": 0,
+ "modified": "2026-11-20 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Trevo Whitelabel",
+ "name": "IRD Sales by BS Month",
+ "owner": "Administrator",
+ "source_name": "IRD Sales by BS Month",
+ "timeseries": 0
+}

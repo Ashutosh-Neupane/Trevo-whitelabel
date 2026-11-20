@@ -90,6 +90,12 @@ def narrow_report_roles():
 			cache[key] = _role_can(doctype, role, ptype)
 		return cache[key]
 
+	from trevo_whitelabel.integrations import report_roles
+
+	# Roles Trevo's integrations offer a report on top of its own list (a compliance register to
+	# the Compliance Manager); like the listed ones, kept only where they can run it.
+	extra_roles = report_roles()
+
 	for report in frappe.get_all("Report", filters={"disabled": 0}, fields=["name", "ref_doctype"]):
 		if not report.ref_doctype or not frappe.db.exists("DocType", report.ref_doctype):
 			continue
@@ -97,7 +103,10 @@ def narrow_report_roles():
 		if existing and report.name not in managed:
 			continue  # someone set this report's roles by hand; leave them
 
-		listed = frappe.get_all("Has Role", filters={"parenttype": "Report", "parent": report.name}, pluck="role")
+		own = frappe.get_all("Has Role", filters={"parenttype": "Report", "parent": report.name}, pluck="role")
+		# Extra roles only widen a restricted report; one with no roles is open to all already.
+		extra = [r for r in extra_roles.get(report.name, []) if r not in own and frappe.db.exists("Role", r)] if own else []
+		listed = own + extra
 		needs = [d for d in REPORT_READS.get(report.name, []) if frappe.db.exists("DocType", d)]
 
 		def runs(role):
@@ -106,7 +115,7 @@ def narrow_report_roles():
 		if listed:
 			# Administrator and System Manager keep what ERPNext gave them (admins hold every role).
 			allowed = sorted(r for r in listed if r in ADMIN_ROLES or runs(r))
-			wanted = allowed if len(allowed) < len(listed) else None
+			wanted = allowed if sorted(allowed) != sorted(own) else None
 		else:
 			# No role listed means every desk user. Keep it that way only if every user can run it.
 			wanted = None if runs("All") or runs("Desk User") else sorted(r for r in roles if runs(r))
