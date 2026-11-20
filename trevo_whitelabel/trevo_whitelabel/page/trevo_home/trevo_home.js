@@ -934,33 +934,40 @@
 				<div class="trevo-home__kpi-grid"></div>
 			</div>`);
 			const $grid = $panel.find(".trevo-home__kpi-grid");
-			group.cards.forEach((card) => {
+			// Containers now, in their order; the widgets fill them once the DocTypes are loaded.
+			const cards = group.cards.map((card) => {
 				// Frappe colours a rise green and a fall red. For work piling up ("Overdue Issues",
 				// "Orders to Deliver", "Pending ...") a rise is bad news, so those cards swap the
 				// colours (CSS on .is-inverse); the numbers and arrows stay Frappe's.
 				const inverse = INVERSE_KPI.test(`${card.label} ${card.name}`);
-				frappe.widget.make_widget({
-					widget_type: "number_card",
-					container: $(`<div class="trevo-kpi${inverse ? " is-inverse" : ""}"></div>`).appendTo($grid),
-					name: card.name,
-					number_card_name: card.name,
-					label: card.label,
-					options: KPI_WIDGET_OPTIONS,
-				});
+				return { card, $box: $(`<div class="trevo-kpi${inverse ? " is-inverse" : ""}"></div>`).appendTo($grid) };
 			});
+			const $chart = group.chart ? $(`<div class="trevo-kpi-chart"></div>`).appendTo($panel) : null;
 
-			if (group.chart) {
-				frappe.widget.make_widget({
-					widget_type: "chart",
-					container: $(`<div class="trevo-kpi-chart"></div>`).appendTo($panel),
-					name: group.chart.name,
-					chart_name: group.chart.name,
-					label: group.chart.label,
-					width: "Full",
-					height: 180,
-					options: KPI_WIDGET_OPTIONS,
+			this.load_doctypes(group.doctypes).then(() => {
+				cards.forEach(({ card, $box }) => {
+					frappe.widget.make_widget({
+						widget_type: "number_card",
+						container: $box,
+						name: card.name,
+						number_card_name: card.name,
+						label: card.label,
+						options: KPI_WIDGET_OPTIONS,
+					});
 				});
-			}
+				if ($chart) {
+					frappe.widget.make_widget({
+						widget_type: "chart",
+						container: $chart,
+						name: group.chart.name,
+						chart_name: group.chart.name,
+						label: group.chart.label,
+						width: "Full",
+						height: 180,
+						options: KPI_WIDGET_OPTIONS,
+					});
+				}
+			});
 
 			if (!group.cards.length && !group.chart) {
 				$grid.replaceWith(`<p class="trevo-home__kpi-empty">${esc(
@@ -987,6 +994,18 @@
 				});
 			}
 			return $panel;
+		}
+
+		// Each Number Card and Chart widget loads the DocType it formats values with
+		// (frappe.model.with_doctype). Started together, four cards on Sales Invoice fetched its
+		// 680 KB definition four times. Load each DocType once, then let the widgets find it in
+		// locals. A failed load doesn't block the cards; they load it themselves as before.
+		load_doctypes(doctypes) {
+			this._doctype_loads = this._doctype_loads || {};
+			const pending = (doctypes || [])
+				.filter((dt) => !locals.DocType?.[dt])
+				.map((dt) => (this._doctype_loads[dt] = this._doctype_loads[dt] || frappe.model.with_doctype(dt).catch(() => null)));
+			return Promise.all(pending);
 		}
 
 		// The module's entry points (workspace, full dashboard, Insights), then the lists and

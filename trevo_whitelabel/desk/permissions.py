@@ -74,6 +74,9 @@ MANAGED_KEY = "trevo_managed_report_roles"  # reports whose Custom Role this mod
 def apply():
 	narrow_report_roles()
 	grant_lookup_read()
+	# Which KPI cards each user's home offers is cached by roles (desk/home.py get_kpi_groups);
+	# the reports and reads changed here change that answer without changing anyone's roles.
+	frappe.cache.delete_keys("trevo_kpi_groups::")
 
 
 def narrow_report_roles():

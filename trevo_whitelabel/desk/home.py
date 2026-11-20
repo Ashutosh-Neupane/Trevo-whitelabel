@@ -647,14 +647,35 @@ def get_custom_doctypes(readable):
 	]
 
 
+KPI_CACHE_SECONDS = 300
+
+
 def get_kpi_groups():
+	"""Which cards and charts this user's home shows, per module (not their values).
+
+	Deciding that runs Frappe's permission check for every card on every workspace: about 700
+	queries for a user with every module. The answer only changes with the user's roles, blocked
+	modules or language, so it is kept for a few minutes under those. The values are read live by
+	Frappe's widgets each time."""
+	user = frappe.session.user
+	signature = [sorted(frappe.get_roles()), sorted(_blocked_modules()), frappe.local.lang]
+	key = f"trevo_kpi_groups::{user}"
+	cached = frappe.cache.get_value(key)
+	if cached and cached.get("signature") == signature:
+		return cached["groups"]
+	groups = _build_kpi_groups()
+	frappe.cache.set_value(key, {"signature": signature, "groups": groups}, expires_in_sec=KPI_CACHE_SECONDS)
+	return groups
+
+
+def _build_kpi_groups():
 	if not frappe.has_permission("Number Card", throw=False):
 		return []
 
 	rows = frappe.db.sql(
 		"""
 		select ws.name as workspace, ws.module as workspace_module, wnc.number_card_name as card,
-			wnc.label, nc.module as card_module, nc.is_public, nc.owner, md.app_name
+			wnc.label, nc.module as card_module, nc.is_public, nc.owner, nc.document_type, md.app_name
 		from `tabWorkspace Number Card` wnc
 		join `tabWorkspace` ws on ws.name = wnc.parent
 		join `tabNumber Card` nc on nc.name = wnc.number_card_name
@@ -690,7 +711,7 @@ def get_kpi_groups():
 		# A card shown on several workspaces ("Annual Sales" on Home and Selling) is filed
 		# under its own module when the user can see that module.
 		module = row.card_module if row.card_module in visible_modules else row.workspace_module
-		groups.setdefault(module, []).append({"name": row.card, "label": _(row.label or row.card)})
+		groups.setdefault(module, []).append({"name": row.card, "label": _(row.label or row.card), "doctype": row.document_type})
 
 	# The module's own workspace (Selling for "Selling"), linked from its tab.
 	workspace_of = {}
@@ -708,6 +729,9 @@ def get_kpi_groups():
 			"chart": charts.get(module),
 			"dashboard": _module_dashboard(module),
 			"insights": bool(insights),
+			# DocTypes the widgets format values with: the home loads each once, up front.
+			"doctypes": sorted({c["doctype"] for c in cards if c.get("doctype")}
+				| ({charts[module]["doctype"]} if charts.get(module, {}).get("doctype") else set())),
 		}
 		for module, cards in groups.items()
 	]
@@ -725,7 +749,7 @@ def _module_charts(permitted_workspace):
 	rows = frappe.db.sql(
 		"""
 		select ws.name as workspace, ws.module, wc.chart_name as chart, wc.label,
-			dc.is_public, dc.owner, md.app_name
+			dc.is_public, dc.owner, dc.document_type, md.app_name
 		from `tabWorkspace Chart` wc
 		join `tabWorkspace` ws on ws.name = wc.parent
 		join `tabDashboard Chart` dc on dc.name = wc.chart_name
@@ -747,7 +771,7 @@ def _module_charts(permitted_workspace):
 			continue
 		if not frappe.has_permission("Dashboard Chart", doc=row.chart) or not _source_permitted("Dashboard Chart", row.chart):
 			continue
-		charts[row.module] = {"name": row.chart, "label": _(row.label or row.chart)}
+		charts[row.module] = {"name": row.chart, "label": _(row.label or row.chart), "doctype": row.document_type}
 	return charts
 
 
