@@ -21,6 +21,7 @@ screens write, so ERPNext's code and metadata stay untouched:
      - Profit and Loss, Balance Sheet, ... (financial_statements.js) list Accounting Dimensions.
      - Accounts Receivable / Payable list Party Types.
      - The "Warehouse wise Stock Value" chart (roles include Accounts User) sums Bin.
+     - The Issue form reads Support Settings; the Chart of Accounts tree reads Accounts Settings.
    Each role offered one of those widgets gets read (no write, no report) through Custom DocPerm,
    the record Role Permission Manager writes.
 
@@ -39,6 +40,7 @@ REPORT_READS = {
 	"Accounts Payable Summary": ["Journal Entry"],
 	"Accounts Receivable": ["Journal Entry"],
 	"Accounts Receivable Summary": ["Journal Entry"],
+	"Trial Balance for Party": ["Customer"],  # default Party Type is Customer
 }
 
 # Lookup DocType -> widgets that read it in a way their roles may not.
@@ -53,6 +55,15 @@ LOOKUPS = {
 		"Consolidated Accounts Payable", "Consolidated Accounts Payable Summary",
 	)],
 	"Bin": [("Dashboard Chart", "Warehouse wise Stock Value")],
+	# The ledger and statement reports default their Company filter and read the company's
+	# currency and fiscal settings; the Auditor role may run them but not read Company.
+	"Company": [("Report", r) for r in (
+		"General Ledger", "Trial Balance", "Profit and Loss Statement", "Balance Sheet", "Cash Flow",
+		"Consolidated Financial Statement", "Profitability Analysis", "Accounts Payable", "Budget Variance Report",
+	)],
+	# Settings a form or tree reads on load (frappe.client.get_value / get_single_value).
+	"Support Settings": [("DocType", "Issue")],  # issue.js: SLA tracking switch
+	"Accounts Settings": [("DocType", "Account")],  # account_tree.js
 }
 
 SKIP_ROLES = {"Administrator", "Guest", "All", "Desk User"}
@@ -139,6 +150,9 @@ def grant_lookup_read():
 
 
 def _widget_roles(parenttype, name):
+	if parenttype == "DocType":  # every role that may read the DocType whose form reads the lookup
+		roles = frappe.get_all("Role", filters={"disabled": 0, "desk_access": 1}, pluck="name")
+		return [r for r in roles if r not in SKIP_ROLES and _role_can(name, r, "read")]
 	if parenttype == "Report":
 		custom = frappe.db.get_value("Custom Role", {"report": name}, "name")
 		if custom:  # the roles the report is actually offered to

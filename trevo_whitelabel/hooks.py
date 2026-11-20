@@ -22,7 +22,15 @@ app_logo_url = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg"
 splash_image = "/assets/trevo_whitelabel/images/TrevoCloudLogo.svg"
 
 update_website_context = "trevo_whitelabel.branding.get_context"
-extend_bootinfo = "trevo_whitelabel.branding.extend_bootinfo"
+extend_bootinfo = [
+	"trevo_whitelabel.branding.extend_bootinfo",
+	# Sidebar links the user would only get an error from (reports/workspaces they can't open).
+	"trevo_whitelabel.desk.boot.prune_sidebars",
+	# The search box's opening list for a user with no history yet.
+	"trevo_whitelabel.desk.search.start_links",
+]
+# Search box: documents by number, records by name, number prefixes, the home's work lists.
+awesomebar_search = ["trevo_whitelabel.desk.search.awesomebar_results"]
 
 # About dialog: hide git branch names (see branding.get_versions).
 override_whitelisted_methods = {

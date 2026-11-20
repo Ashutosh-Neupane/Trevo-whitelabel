@@ -47,21 +47,70 @@ def get_attention():
 @frappe.whitelist()
 def get_home_data(opened=None):
 	readable = set(frappe.get_user().get_can_read())
+	base_only = _base_only_readable(readable)
 	opened_rows = frappe.parse_json(opened) or []
 	usage = get_usage(opened_rows)
+	modules = get_usable_modules(readable - base_only)
+	kpis = get_kpi_groups()
+	if base_only:
+		# A module whose KPIs the user can read only through the base roles (Quality for a new
+		# hire) is not theirs: show the KPIs of the modules their own roles open.
+		kpis = [g for g in kpis if g.get("module") in modules]
+	if not kpis:
+		# Narrow roles (a delivery driver reads Delivery Note and Delivery Trip, no KPI card)
+		# still get a tab per module, so its quick links give the page a working centre.
+		kpis = _link_only_groups(modules, usage.get("modules"))
 	return {
 		"approvals": get_approvals(),
 		"assigned": get_assigned(),
 		"cues": get_cues(usage.get("modules")),
 		"events": get_upcoming_events(),
 		"usage": usage,
-		"kpis": get_kpi_groups(),
+		"kpis": kpis,
 		"recent": get_recent(opened_rows),
-		"modules": get_usable_modules(readable),
+		"modules": modules,
 		"doctype_modules": get_doctype_modules(),
+		"base_only": sorted(base_only),
 		"custom": get_custom_doctypes(readable),
 		"create_config": get_create_config(),
 	}
+
+
+LINK_ONLY_SKIP = {"Contacts", "Setup", "Core", "Desk"}
+
+
+def _link_only_groups(modules, usage_modules, limit=4):
+	"""KPI groups without cards for a user who has none: their business modules, most used first."""
+	business = [m for m in modules if m not in LINK_ONLY_SKIP and frappe.db.exists("Workspace", m)]
+	business.sort(key=lambda m: -(usage_modules or {}).get(m, 0))
+	groups = []
+	for module in business[:limit]:
+		groups.append({"module": module, "workspace": module if _workspace_permitted(module) else None,
+			"cards": [], "chart": None, "dashboard": None, "insights": False})
+	return groups
+
+
+BASE_ROLES = {"All", "Guest", "Desk User"}
+
+
+def _base_only_readable(readable):
+	"""DocTypes the user can read only because every desk user can (roles All / Desk User).
+
+	ERPNext lets every desk user read some 60 DocTypes: lookups (Country, Gender), their own
+	Leads, Projects and Sales Invoices, the Quality lists, the framework's admin lists. Judged
+	by those, a new hire got Quality KPIs and Build, Data, Users and Website tiles. Modules and
+	KPIs are judged by what the user's own roles grant; System Managers see everything."""
+	roles = set(frappe.get_roles()) - BASE_ROLES
+	if "System Manager" in roles or frappe.session.user == "Administrator" or not readable:
+		return set()
+	readable = list(readable)
+	with_custom = set(frappe.get_all("Custom DocPerm", filters={"parent": ["in", readable]}, pluck="parent", distinct=True))
+	granted = set()
+	if roles:
+		perm = {"parent": ["in", readable], "role": ["in", list(roles)], "read": 1, "permlevel": 0}
+		granted |= set(frappe.get_all("Custom DocPerm", filters=perm, pluck="parent", distinct=True))
+		granted |= {d for d in frappe.get_all("DocPerm", filters=perm, pluck="parent", distinct=True) if d not in with_custom}
+	return set(readable) - granted
 
 
 def get_create_config():
@@ -242,7 +291,7 @@ DRAFT_DOCTYPES = (
 ROLE_MODULES = {
 	"Accounts": ["Accounts"], "Sales": ["Selling", "CRM"], "Purchase": ["Buying"], "Stock": ["Stock"],
 	"Manufacturing": ["Manufacturing"], "Projects": ["Projects"], "Quality": ["Quality Management"],
-	"Support": ["Support"], "Maintenance": ["Support", "Assets"], "Item": ["Stock"],
+	"Support": ["Support"], "Maintenance": ["Support", "Assets"], "Item": ["Stock"], "Delivery": ["Stock"],
 	"Auditor": ["Accounts"],  # a role named without a "User"/"Manager" suffix
 }
 # Holders of these roles see the whole team's documents in that module; others see their own.
@@ -302,6 +351,11 @@ def _cue_definitions():
 			[["docstatus", "=", 1], ["material_request_type", "=", "Material Transfer"], ["status", "in", ["Pending", "Partially Received"]]]),
 		C("to_deliver_week", "Stock", "Sales Order", _("Orders due to ship this week"), "info", "package",
 			[["docstatus", "=", 1], ["status", "in", ["To Deliver and Bill", "To Deliver"]], ["delivery_date", "between", [today, week]]]),
+		# Delivery: the trips a driver (Delivery User) has to run, and the ones still on the road.
+		C("trips_scheduled", "Stock", "Delivery Trip", _("Delivery trips to run"), "warning", "truck",
+			[["docstatus", "=", 1], ["status", "=", "Scheduled"]]),
+		C("trips_in_transit", "Stock", "Delivery Trip", _("Delivery trips on the road"), "info", "navigation",
+			[["docstatus", "=", 1], ["status", "=", "In Transit"]]),
 		# Manufacturing
 		C("wo_late", "Manufacturing", "Work Order", _("Work orders past planned end"), "danger", "factory",
 			[["docstatus", "=", 1], ["status", "in", ["Not Started", "In Process"]], ["planned_end_date", "<", now]]),
@@ -463,13 +517,27 @@ def _draft_cues():
 def get_upcoming_events():
 	"""The user's calendar for the next 7 days (Event permission: own, public or invited)."""
 	now = frappe.utils.now_datetime()
-	return frappe.get_list(
+	events = frappe.get_list(
 		"Event",
 		filters=[["starts_on", "between", [now, frappe.utils.add_days(now, 7)]], ["status", "=", "Open"]],
-		fields=["name", "subject", "starts_on", "all_day", "color"],
+		fields=["name", "subject", "starts_on", "all_day", "color", "event_type", "owner"],
 		order_by="starts_on asc",
-		limit=5,
+		limit=20,
 	)
+	# Public events are everyone's by Frappe's rule, so CRM appointments (public events about a
+	# Lead or Customer) filled a delivery driver's and a new hire's "Coming up". Keep a public
+	# event someone else made only when the user may read what it is about.
+	user = frappe.session.user
+	about = {}
+	for row in frappe.get_all("Event Participants", filters={"parenttype": "Event", "parent": ["in", [e.name for e in events]]},
+			fields=["parent", "reference_doctype"]):
+		about.setdefault(row.parent, set()).add(row.reference_doctype)
+	kept = [
+		e for e in events
+		if e.event_type != "Public" or e.owner == user
+		or all(dt and frappe.has_permission(dt, "read") for dt in about.get(e.name, ()))
+	]
+	return [{k: e[k] for k in ("name", "subject", "starts_on", "all_day", "color")} for e in kept[:5]]
 
 
 USAGE_DAYS = 90

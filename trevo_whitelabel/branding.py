@@ -27,7 +27,26 @@ def get_context(context):
     else:
         context.home_page = "desk"
 
+    _signed_in_not_permitted()
     return context
+
+
+def _signed_in_not_permitted():
+    """Frappe's "Not Permitted" page always offers "Login", also to someone already signed in:
+    a portal customer who opens /desk was sent to a login form they had just passed. For a
+    signed-in user, point it at where they can go instead (portal customers: their portal;
+    desk users: the desk). The page and its 403 status are Frappe's; only the button changes.
+    It is applied to the response context, which Frappe merges after this hook."""
+    page = (getattr(frappe.local, "response", None) or {}).get("context")
+    if not page or page.get("primary_label") != frappe._("Login") or frappe.session.user == "Guest":
+        return
+    if frappe.session.data.user_type == "Website User":
+        page["primary_action"], page["primary_label"] = "/me", frappe._("Go to my portal")
+        if (frappe.request.path or "").startswith("/desk"):
+            page["message"] = frappe._(
+                "The desk is for staff accounts. Your orders, invoices and profile are in your portal.")
+    else:
+        page["primary_action"], page["primary_label"] = "/desk", frappe._("Back to the desk")
 
 
 @frappe.whitelist()

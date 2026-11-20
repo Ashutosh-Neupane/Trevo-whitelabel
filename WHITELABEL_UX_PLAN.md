@@ -812,3 +812,109 @@ apply. Clicking one opens the list with the same filters, through `route_options
   `Item.hs_code` that broke invoicing.
 - Twelve months of backdated data were seeded (scripts in `trevo_v16/demo_seed`, outside this
   repo).
+
+## 2026-11-20: Cues per module, 3-pane home, no permission errors
+
+**Cues v2** (`desk/home.py`).
+- About 30 cues across Accounts, Selling, CRM, Buying, Stock, Manufacturing, Projects, Quality,
+  Support and Assets. They are grouped by module under "In your modules", with an info button
+  explaining where they come from.
+- A user's modules come from their roles, minus modules their Module Profile blocks. A user
+  with no business role gets cues only for modules they use heavily.
+- Team cues are shown only to that module's managers. Everyone else sees their own documents,
+  tagged "Yours".
+- Trevo Settings has an "Attention cues" table (child DocType **Trevo Home Cue**). Each row
+  turns a "Document Type" Number Card into a cue, without code.
+- Number Cards whose fixed date filters ended over a year ago are skipped. ERPNext ships three
+  with 2020 ranges.
+
+**Layout.**
+- Above 62rem, the home is exactly the window's height: nav / main / aside, each pane
+  scrolling on its own (`trevo-scroll-pane` mixin). The modules move into the left nav from
+  80rem. Phones keep normal page flow.
+- Site banners (impersonation, read-only) are measured and subtracted from that height, so the
+  page never scrolls.
+
+**Quick links.** Under each module's KPIs there is a grid of boxes:
+- The workspace, the dashboard and Insights.
+- Then the module's lists and reports that this user may open. Lists with waiting work show a
+  count.
+
+**Module tiles.**
+- ERPNext's dock hides Support (`hidden: 1`), so a module the user works in gets its sidebar as
+  a tile when the dock omits it.
+- Blocked modules get no tile.
+
+**No permission errors.** These were found by crawling every link and sidebar item for 13
+personas.
+- `_source_permitted` / `_dashboard_usable` (home.py): KPI cards, charts and dashboards are
+  offered only when the user can run the report behind them.
+- `desk/permissions.py: apply()` runs after install and migrate. It writes only what Role
+  Permission Manager writes:
+  - **`narrow_report_roles`:** a Custom Role on reports a role is listed for but can't run,
+    because it has no "report" right on the ref DocType, or no read on a DocType the report
+    queries by default (36 reports). The links then disappear instead of failing.
+  - **`grant_lookup_read`:** read on settings and lookup lists that a report or form reads in
+    the browser, only for the roles that open it: Accounting Dimension, Party Type, Bin,
+    Support Settings, Accounts Settings.
+- `desk/boot.py: prune_sidebars` (`extend_bootinfo`): Frappe lists role-less reports in every
+  sidebar without checking Custom Role. Report and workspace links the user can't open are
+  dropped from their own boot payload.
+
+**Other desk pages** (`trevo_pages.bundle.scss`, section 8 of `trevo_desk.bundle.js`).
+- "Page not found" and "no access" cards keep the sidebar instead of leaving a blank page.
+- The dashboard-view cards fill the row.
+- Report filters sit two per row on phones.
+
+**Known upstream issues, not patched.**
+- "Sales Pipeline Analytics" requires dates its filters don't default.
+- "Addresses And Contacts", "Stock Analytics", "Consolidated Financial Statement" and "MRP
+  Report" have required filters without defaults.
+- Frappe's File and Location new-forms raise script errors.
+- frappe-charts sometimes logs `removeChild` on re-render.
+
+**Demo** (`trevo_v16/demo_seed`, `trevo_v16/qa`, outside this repo).
+- 13 personas with Role and Module Profiles (`PERSONAS.md`).
+- Extra data for every module (`seed_more.py`).
+- A Playwright QA suite: persona sweep, crawl, layout and visual checks, with a comparison
+  against the baseline (`qa/run.mjs`).
+
+## 2026-11-20 (b): Narrow users, search box, portal customers
+
+**Home for narrow roles.**
+- Modules, tiles and KPI tabs are judged by what the user's own roles grant
+  (`_base_only_readable`). Every desk user can read about 60 DocTypes through All / Desk User
+  (lookups, their own Leads and Projects, the Quality lists, framework admin lists). That gave a
+  new hire Quality KPIs and Build, Data, Users and Website tiles.
+- New hire (no business role): "Your account is ready" with links to to-dos, calendar, notes
+  and profile. No module tiles, KPIs or cues.
+- Delivery driver (`driver.demo`, Delivery User only):
+  - Cues: "Delivery trips to run" and "Delivery trips on the road".
+  - A Stock tab with no numbers (`_link_only_groups`).
+  - Quick-link boxes for Delivery Trip (with its count, although the Stock sidebar doesn't
+    list it) and Delivery Note.
+- Create buttons and quick links never offer documents ERPNext makes itself (Serial and Batch
+  Bundle, GL Entry, …).
+- "Coming up" keeps a public event someone else made only when the user can read what it is
+  about. CRM appointments had filled every user's calendar.
+- KPI cards where more is worse (overdue, late, to deliver, to bill, pending, outstanding)
+  colour a rise red and a fall green.
+
+**Search box** (`desk/search.py`, Frappe's `awesomebar_search` hook).
+- Document numbers: "00012" gives the Sales Order, Quotation, Delivery Note, … with that number.
+- Number prefixes: "SINV" gives Sales Invoice, and "PUR-ORD" gives Purchase Order.
+- Names: "palmer" gives the customer and the contact.
+- Work words: "overdue" or "late" open the home's filtered lists.
+- All of it goes through `frappe.get_list` and permissions.
+- A user with no history used to get an empty box. It now opens on the lists of their own work
+  (`start_links` pads `frequently_visited_links`).
+
+**Sidebars** (`desk/boot.py`). Links to pages that don't exist ("background-task") are dropped
+for administrators too.
+
+**Portal customers.** Frappe's "Not Permitted" page offered "Login" to people already signed
+in. Through `update_website_context`, a signed-in portal customer at `/desk` reads "The desk is
+for staff accounts…" and gets "Go to my portal". Other signed-in users get "Back to the desk".
+
+**Auditor.** Read on Company (`permissions.py` LOOKUPS), which the ledger and statement reports
+need.

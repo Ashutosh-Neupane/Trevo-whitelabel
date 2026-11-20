@@ -106,6 +106,10 @@
 	// From this width the apps move into a left column (keep in step with the SCSS).
 	const WIDE_LAYOUT = "80rem";
 	const CUE_GROUPS_SHOWN = 3; // module groups open at first; the rest behind "Show more"
+	// Documents ERPNext makes itself from another document; nobody starts one from a Create button.
+	const MADE_BY_SYSTEM = new Set(["Serial and Batch Bundle", "Stock Ledger Entry", "GL Entry", "Repost Item Valuation", "Bin"]);
+	// KPI cards where more is worse (work waiting, late, owed): their change is coloured the other way.
+	const INVERSE_KPI = /overdue|late|pending|outstanding|unpaid|to deliver|to bill|to receive|open issues|open quality|backlog|expense|defect|reject/i;
 	// Read-only: the home shows cards, it does not edit workspaces.
 	const KPI_WIDGET_OPTIONS = {
 		allow_sorting: false,
@@ -132,6 +136,20 @@
 			this.$home = this.$root.find(".trevo-home");
 			this.make_topbar();
 			this.keep_fresh();
+			this.fit_site_banners();
+		}
+
+		// Frappe puts site banners (impersonation, read-only) above the page, in the same scroll
+		// column. The desktop home is exactly the window's height, so without this the page
+		// scrolled by the banner's height. The CSS subtracts --trevo-banners from that height.
+		fit_site_banners() {
+			const fit = () => {
+				const px = $(".site-banners").outerHeight() || 0;
+				const root = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+				this.$root[0].style.setProperty("--trevo-banners", `${px / root}rem`);
+			};
+			fit();
+			$(window).on("resize", frappe.utils.debounce(fit, 200));
 		}
 
 		// Work waiting changes during the day (someone submits a PO for approval, an invoice
@@ -225,7 +243,9 @@
 			this.render_recent(this.make_recent_section($aside), data.recent || []);
 			this.place_apps($layout, $apps);
 
-			if (!has_create && !has_kpis && !has_modules && !has_custom) {
+			// No module of their own yet (a new hire whose roles are still to come): say so in the
+			// centre, with what every desk user can already use. Create (ToDo, Event) doesn't count.
+			if (!has_kpis && !has_modules && !has_custom) {
 				this.render_no_access().prependTo($main);
 			}
 		}
@@ -555,10 +575,21 @@
 						)
 					)}</p>
 				</div>
-				<a class="trevo-chip" href="/desk/user/${esc(encodeURIComponent(frappe.session.user))}">
-					${icon("user", "xs")}<span>${esc(__("My Profile"))}</span>
-				</a>
+				<div class="trevo-home__notice-links"></div>
 			</section>`);
+			// Lists every desk user has, whatever their roles.
+			const links = [
+				["List", "ToDo", "list-todo", __("My to-dos")],
+				["List", "Event", "calendar", __("Calendar"), "/desk/event/view/calendar"],
+				["List", "Note", "notebook-pen", __("Notes")],
+			]
+				.filter(([, doctype]) => frappe.model.can_read(doctype))
+				.map(([, doctype, ic, label, href]) => [href || `/desk/${frappe.router.slug(doctype)}`, ic, label]);
+			links.push([`/desk/user/${encodeURIComponent(frappe.session.user)}`, "user", __("My Profile")]);
+			const $links = $notice.find(".trevo-home__notice-links");
+			links.forEach(([href, ic, label]) => {
+				$(`<a class="trevo-chip" href="${esc(href)}">${icon(ic, "xs")}<span>${esc(label)}</span></a>`).appendTo($links);
+			});
 			return $notice;
 		}
 
@@ -686,7 +717,7 @@
 			const singles = new Set(frappe.boot.single_types || []);
 			const used = this.usage?.doctypes || {};
 			return doctypes
-				.filter((dt, i, all) => dt && all.indexOf(dt) === i && can.has(dt) && !singles.has(dt))
+				.filter((dt, i, all) => dt && all.indexOf(dt) === i && can.has(dt) && !singles.has(dt) && !MADE_BY_SYSTEM.has(dt))
 				.map((dt, i) => ({ dt, i, use: used[dt] || 0 }))
 				.sort((a, b) => b.use - a.use || a.i - b.i)
 				.map((x) => x.dt);
@@ -904,9 +935,13 @@
 			</div>`);
 			const $grid = $panel.find(".trevo-home__kpi-grid");
 			group.cards.forEach((card) => {
+				// Frappe colours a rise green and a fall red. For work piling up ("Overdue Issues",
+				// "Orders to Deliver", "Pending ...") a rise is bad news, so those cards swap the
+				// colours (CSS on .is-inverse); the numbers and arrows stay Frappe's.
+				const inverse = INVERSE_KPI.test(`${card.label} ${card.name}`);
 				frappe.widget.make_widget({
 					widget_type: "number_card",
-					container: $(`<div class="trevo-kpi"></div>`).appendTo($grid),
+					container: $(`<div class="trevo-kpi${inverse ? " is-inverse" : ""}"></div>`).appendTo($grid),
 					name: card.name,
 					number_card_name: card.name,
 					label: card.label,
@@ -999,7 +1034,7 @@
 				seen.add(key);
 				let href, sub, weight;
 				if (it.link_type === "DocType") {
-					if (!can_read.has(it.link_to)) return;
+					if (!can_read.has(it.link_to) || MADE_BY_SYSTEM.has(it.link_to)) return;
 					let opts = it.route_options;
 					try {
 						opts = typeof opts === "string" ? JSON.parse(opts) : opts;
@@ -1036,6 +1071,23 @@
 					rank: (cue ? -1e6 : 0) - weight * 100 + i,
 				});
 			});
+			// A list with work waiting that the module's sidebar doesn't carry (Delivery Trip is
+			// not in ERPNext's Stock sidebar) still gets its box: it is where the driver works.
+			cues.filter((c) => c.module === group.module && c.count && can_read.has(c.doctype)).forEach((c) => {
+				const key = `DocType|${c.doctype}`;
+				if (seen.has(key)) return;
+				seen.add(key);
+				rows.push({
+					href: frappe.utils.generate_route({ type: "doctype", name: c.doctype }),
+					sub: __("List"),
+					label: __(c.doctype),
+					icon: c.icon || "file-text",
+					count: c.count,
+					tone: c.tone,
+					count_title: __(c.label),
+					rank: -1e6,
+				});
+			});
 			rows.sort((a, b) => a.rank - b.rank);
 			return out.concat(rows.slice(0, Math.max(limit - out.length, 4)));
 		}
@@ -1052,7 +1104,10 @@
 			if (!Array.isArray(data.modules)) return () => true;
 			const usable = new Set(data.modules);
 			const owners = new Set(data.doctype_modules || []);
-			const can_read = new Set(frappe.boot.user.can_read || []);
+			// DocTypes every desk user reads (lookups, the framework's admin lists) don't make
+			// a module theirs: a new hire got Build, Data, Users and Website tiles from them.
+			const base = new Set(data.base_only || []);
+			const can_read = new Set((frappe.boot.user.can_read || []).filter((d) => !base.has(d)));
 			const sidebars = frappe.boot.module_sidebars || {};
 			return (entry) => {
 				const bar = sidebars[entry.link_to] || sidebars[entry.label];
@@ -1065,13 +1120,26 @@
 
 		// Entries for an app: its dock, or, for an installed app that declares no apps-screen
 		// entry (e.g. a client app such as SaathiMart), the module sidebars Frappe made for it.
+		// ERPNext's standard dock hides some modules (Support ships `hidden: 1`), so a support
+		// agent got no Support tile although Support is their work. A module the user works in
+		// (their cue modules, from their roles) gets its sidebar as a tile when the dock omits it.
 		app_entries(app) {
 			const sidebar = frappe.app.sidebar;
-			if (app.on_apps_screen) return sidebar.collect_dock_entries(app);
-			return Object.values(frappe.boot.module_sidebars || {})
-				.filter((bar) => bar.app === app.app_name && (bar.items || []).length)
-				.map((bar) => sidebar.dock_entry({ link_type: "Sidebar", link_to: bar.name }))
+			const bars = Object.values(frappe.boot.module_sidebars || {}).filter(
+				(bar) => bar.app === app.app_name && (bar.items || []).length
+			);
+			const as_entry = (bar) => sidebar.dock_entry({ link_type: "Sidebar", link_to: bar.name });
+			if (!app.on_apps_screen) return bars.map(as_entry).filter(Boolean);
+
+			const entries = sidebar.collect_dock_entries(app);
+			const work = new Set(this.data?.cues?.modules || []);
+			if (!work.size) return entries;
+			const covered = new Set(entries.flatMap((e) => [e.link_to, e.label, e.module]));
+			const extra = bars
+				.filter((bar) => work.has(bar.module) && !covered.has(bar.name) && !covered.has(bar.module))
+				.map(as_entry)
 				.filter(Boolean);
+			return entries.concat(extra);
 		}
 
 		render_modules($main, is_usable) {

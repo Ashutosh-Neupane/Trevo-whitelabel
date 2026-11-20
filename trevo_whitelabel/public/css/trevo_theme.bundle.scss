@@ -2111,6 +2111,18 @@ $trevo-home-width: 70rem;
 	gap: 12px;
 }
 
+// More is worse for this card (trevo_home.js INVERSE_KPI): a rise reads as a warning.
+// Same depth as the card style below, plus .is-inverse, so it wins over the default colours.
+.trevo-kpi.is-inverse .widget.number-widget-box .widget-body .card-stats {
+	&.green-stat {
+		color: var(--red-600, var(--text-red));
+	}
+
+	&.red-stat {
+		color: var(--trevo-ink);
+	}
+}
+
 // Frappe's NumberCardWidget, in the home's card style.
 .trevo-kpi {
 	min-width: 0;
@@ -2414,8 +2426,9 @@ $trevo-home-width: 70rem;
 	.trevo-home-page {
 		display: flex;
 		flex-direction: column;
-		height: 100vh;
-		height: 100dvh;
+		// Less any site banner (impersonation, read-only) above it; set by trevo_home.js.
+		height: calc(100vh - var(--trevo-banners, 0rem));
+		height: calc(100dvh - var(--trevo-banners, 0rem));
 		min-height: 0;
 		overflow: hidden;
 	}
@@ -2733,6 +2746,7 @@ $trevo-home-width: 70rem;
 // No business role yet: one calm explanation in place of empty sections.
 .trevo-home__notice {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
 	gap: 16px;
 	padding: 20px;
@@ -2772,6 +2786,14 @@ $trevo-home-width: 70rem;
 .trevo-home__notice-text {
 	flex: 1 1 auto;
 	min-width: 0;
+}
+
+.trevo-home__notice-links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	flex-basis: 100%;
+	padding-left: 3.5rem; // under the text, past the icon
 }
 
 // Loading placeholder for the sections under the greeting.
