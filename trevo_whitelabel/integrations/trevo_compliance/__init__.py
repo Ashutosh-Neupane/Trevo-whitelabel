@@ -126,20 +126,28 @@ def _upsert(doctype, name, values):
 
 
 def _fill_workspace():
-	"""The app's own workspace, with Trevo's content. Written straight to the database (no save):
-	saving a standard workspace in developer mode would write it into the compliance app's files.
-	If the app ships a newer workspace, migrate syncs it and this fills it again right after."""
+	"""Put the dashboard at the top of the app's own workspace. Everything the app ships there
+	(its shortcuts, its register and report links, their order) is kept exactly as in the app's
+	workspace file, read afresh each time; only the cards and charts are added above it.
+
+	Written straight to the database (no save): saving a standard workspace in developer mode
+	would write it into the compliance app's files. If the app ships a newer workspace, migrate
+	syncs it and this adds the dashboard again right after."""
 	if not frappe.db.exists("Workspace", WORKSPACE):
 		return
-	with open(os.path.join(os.path.dirname(__file__), "workspace.json")) as f:
-		layout = json.load(f)
+	app_file = frappe.get_app_path("trevo_compliance", "trevo_compliance", "workspace", "trevo_compliance", "trevo_compliance.json")
+	if not os.path.exists(app_file):
+		return
+	with open(app_file) as f:
+		shipped = json.load(f)
 	ws = frappe.get_doc("Workspace", WORKSPACE)
 	tables = {
 		"number_cards": [{"number_card_name": c["name"], "label": c["label"]} for c in NUMBER_CARDS],
 		"charts": [{"chart_name": name, "label": name} for name, *_rest in CHARTS],
-		"shortcuts": layout["shortcuts"],
-		"links": layout["links"],
-		"roles": [{"role": r} for r in VIEWERS],
+		# The app's own rows, unchanged.
+		"shortcuts": _rows(shipped.get("shortcuts")),
+		"links": _rows(shipped.get("links")),
+		"roles": _rows(shipped.get("roles")),
 	}
 	for field, rows in tables.items():
 		child = ws.meta.get_field(field).options
@@ -147,32 +155,26 @@ def _fill_workspace():
 		ws.set(field, [])
 		for row in rows:
 			ws.append(field, row).db_insert()
-	ws.icon = layout["icon"]
-	ws.content = json.dumps(_content(layout))
+	ws.content = json.dumps(_dashboard_blocks() + json.loads(shipped.get("content") or "[]"))
 	ws.db_update()
 	frappe.clear_cache()
 
 
-def _content(layout):
+def _rows(rows):
+	skip = {"name", "owner", "creation", "modified", "modified_by", "parent", "parentfield", "parenttype", "idx", "docstatus", "doctype"}
+	return [{k: v for k, v in row.items() if k not in skip} for row in rows or []]
+
+
+def _dashboard_blocks():
 	blocks = []
 
 	def add(kind, **data):
 		blocks.append({"id": frappe.generate_hash(length=10), "type": kind, "data": {**data, "col": data.get("col", 12)}})
 
-	def header(text):
-		add("header", text=f'<span class="h4"><b>{text}</b></span>')
-
-	header(frappe._("IRD at a glance"))
+	add("header", text=f'<span class="h4"><b>{frappe._("IRD at a glance")}</b></span>')
 	for card in NUMBER_CARDS:
 		# A block names its workspace row by that row's label, not by the card record.
 		add("number_card", number_card_name=card["label"], col=3)
 	for name, _s, _t, width, _r in CHARTS:
 		add("chart", chart_name=name, col=12 if width == "Full" else 6)
-	header(frappe._("Shortcuts"))
-	for s in layout["shortcuts"]:
-		add("shortcut", shortcut_name=s["label"], col=3)
-	header(frappe._("Registers and records"))
-	for link in layout["links"]:
-		if link.get("type") == "Card Break":
-			add("card", card_name=link["label"], col=4)
 	return blocks
